@@ -7,7 +7,8 @@
 #include<glad/glad.h>
 #include<glfw3.h>
 
-int main(void) 
+#include "Shader.h"
+
 void GLAPIENTRY DebugMessageCallback(GLenum source,
 	GLenum type,
 	GLuint id,
@@ -36,13 +37,14 @@ void GLAPIENTRY DebugMessageCallback(GLenum source,
 		fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
 			(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
 			type, severity, message);
-		
+
 		__debugbreak();
 		break;
 	default:
 		break;
 	}
 }
+
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, int)
 {
@@ -62,15 +64,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, int)
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
-		throw std::exception("Could not loead OpenGL function loader.");
+		throw std::exception("Could not load OpenGL function loader.");
 	}
 
 	// During init, enable debug output
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(DebugMessageCallback, 0);
+
+	Shader mainShader("Shaders/MainShader.vert", "Shaders/MainShader.frag");
+
 	GLuint vao;
 	glCreateVertexArrays(1, &vao);
 	glBindVertexArray(vao);
+
 	// Rendering and all that 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -82,6 +88,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, int)
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
 		glViewport(0, 0, width, height);
+
+		mainShader.use();
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
 
 		glfwSwapBuffers(window);
 	}

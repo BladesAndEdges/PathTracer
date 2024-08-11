@@ -68,6 +68,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, int)
 	// During init, enable debug output
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(DebugMessageCallback, 0);
+	GLuint vao;
+	glCreateVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 	// Rendering and all that 
 	while (!glfwWindowShouldClose(window))
 	{

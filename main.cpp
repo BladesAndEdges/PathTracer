@@ -76,6 +76,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, int)
 		glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		int width, height;
+		glfwGetFramebufferSize(window, &width, &height);
+		glViewport(0, 0, width, height);
 
 		glfwSwapBuffers(window);
 	}

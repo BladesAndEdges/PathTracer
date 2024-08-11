@@ -107,7 +107,7 @@
       <AdditionalIncludeDirectories>C:\Users\Dan\source\repos\PathTracer\Dependencies;C:\Users\Dan\source\repos\PathTracer\Submodules\imgui;C:\Users\Dan\source\repos\PathTracer\Submodules\glfw\include\GLFW;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Users\Dan\source\repos\PathTracer\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);GLFW.lib;ImGui.lib;glad.lib;%(AdditionalDependencies)</AdditionalDependencies>

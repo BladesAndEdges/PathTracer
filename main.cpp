@@ -1,3 +1,4 @@
+#include<Windows.h>
 #include<exception>
 
 
@@ -7,6 +8,7 @@
 #include<glfw3.h>
 
 int main(void) 
+int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, int)
 {
 	if (!glfwInit())
 	{

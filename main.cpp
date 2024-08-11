@@ -8,6 +8,42 @@
 #include<glfw3.h>
 
 int main(void) 
+void GLAPIENTRY DebugMessageCallback(GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length,
+	const GLchar* message,
+	const void*)
+{
+	switch (severity)
+	{
+	case GL_DEBUG_SEVERITY_HIGH:
+		fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+			(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+			type, severity, message);
+
+		__debugbreak();
+		break;
+	case GL_DEBUG_SEVERITY_MEDIUM:
+		fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+			(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+			type, severity, message);
+
+		__debugbreak();
+		break;
+	case GL_DEBUG_SEVERITY_LOW:
+		fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+			(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+			type, severity, message);
+		
+		__debugbreak();
+		break;
+	default:
+		break;
+	}
+}
+
 int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, int)
 {
 	if (!glfwInit())
@@ -29,6 +65,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, int)
 		throw std::exception("Could not loead OpenGL function loader.");
 	}
 
+	// During init, enable debug output
+	glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(DebugMessageCallback, 0);
 	// Rendering and all that 
 	while (!glfwWindowShouldClose(window))
 	{

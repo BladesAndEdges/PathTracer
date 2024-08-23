@@ -34,4 +34,5 @@ void main()
 	const uint c_correctedVertexId = 2  - gl_VertexID;
 	
 	gl_Position = generateTriangleClipspaceCoordinate(c_correctedVertexId);
+	v2f_textureCoordinate = generateTriangleTextureCoordinates(c_correctedVertexId);
 }

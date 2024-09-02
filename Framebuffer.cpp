@@ -4,9 +4,9 @@
 #include <glad/glad.h>
 
 // --------------------------------------------------------------------------------
-Framebuffer::Framebuffer(uint32_t width, uint32_t height, uint32_t channels) : m_width(width), m_height(height), m_channels(channels)
+Framebuffer::Framebuffer(uint32_t width, uint32_t height, uint32_t channels) : m_width(width), m_height(height), m_numChannels(channels)
 {
-	m_data = new GLubyte[m_width * m_height * m_channels];
+	m_data = new GLubyte[m_width * m_height * m_numChannels];
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &m_texture);
 
@@ -19,14 +19,14 @@ Framebuffer::Framebuffer(uint32_t width, uint32_t height, uint32_t channels) : m
 }
 
 // --------------------------------------------------------------------------------
-void Framebuffer::use() const
+void Framebuffer::Use() const
 {
 	// If a new bind slot is used, make sure that you update it here
 	glBindTextureUnit(0, m_texture);
 }
 
 // --------------------------------------------------------------------------------
-void Framebuffer::update() const
+void Framebuffer::Update() const
 {
 	glTextureSubImage2D(m_texture, 0, 0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, m_data);
 }
@@ -45,25 +45,25 @@ Framebuffer::~Framebuffer()
 }
 
 // --------------------------------------------------------------------------------
-uint32_t Framebuffer::getWidth() const
+uint32_t Framebuffer::GetWidth() const
 {
 	return m_width;
 }
 
 // --------------------------------------------------------------------------------
-uint32_t Framebuffer::getHeight() const
+uint32_t Framebuffer::GetHeight() const
 {
 	return m_height;
 }
 
 // --------------------------------------------------------------------------------
-uint32_t Framebuffer::getChannels() const
+uint32_t Framebuffer::GetNumChannels() const
 {
-	return m_channels;
+	return m_numChannels;
 }
 
 // --------------------------------------------------------------------------------
-uint8_t* Framebuffer::getData()
+uint8_t* Framebuffer::GetDataPtr()
 {
 	return m_data;
 }

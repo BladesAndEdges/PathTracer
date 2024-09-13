@@ -5,6 +5,8 @@
 #include "Framebuffer.h"
 #include "Shader.h"
 
+#define NUMBER_OF_CHANNELS_PER_TEXEL 4u
+
 // --------------------------------------------------------------------------------
 GLContext::GLContext()
 {
@@ -14,10 +16,15 @@ GLContext::GLContext()
 
 	InitializeGlad();
 
+	RegisterDebugCallback();
+
 	glCreateVertexArrays(1, &m_vao);
 
 	m_shader = new Shader("Shaders/MainShader.vert", "Shaders/MainShader.frag");
-	m_framebuffer = new Framebuffer(1024u, 720u, 3u);
+
+	int framebufferWidth, framebufferHeight;
+	glfwGetFramebufferSize(m_glfwWindow, &framebufferWidth, &framebufferHeight);
+	m_framebuffer = new Framebuffer(framebufferWidth, framebufferHeight, NUMBER_OF_CHANNELS_PER_TEXEL);
 }
 
 // --------------------------------------------------------------------------------
@@ -57,11 +64,11 @@ bool GLContext::HasFramebufferChanged()
 // --------------------------------------------------------------------------------
 void GLContext::ResizeFramebuffer()
 {
-	delete m_framebuffer;
+	delete m_framebuffer; // Any synchronization needed here?
 
 	int currentWidth, currentHeight;
 	glfwGetFramebufferSize(m_glfwWindow, &currentWidth, &currentHeight);
-	m_framebuffer = new Framebuffer(currentWidth, currentHeight, 3u);
+	m_framebuffer = new Framebuffer(currentWidth, currentHeight, NUMBER_OF_CHANNELS_PER_TEXEL);
 }
 
 // --------------------------------------------------------------------------------
@@ -108,7 +115,7 @@ void GLContext::CreateGLFWWindow()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	m_glfwWindow = glfwCreateWindow(1024, 720, "Path Tracer", nullptr, nullptr);
+	m_glfwWindow = glfwCreateWindow(1024u, 720u, "Path Tracer", nullptr, nullptr);
 
 	glfwMakeContextCurrent(m_glfwWindow);
 }

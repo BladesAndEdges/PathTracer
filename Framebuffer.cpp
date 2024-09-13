@@ -1,5 +1,6 @@
 #include "Framebuffer.h"
 
+#include <assert.h>
 #include <cstring>
 #include <glad/glad.h>
 
@@ -15,7 +16,18 @@ Framebuffer::Framebuffer(uint32_t width, uint32_t height, uint32_t channels) : m
 	glTextureParameteri(m_texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTextureParameteri(m_texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTextureStorage2D(m_texture, 1, GL_RGB8, m_width, m_height);
+	if (m_numChannels == 3u)
+	{
+		glTextureStorage2D(m_texture, 1, GL_RGB8, m_width, m_height);
+	}
+	else if (m_numChannels == 4u)
+	{
+		glTextureStorage2D(m_texture, 1, GL_RGBA8, m_width, m_height);
+	}
+	else
+	{
+		assert(0u);
+	}
 }
 
 // --------------------------------------------------------------------------------
@@ -28,7 +40,18 @@ void Framebuffer::Use() const
 // --------------------------------------------------------------------------------
 void Framebuffer::Update() const
 {
-	glTextureSubImage2D(m_texture, 0, 0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, m_data);
+	if (m_numChannels == 3u)
+	{
+		glTextureSubImage2D(m_texture, 0, 0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, m_data);
+	}
+	else if (m_numChannels == 4u)
+	{
+		glTextureSubImage2D(m_texture, 0, 0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, m_data);
+	}
+	else
+	{
+		assert(0u);
+	}
 }
 
 // --------------------------------------------------------------------------------

@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImGui", "Subprojects\ImGui\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glad", "Subprojects\glad\glad.vcxproj", "{767E2D8B-D10A-48C3-A26E-0D6AED7A982D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MathLibrary", "Subprojects\MathLibrary\MathLibrary.vcxproj", "{089E4932-5431-4F28-A918-4234E5202F51}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -51,6 +53,14 @@ Global
 		{767E2D8B-D10A-48C3-A26E-0D6AED7A982D}.Release|x64.Build.0 = Release|x64
 		{767E2D8B-D10A-48C3-A26E-0D6AED7A982D}.Release|x86.ActiveCfg = Release|Win32
 		{767E2D8B-D10A-48C3-A26E-0D6AED7A982D}.Release|x86.Build.0 = Release|Win32
+		{089E4932-5431-4F28-A918-4234E5202F51}.Debug|x64.ActiveCfg = Debug|x64
+		{089E4932-5431-4F28-A918-4234E5202F51}.Debug|x64.Build.0 = Debug|x64
+		{089E4932-5431-4F28-A918-4234E5202F51}.Debug|x86.ActiveCfg = Debug|Win32
+		{089E4932-5431-4F28-A918-4234E5202F51}.Debug|x86.Build.0 = Debug|Win32
+		{089E4932-5431-4F28-A918-4234E5202F51}.Release|x64.ActiveCfg = Release|x64
+		{089E4932-5431-4F28-A918-4234E5202F51}.Release|x64.Build.0 = Release|x64
+		{089E4932-5431-4F28-A918-4234E5202F51}.Release|x86.ActiveCfg = Release|Win32
+		{089E4932-5431-4F28-A918-4234E5202F51}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

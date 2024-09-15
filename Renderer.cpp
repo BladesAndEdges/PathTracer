@@ -58,17 +58,50 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, uint32_t fram
 
 			if (framebuffer->GetNumChannels() == 3u)
 			{
-				bytes[texelByteIndex] = 255u;
-				bytes[texelByteIndex + 1u] = 0u;
-				bytes[texelByteIndex + 2u] = 0u;
+				if (hitSphere(Vector3(0.0f, 0.0f, 0.0f), texelCenter, Vector3(0.0f, 0.0f, -10.0f)))
+				{
+					bytes[texelByteIndex] = 255u;
+					bytes[texelByteIndex + 1u] = 255u;
+					bytes[texelByteIndex + 2u] = 0u;
+				}
+				else
+				{
+					bytes[texelByteIndex] = 255u;
+					bytes[texelByteIndex + 1u] = 0u;
+					bytes[texelByteIndex + 2u] = 0u;
+				}
 			}
 			else if (framebuffer->GetNumChannels() == 4u)
 			{
-				bytes[texelByteIndex] = 255u;
-				bytes[texelByteIndex + 1u] = 0u;
-				bytes[texelByteIndex + 2u] = 0u;
-				bytes[texelByteIndex + 3u] = 1u;
+				if (hitSphere(Vector3(0.0f, 0.0f, 0.0f), texelCenter, Vector3(0.0f, 0.0f, -1.0f)))
+				{
+					bytes[texelByteIndex] = 255u;
+					bytes[texelByteIndex + 1u] = 255u;
+					bytes[texelByteIndex + 2u] = 0u;
+					bytes[texelByteIndex + 3u] = 1u;
+				}
+				else
+				{
+					bytes[texelByteIndex] = 255u;
+					bytes[texelByteIndex + 1u] = 0u;
+					bytes[texelByteIndex + 2u] = 0u;
+					bytes[texelByteIndex + 3u] = 1u;
+
+				}
 			}
 		}
 	}
+}
+
+
+// --------------------------------------------------------------------------------
+bool Renderer::hitSphere(const Vector3& rayOrigin, const Vector3& rayDirection, const Vector3& sphereCenter)
+{
+	const Vector3 oc = sphereCenter - rayOrigin;
+	const float a = Dot(rayDirection, rayDirection);
+	const float b = -2.0f * Dot(rayDirection, oc);
+	const float c = Dot(oc, oc) - 0.1f * 0.4f;
+
+	const float discriminant = b * b - 4 * a * c;
+	return (discriminant >= 0);
 }

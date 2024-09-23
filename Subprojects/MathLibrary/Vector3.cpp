@@ -3,6 +3,11 @@
 #include "math.h"
 
 // --------------------------------------------------------------------------------
+Vector3::Vector3()
+{
+}
+
+// --------------------------------------------------------------------------------
 Vector3::Vector3(float x, float y, float z) : m_x(x), m_y(y), m_z(z)
 {
 }
@@ -59,6 +64,13 @@ Vector3 operator-(const Vector3& lhs, const Vector3& rhs)
 Vector3 operator*(const float scalar, const Vector3& vec)
 {
     return Vector3(scalar * vec.X(), scalar * vec.Y(), scalar * vec.Z());
+}
+
+// --------------------------------------------------------------------------------
+Vector3 Normalize(const Vector3& vec)
+{
+    float c_magnitude = Magnitude(vec);
+    return Vector3(vec.X() / c_magnitude, vec.Y() / c_magnitude, vec.Z() / c_magnitude);
 }
 
 // --------------------------------------------------------------------------------

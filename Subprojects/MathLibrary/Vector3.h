@@ -4,6 +4,7 @@ class Vector3
 {	
 public:
 
+	Vector3();
 	Vector3(float x, float y, float z);
 
 	float X() const;
@@ -25,5 +26,7 @@ Vector3 operator+(const Vector3& lhs, const Vector3& rhs);
 Vector3 operator-(const Vector3& lhs, const Vector3& rhs);
 Vector3 operator*(const float scalar, const Vector3& vec);
 
+Vector3 Normalize(const Vector3& direction);
+
 float Dot(const Vector3& vecA, const Vector3& vecB);
-float Magnitude(const Vector3& vecA, const Vector3& vecB);
+float Magnitude(const Vector3& vec);

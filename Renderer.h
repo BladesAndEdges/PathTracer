@@ -3,6 +3,8 @@
 #include<cstdint>
 #include <vector>
 #include "Vector3.h"
+#include "RGB.h"
+#include "HitResult.h"
 
 class Framebuffer;
 class Ray;
@@ -20,9 +22,10 @@ public:
 
 private:
 
-	bool hitSphere(const Vector3& texelCenter);
-	bool hitPlane(const Ray& ray, const Vector3& pointOnPlane, const Vector3& planeNormal);
+	HitResult hitSphere(const Vector3& texelCenter);
+	//bool hitPlane(const Ray& ray, const Vector3& pointOnPlane, const Vector3& planeNormal);
 
 	std::vector<Vector3> m_sphereList;
+	std::vector<RGB> m_sphereColours;
 };
 

@@ -19,6 +19,22 @@ Renderer::Renderer()
 {
 	m_sphereList.push_back(Vector3(0.0f, 0.0f, -10.0f));
 	m_sphereList.push_back(Vector3(5.0f, 5.0f, -10.0f));
+
+	RGB c_green;
+	c_green.m_red = 0u;
+	c_green.m_green = 255u;
+	c_green.m_blue = 0u;
+
+	RGB c_blue;
+	c_blue.m_red = 0u;
+	c_blue.m_green = 0u;
+	c_blue.m_blue = 255u;
+
+
+	m_sphereColours.push_back(c_green);
+	m_sphereColours.push_back(c_blue);
+
+	assert(m_sphereList.size() == m_sphereColours.size());
 }
 
 // --------------------------------------------------------------------------------
@@ -61,12 +77,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 			// Byte offsets
 			const uint32_t texelByteIndex = (row * framebuffer->GetWidth() * framebuffer->GetNumChannels()) + (column * framebuffer->GetNumChannels());
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
-				
-			if (hitSphere(texelCenter))
+			
+			const HitResult c_hitResult = hitSphere(texelCenter);
+			if (c_hitResult.m_t != INFINITY) 
 			{
-				bytes[texelByteIndex] = 255u;
-				bytes[texelByteIndex + 1u] = 255u;
-				bytes[texelByteIndex + 2u] = 0u;
+				bytes[texelByteIndex] = c_hitResult.m_colour.m_red;
+				bytes[texelByteIndex + 1u] = c_hitResult.m_colour.m_green;
+				bytes[texelByteIndex + 2u] = c_hitResult.m_colour.m_blue;
 				bytes[texelByteIndex + 3u] = 1u;
 			}
 			else
@@ -82,7 +99,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 
 
 // --------------------------------------------------------------------------------
-bool Renderer::hitSphere(const Vector3& texelCenter)
+HitResult Renderer::hitSphere(const Vector3& texelCenter)
 {
 	// Calculate world space ray
 	const Ray c_ray(Vector3(5.0f, 5.0f, 0.0f), texelCenter); // Sphere bottom left relative to origin
@@ -90,8 +107,7 @@ bool Renderer::hitSphere(const Vector3& texelCenter)
 	const float sphereRadius = 0.4f;
 
 	// Can hit multiple spheres, now question is which one
-	bool hasIntersected = false;
-	float t = INFINITY;
+	HitResult hitResult;
 	for (uint32_t sphere = 0u; sphere < m_sphereList.size(); sphere++)
 	{
 		const Vector3 rayOriginToSphere = m_sphereList[sphere] - c_ray.Origin();
@@ -103,24 +119,25 @@ bool Renderer::hitSphere(const Vector3& texelCenter)
 
 		if (discriminant >= 0.0f)
 		{
-			hasIntersected = true;
+			hitResult.m_t = 111.0f;
+			hitResult.m_colour = m_sphereColours[sphere];
 		}
 	}
 
-	return hasIntersected;
+	return hitResult;
 }
 
-bool Renderer::hitPlane(const Ray& ray, const Vector3& pointOnPlane, const Vector3& planeNormal)
-{
-
-	//Ray viewSpaceRay;
-	//
-	//const Vector3 rayOriginWS = ViewToWorldMatrix * viewSpaceRay.Origin();
-	//const Vector3 rayTexelCenterWS = ViewToWorldMatrix * viewSpaceRay.Direction(); // Treat as point vector for our purposes 
-	//																				// Won't work in my case as it's normalized
-	//
-	//Ray worldSpaceRay(rayOriginWS, rayTexelCenterWS); // Direction normalized during ray creation. It expects non-normalized direction
-
-
-	return true;
-}
+//bool Renderer::hitPlane(const Ray& ray, const Vector3& pointOnPlane, const Vector3& planeNormal)
+//{
+//
+//	//Ray viewSpaceRay;
+//	//
+//	//const Vector3 rayOriginWS = ViewToWorldMatrix * viewSpaceRay.Origin();
+//	//const Vector3 rayTexelCenterWS = ViewToWorldMatrix * viewSpaceRay.Direction(); // Treat as point vector for our purposes 
+//	//																				// Won't work in my case as it's normalized
+//	//
+//	//Ray worldSpaceRay(rayOriginWS, rayTexelCenterWS); // Direction normalized during ray creation. It expects non-normalized direction
+//
+//
+//	return true;
+//}

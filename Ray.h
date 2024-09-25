@@ -8,6 +8,9 @@ public:
 
 	Ray(const Vector3& origin, const Vector3& direction);
 
+	Vector3 Origin() const;
+	Vector3 Direction() const;
+
 private:
 
 	Vector3 m_rayOrigin;

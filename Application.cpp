@@ -20,9 +20,6 @@ Application::~Application()
 // --------------------------------------------------------------------------------
 void Application::Run()
 {
-	uint32_t frame = 0u;
-	bool changeColour = false;
-
 	// Rendering and all that 
 	while (!m_context->ShouldClose())
 	{
@@ -33,13 +30,11 @@ void Application::Run()
 			m_context->ResizeFramebuffer();
 		}
 
-		m_renderer->UpdateFramebufferContents(m_context->GetFramebuffer(), frame, changeColour);
+		m_renderer->UpdateFramebufferContents(m_context->GetFramebuffer());
 		m_context->UpdateFramebuffer();
 
 		m_context->Draw();
 
 		m_context->SwapBuffers();
-
-		frame++;
 	}
 }

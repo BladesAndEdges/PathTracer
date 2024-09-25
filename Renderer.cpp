@@ -9,17 +9,20 @@
 #include <math.h>
 #include <vector>
 #include <assert.h>
+#include <cmath>
+#include "Ray.h"
 
 # define M_PI 3.14159265358979323846
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
 {
-
+	m_sphereList.push_back(Vector3(0.0f, 0.0f, -10.0f));
+	m_sphereList.push_back(Vector3(5.0f, 5.0f, -10.0f));
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, uint32_t frame, bool& changeColour)
+void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 {
 	float aspectRatio = (float)framebuffer->GetWidth() / (float)framebuffer->GetHeight();
 
@@ -31,6 +34,8 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, uint32_t fram
 
 	const float c_texelWidth = c_width /framebuffer->GetWidth();
 	const float c_texelHeight = c_height / framebuffer->GetHeight();
+
+	const Vector3 cameraPos(0.0f, 0.0f, 0.0f);
 
 	// Corners of the plane
 	const Vector3 c_topLeftTexel(-(c_width / 2.0f), c_height / 2.0f, -distanceToPlane);
@@ -53,41 +58,23 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, uint32_t fram
 			texelCenter.SetX(texelCenter.X() + (c_texelWidth / 2.0f));
 			texelCenter.SetY(texelCenter.Y() - (c_texelHeight / 2.0f));
 
+			// Byte offsets
 			const uint32_t texelByteIndex = (row * framebuffer->GetWidth() * framebuffer->GetNumChannels()) + (column * framebuffer->GetNumChannels());
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
-
-			if (framebuffer->GetNumChannels() == 3u)
+				
+			if (hitSphere(texelCenter))
 			{
-				if (hitSphere(Vector3(0.0f, 0.0f, 0.0f), texelCenter, Vector3(0.0f, 0.0f, -10.0f)))
-				{
-					bytes[texelByteIndex] = 255u;
-					bytes[texelByteIndex + 1u] = 255u;
-					bytes[texelByteIndex + 2u] = 0u;
-				}
-				else
-				{
-					bytes[texelByteIndex] = 255u;
-					bytes[texelByteIndex + 1u] = 0u;
-					bytes[texelByteIndex + 2u] = 0u;
-				}
+				bytes[texelByteIndex] = 255u;
+				bytes[texelByteIndex + 1u] = 255u;
+				bytes[texelByteIndex + 2u] = 0u;
+				bytes[texelByteIndex + 3u] = 1u;
 			}
-			else if (framebuffer->GetNumChannels() == 4u)
+			else
 			{
-				if (hitSphere(Vector3(0.0f, 0.0f, 0.0f), texelCenter, Vector3(0.0f, 0.0f, -1.0f)))
-				{
-					bytes[texelByteIndex] = 255u;
-					bytes[texelByteIndex + 1u] = 255u;
-					bytes[texelByteIndex + 2u] = 0u;
-					bytes[texelByteIndex + 3u] = 1u;
-				}
-				else
-				{
-					bytes[texelByteIndex] = 255u;
-					bytes[texelByteIndex + 1u] = 0u;
-					bytes[texelByteIndex + 2u] = 0u;
-					bytes[texelByteIndex + 3u] = 1u;
-
-				}
+				bytes[texelByteIndex] = 255u;
+				bytes[texelByteIndex + 1u] = 0u;
+				bytes[texelByteIndex + 2u] = 0u;
+				bytes[texelByteIndex + 3u] = 1u;
 			}
 		}
 	}
@@ -95,13 +82,45 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, uint32_t fram
 
 
 // --------------------------------------------------------------------------------
-bool Renderer::hitSphere(const Vector3& rayOrigin, const Vector3& rayDirection, const Vector3& sphereCenter)
+bool Renderer::hitSphere(const Vector3& texelCenter)
 {
-	const Vector3 oc = sphereCenter - rayOrigin;
-	const float a = Dot(rayDirection, rayDirection);
-	const float b = -2.0f * Dot(rayDirection, oc);
-	const float c = Dot(oc, oc) - 0.1f * 0.4f;
+	// Calculate world space ray
+	const Ray c_ray(Vector3(5.0f, 5.0f, 0.0f), texelCenter); // Sphere bottom left relative to origin
 
-	const float discriminant = b * b - 4 * a * c;
-	return (discriminant >= 0);
+	const float sphereRadius = 0.4f;
+
+	// Can hit multiple spheres, now question is which one
+	bool hasIntersected = false;
+	float t = INFINITY;
+	for (uint32_t sphere = 0u; sphere < m_sphereList.size(); sphere++)
+	{
+		const Vector3 rayOriginToSphere = m_sphereList[sphere] - c_ray.Origin();
+		const float a = Dot(c_ray.Direction(), c_ray.Direction());
+		const float b = -2.0f * Dot(c_ray.Direction(), rayOriginToSphere);
+		const float c = Dot(rayOriginToSphere, rayOriginToSphere) - (sphereRadius * sphereRadius);
+
+		const float discriminant = b * b - 4 * a * c;
+
+		if (discriminant >= 0.0f)
+		{
+			hasIntersected = true;
+		}
+	}
+
+	return hasIntersected;
+}
+
+bool Renderer::hitPlane(const Ray& ray, const Vector3& pointOnPlane, const Vector3& planeNormal)
+{
+
+	//Ray viewSpaceRay;
+	//
+	//const Vector3 rayOriginWS = ViewToWorldMatrix * viewSpaceRay.Origin();
+	//const Vector3 rayTexelCenterWS = ViewToWorldMatrix * viewSpaceRay.Direction(); // Treat as point vector for our purposes 
+	//																				// Won't work in my case as it's normalized
+	//
+	//Ray worldSpaceRay(rayOriginWS, rayTexelCenterWS); // Direction normalized during ray creation. It expects non-normalized direction
+
+
+	return true;
 }

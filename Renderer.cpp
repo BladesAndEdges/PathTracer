@@ -17,8 +17,8 @@
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
 {
-	m_sphereList.push_back(Vector3(0.0f, 0.0f, -10.0f));
-	m_sphereList.push_back(Vector3(5.0f, 5.0f, -10.0f));
+	m_sphereList.push_back(Vector3(5.0f, 5.0f, -10.0f)); // green, in front
+	m_sphereList.push_back(Vector3(5.0f, 5.0f, -12.0f)); // blue, behind
 
 	RGB c_green;
 	c_green.m_red = 0u;
@@ -115,12 +115,17 @@ HitResult Renderer::hitSphere(const Vector3& texelCenter)
 		const float b = -2.0f * Dot(c_ray.Direction(), rayOriginToSphere);
 		const float c = Dot(rayOriginToSphere, rayOriginToSphere) - (sphereRadius * sphereRadius);
 
+		// If an intersection has occurred
 		const float discriminant = b * b - 4 * a * c;
-
 		if (discriminant >= 0.0f)
 		{
-			hitResult.m_t = 111.0f;
-			hitResult.m_colour = m_sphereColours[sphere];
+			// If the intersection is closer than previously stored distance
+			const float t = -b - sqrtf(discriminant) / 2.0f * a;
+			if (t < hitResult.m_t)
+			{
+				hitResult.m_t = t;
+				hitResult.m_colour = m_sphereColours[sphere];
+			}
 		}
 	}
 

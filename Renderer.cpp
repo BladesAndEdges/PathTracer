@@ -17,8 +17,8 @@
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
 {
-	m_sphereList.push_back(Vector3(5.0f, 5.0f, -10.0f)); // green, in front
-	m_sphereList.push_back(Vector3(5.0f, 5.0f, -12.0f)); // blue, behind
+	m_sphereList.push_back(Vector3(5.0f, -0.5f, -10.0f)); // green, in front
+	m_sphereList.push_back(Vector3(5.0f, 0.0f, -12.0f)); // blue, behind
 
 	RGB c_green;
 	c_green.m_red = 0u;
@@ -78,7 +78,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 			const uint32_t texelByteIndex = (row * framebuffer->GetWidth() * framebuffer->GetNumChannels()) + (column * framebuffer->GetNumChannels());
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 			
-			const HitResult c_hitResult = hitSphere(texelCenter);
+			const HitResult c_hitResult = TraceRay(texelCenter);
 			if (c_hitResult.m_t != INFINITY) 
 			{
 				bytes[texelByteIndex] = c_hitResult.m_colour.m_red;
@@ -99,15 +99,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 
 
 // --------------------------------------------------------------------------------
-HitResult Renderer::hitSphere(const Vector3& texelCenter)
+void Renderer::HitSphere(const Vector3& texelCenter, HitResult& hitResult)
 {
 	// Calculate world space ray
-	const Ray c_ray(Vector3(5.0f, 5.0f, 0.0f), texelCenter); // Sphere bottom left relative to origin
+	const Ray c_ray(Vector3(5.0f, 5.0f, 0.0f), texelCenter); // Will go in camera later
 
 	const float sphereRadius = 0.4f;
 
-	// Can hit multiple spheres, now question is which one
-	HitResult hitResult;
 	for (uint32_t sphere = 0u; sphere < m_sphereList.size(); sphere++)
 	{
 		const Vector3 rayOriginToSphere = m_sphereList[sphere] - c_ray.Origin();
@@ -120,7 +118,7 @@ HitResult Renderer::hitSphere(const Vector3& texelCenter)
 		if (discriminant >= 0.0f)
 		{
 			// If the intersection is closer than previously stored distance
-			const float t = -b - sqrtf(discriminant) / 2.0f * a;
+			const float t = (-b - sqrtf(discriminant)) / (2.0f * a);
 			if (t < hitResult.m_t)
 			{
 				hitResult.m_t = t;
@@ -128,21 +126,44 @@ HitResult Renderer::hitSphere(const Vector3& texelCenter)
 			}
 		}
 	}
+}
+
+// --------------------------------------------------------------------------------
+void Renderer::HitPlane(const Vector3& texelCenter, HitResult& hitResult)
+{
+	// Calculate world space ray
+	const Ray c_ray(Vector3(5.0f, 5.0f, 0.0f), texelCenter); // Will go in camera later, direction is normalized
+	const float distance = 0.0f;
+
+	const Vector3 planeNormal(0.0f, 1.0f, 0.0f); 
+	const Vector3 normalizedPlaneNormal = Normalize(planeNormal);
+
+	const float denom = Dot(normalizedPlaneNormal, c_ray.Direction());
+
+	RGB c_indigo;
+	c_indigo.m_red = 75u;
+	c_indigo.m_green = 0u;
+	c_indigo.m_blue = 130u;
+
+	if (std::fabs(denom) >= 1e-8f)
+	{
+		const float t = (distance - Dot(normalizedPlaneNormal, c_ray.Origin())) / denom;
+
+		if (t >= 0.0f && t < hitResult.m_t)
+		{
+			hitResult.m_t = t;
+			hitResult.m_colour = c_indigo;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+HitResult Renderer::TraceRay(const Vector3& texelCenter)
+{
+	HitResult hitResult;
+
+	HitSphere(texelCenter, hitResult);
+	HitPlane(texelCenter, hitResult);
 
 	return hitResult;
 }
-
-//bool Renderer::hitPlane(const Ray& ray, const Vector3& pointOnPlane, const Vector3& planeNormal)
-//{
-//
-//	//Ray viewSpaceRay;
-//	//
-//	//const Vector3 rayOriginWS = ViewToWorldMatrix * viewSpaceRay.Origin();
-//	//const Vector3 rayTexelCenterWS = ViewToWorldMatrix * viewSpaceRay.Direction(); // Treat as point vector for our purposes 
-//	//																				// Won't work in my case as it's normalized
-//	//
-//	//Ray worldSpaceRay(rayOriginWS, rayTexelCenterWS); // Direction normalized during ray creation. It expects non-normalized direction
-//
-//
-//	return true;
-//}

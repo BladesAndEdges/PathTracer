@@ -23,9 +23,9 @@ public:
 private:
 
 
-	void HitSphere(const Vector3& texelCenter, HitResult& hitResult);
-	void HitPlane(const Vector3& texelCenter, HitResult& hitResult);
-	HitResult TraceRay(const Vector3& texelCenter);
+	void HitSphere(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax, HitResult& hitResult);
+	void HitPlane(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax, HitResult& hitResult);
+	HitResult TraceRay(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax);
 
 	std::vector<Vector3> m_sphereList;
 	std::vector<RGB> m_sphereColours;

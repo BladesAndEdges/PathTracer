@@ -17,8 +17,8 @@
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
 {
-	m_sphereList.push_back(Vector3(5.0f, -0.5f, -10.0f)); // green, in front
-	m_sphereList.push_back(Vector3(5.0f, 0.0f, -12.0f)); // blue, behind
+	m_sphereList.push_back(Vector3(0.0f, 0.4f, -2.0f)); // green, in front
+	m_sphereList.push_back(Vector3(0.5f, 0.4f, -2.5f)); // blue, behind
 
 	RGB c_green;
 	c_green.m_red = 0u;
@@ -51,8 +51,6 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 	const float c_texelWidth = c_width /framebuffer->GetWidth();
 	const float c_texelHeight = c_height / framebuffer->GetHeight();
 
-	const Vector3 cameraPos(0.0f, 0.0f, 0.0f);
-
 	// Corners of the plane
 	const Vector3 c_topLeftTexel(-(c_width / 2.0f), c_height / 2.0f, -distanceToPlane);
 	const Vector3 c_bottomLeftTexel(-(c_width / 2.0f), -(c_height / 2.0f), -distanceToPlane);
@@ -78,13 +76,28 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 			const uint32_t texelByteIndex = (row * framebuffer->GetWidth() * framebuffer->GetNumChannels()) + (column * framebuffer->GetNumChannels());
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 			
-			const HitResult c_hitResult = TraceRay(texelCenter);
-			if (c_hitResult.m_t != INFINITY) 
+			const HitResult c_primaryHitResult = TraceRay(Vector3(0.0f, 1.0f, 0.0f), texelCenter, 1e-5f, INFINITY);
+			if (c_primaryHitResult.m_t != INFINITY)
 			{
-				bytes[texelByteIndex] = c_hitResult.m_colour.m_red;
-				bytes[texelByteIndex + 1u] = c_hitResult.m_colour.m_green;
-				bytes[texelByteIndex + 2u] = c_hitResult.m_colour.m_blue;
-				bytes[texelByteIndex + 3u] = 1u;
+				const Vector3 lightDirection = Normalize(Vector3(-1.0f, 1.0f, -1.0f));
+				const float clampValue = std::fmin(std::fmax(Dot(lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
+
+				const HitResult c_secondaryRayHitResult = TraceRay(c_primaryHitResult.m_intersectionPoint, lightDirection, 1e-5f, INFINITY);
+
+				if (c_secondaryRayHitResult.m_t == INFINITY)
+				{
+					bytes[texelByteIndex] = clampValue * c_primaryHitResult.m_colour.m_red;
+					bytes[texelByteIndex + 1u] = clampValue * c_primaryHitResult.m_colour.m_green;
+					bytes[texelByteIndex + 2u] = clampValue * c_primaryHitResult.m_colour.m_blue;
+					bytes[texelByteIndex + 3u] = 1u;
+				}
+				else
+				{
+					bytes[texelByteIndex] = 0u;
+					bytes[texelByteIndex + 1u] = 0u;
+					bytes[texelByteIndex + 2u] = 0u;
+					bytes[texelByteIndex + 3u] = 1u;
+				}
 			}
 			else
 			{
@@ -99,10 +112,10 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 
 
 // --------------------------------------------------------------------------------
-void Renderer::HitSphere(const Vector3& texelCenter, HitResult& hitResult)
+void Renderer::HitSphere(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax, HitResult& hitResult)
 {
 	// Calculate world space ray
-	const Ray c_ray(Vector3(5.0f, 5.0f, 0.0f), texelCenter); // Will go in camera later
+	const Ray c_ray(origin, direction); // Will go in camera later
 
 	const float sphereRadius = 0.4f;
 
@@ -119,20 +132,22 @@ void Renderer::HitSphere(const Vector3& texelCenter, HitResult& hitResult)
 		{
 			// If the intersection is closer than previously stored distance
 			const float t = (-b - sqrtf(discriminant)) / (2.0f * a);
-			if (t < hitResult.m_t)
+			if (t < hitResult.m_t && t >= tMin && t <= tMax)
 			{
 				hitResult.m_t = t;
+				hitResult.m_intersectionPoint = c_ray.CalculateIntersectionPoint(hitResult.m_t);
 				hitResult.m_colour = m_sphereColours[sphere];
+				hitResult.m_normal = Normalize(c_ray.CalculateIntersectionPoint(t) - m_sphereList[sphere]);
 			}
 		}
 	}
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::HitPlane(const Vector3& texelCenter, HitResult& hitResult)
+void Renderer::HitPlane(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax, HitResult& hitResult)
 {
 	// Calculate world space ray
-	const Ray c_ray(Vector3(5.0f, 5.0f, 0.0f), texelCenter); // Will go in camera later, direction is normalized
+	const Ray c_ray(origin, direction); // Will go in camera later, direction is normalized
 	const float distance = 0.0f;
 
 	const Vector3 planeNormal(0.0f, 1.0f, 0.0f); 
@@ -149,21 +164,23 @@ void Renderer::HitPlane(const Vector3& texelCenter, HitResult& hitResult)
 	{
 		const float t = (distance - Dot(normalizedPlaneNormal, c_ray.Origin())) / denom;
 
-		if (t >= 0.0f && t < hitResult.m_t)
+		if (t >= 0.0f && t < hitResult.m_t && t >= tMin && t <= tMax)
 		{
 			hitResult.m_t = t;
+			hitResult.m_intersectionPoint = c_ray.CalculateIntersectionPoint(hitResult.m_t);
 			hitResult.m_colour = c_indigo;
+			hitResult.m_normal = normalizedPlaneNormal;
 		}
 	}
 }
 
 // --------------------------------------------------------------------------------
-HitResult Renderer::TraceRay(const Vector3& texelCenter)
+HitResult Renderer::TraceRay(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax)
 {
 	HitResult hitResult;
 
-	HitSphere(texelCenter, hitResult);
-	HitPlane(texelCenter, hitResult);
+	HitSphere(origin, direction, tMin, tMax, hitResult);
+	HitPlane(origin, direction, tMin, tMax, hitResult);
 
 	return hitResult;
 }

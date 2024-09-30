@@ -10,6 +10,7 @@ public:
 
 	Vector3 Origin() const;
 	Vector3 Direction() const;
+	Vector3 CalculateIntersectionPoint(const float t) const;
 
 private:
 

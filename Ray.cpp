@@ -17,3 +17,10 @@ Vector3 Ray::Direction() const
 {
 	return m_normalizedRayDir;
 }
+
+// --------------------------------------------------------------------------------
+Vector3 Ray::CalculateIntersectionPoint(const float t) const
+{
+	const Vector3 offset = t * m_normalizedRayDir;
+	return m_rayOrigin + offset;
+}

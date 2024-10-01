@@ -9,6 +9,9 @@
 
 #define NUMBER_OF_CHANNELS_PER_TEXEL 4u
 
+float g_deltaTime = 0.0f;
+float g_previousFrameTime = 0.0f;
+
 // --------------------------------------------------------------------------------
 GLContext::GLContext()
 {
@@ -82,40 +85,47 @@ void GLContext::UpdateFramebuffer()
 // --------------------------------------------------------------------------------
 void GLContext::ProcessCameraInput(Camera* camera)
 {
+	float currentFrameTime = (float)glfwGetTime();
+	g_deltaTime = currentFrameTime - g_previousFrameTime;
+	g_previousFrameTime = currentFrameTime;
+
+	const float unitsPerFrame = 1.5f * g_deltaTime;
+
 	const Vector3 forward(0.0f, 0.0f, 1.0f);
 	const Vector3 up(0.0f, 1.0f, 0.0f);
 	const Vector3 right(1.0f, 0.0f, 0.0f);
+
 	//Camera Translation
 	Vector3 viewSpaceTranslation(0.0f, 0.0f, 0.0f);
 
 	if (glfwGetKey(m_glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		viewSpaceTranslation = viewSpaceTranslation - forward /* + (unitsPerFrame * forward)*/;
+		viewSpaceTranslation = viewSpaceTranslation - (unitsPerFrame * forward);
 	}
 
 	if (glfwGetKey(m_glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
 	{
-		viewSpaceTranslation = viewSpaceTranslation + forward/* - (unitsPerFrame * forward)*/;
+		viewSpaceTranslation = viewSpaceTranslation + (unitsPerFrame * forward);
 	}
 
 	if (glfwGetKey(m_glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
 	{
-		viewSpaceTranslation = viewSpaceTranslation - right/* - (unitsPerFrame * right)*/;
+		viewSpaceTranslation = viewSpaceTranslation - (unitsPerFrame * right);
 	}
 
 	if (glfwGetKey(m_glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
 	{
-		viewSpaceTranslation = viewSpaceTranslation + right/* + (unitsPerFrame * right)*/;
+		viewSpaceTranslation = viewSpaceTranslation + (unitsPerFrame * right);
 	}
 
 	if (glfwGetKey(m_glfwWindow, GLFW_KEY_Q) == GLFW_PRESS)
 	{
-		viewSpaceTranslation = viewSpaceTranslation + up/* + (unitsPerFrame * up)*/;
+		viewSpaceTranslation = viewSpaceTranslation + (unitsPerFrame * up);
 	}
 
 	if (glfwGetKey(m_glfwWindow, GLFW_KEY_E) == GLFW_PRESS)
 	{
-		viewSpaceTranslation = viewSpaceTranslation - up/* - (unitsPerFrame * up)*/;
+		viewSpaceTranslation = viewSpaceTranslation - (unitsPerFrame * up);
 	}
 
 	const Vector3 c_worldSpaceTranslation = /*camera.getWorldOrientation() **/ viewSpaceTranslation;

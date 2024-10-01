@@ -24,6 +24,7 @@ void Application::Run()
 	while (!m_context->ShouldClose())
 	{
 		m_context->Listen();
+		m_context->ProcessCameraInput(m_renderer->GetCamera());
 
 		if (m_context->HasFramebufferChanged())
 		{

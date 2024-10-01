@@ -35,6 +35,14 @@ Renderer::Renderer()
 	m_sphereColours.push_back(c_blue);
 
 	assert(m_sphereList.size() == m_sphereColours.size());
+
+	m_camera.SetCameraLocation(Vector3(0.0f, 1.0f, 0.0f));
+}
+
+// --------------------------------------------------------------------------------
+Camera* Renderer::GetCamera()
+{
+	return &m_camera;
 }
 
 // --------------------------------------------------------------------------------
@@ -76,7 +84,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 			const uint32_t texelByteIndex = (row * framebuffer->GetWidth() * framebuffer->GetNumChannels()) + (column * framebuffer->GetNumChannels());
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 			
-			const HitResult c_primaryHitResult = TraceRay(Vector3(0.0f, 1.0f, 0.0f), texelCenter, 1e-5f, INFINITY);
+			const HitResult c_primaryHitResult = TraceRay(m_camera.GetCameraLocation(), texelCenter, 1e-5f, INFINITY);
 			if (c_primaryHitResult.m_t != INFINITY)
 			{
 				const Vector3 lightDirection = Normalize(Vector3(-1.0f, 1.0f, -1.0f));
@@ -164,7 +172,7 @@ void Renderer::HitPlane(const Vector3& origin, const Vector3& direction, const f
 	{
 		const float t = (distance - Dot(normalizedPlaneNormal, c_ray.Origin())) / denom;
 
-		if (t >= 0.0f && t < hitResult.m_t && t >= tMin && t <= tMax)
+		if (t < hitResult.m_t && t >= tMin && t <= tMax)
 		{
 			hitResult.m_t = t;
 			hitResult.m_intersectionPoint = c_ray.CalculateIntersectionPoint(hitResult.m_t);

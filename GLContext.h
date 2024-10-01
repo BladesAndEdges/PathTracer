@@ -6,6 +6,7 @@
 
 class Framebuffer;
 class Shader;
+class Camera;
 
 class GLContext
 {
@@ -22,6 +23,7 @@ public:
 	bool HasFramebufferChanged();
 	void ResizeFramebuffer();
 	void UpdateFramebuffer();
+	void ProcessCameraInput(Camera* camera);
 	void Draw();
 	void SwapBuffers();
 

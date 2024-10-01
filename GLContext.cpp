@@ -2,8 +2,10 @@
 
 #include<exception>
 
+#include "Camera.h"
 #include "Framebuffer.h"
 #include "Shader.h"
+#include "Vector3.h"
 
 #define NUMBER_OF_CHANNELS_PER_TEXEL 4u
 
@@ -75,6 +77,50 @@ void GLContext::ResizeFramebuffer()
 void GLContext::UpdateFramebuffer()
 {
 	m_framebuffer->Update();
+}
+
+// --------------------------------------------------------------------------------
+void GLContext::ProcessCameraInput(Camera* camera)
+{
+	const Vector3 forward(0.0f, 0.0f, 1.0f);
+	const Vector3 up(0.0f, 1.0f, 0.0f);
+	const Vector3 right(1.0f, 0.0f, 0.0f);
+	//Camera Translation
+	Vector3 viewSpaceTranslation(0.0f, 0.0f, 0.0f);
+
+	if (glfwGetKey(m_glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		viewSpaceTranslation = viewSpaceTranslation - forward /* + (unitsPerFrame * forward)*/;
+	}
+
+	if (glfwGetKey(m_glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		viewSpaceTranslation = viewSpaceTranslation + forward/* - (unitsPerFrame * forward)*/;
+	}
+
+	if (glfwGetKey(m_glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		viewSpaceTranslation = viewSpaceTranslation - right/* - (unitsPerFrame * right)*/;
+	}
+
+	if (glfwGetKey(m_glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		viewSpaceTranslation = viewSpaceTranslation + right/* + (unitsPerFrame * right)*/;
+	}
+
+	if (glfwGetKey(m_glfwWindow, GLFW_KEY_Q) == GLFW_PRESS)
+	{
+		viewSpaceTranslation = viewSpaceTranslation + up/* + (unitsPerFrame * up)*/;
+	}
+
+	if (glfwGetKey(m_glfwWindow, GLFW_KEY_E) == GLFW_PRESS)
+	{
+		viewSpaceTranslation = viewSpaceTranslation - up/* - (unitsPerFrame * up)*/;
+	}
+
+	const Vector3 c_worldSpaceTranslation = /*camera.getWorldOrientation() **/ viewSpaceTranslation;
+	const Vector3 c_worldSpacePosition = camera->GetCameraLocation() + c_worldSpaceTranslation;
+	camera->SetCameraLocation(c_worldSpacePosition);
 }
 
 // --------------------------------------------------------------------------------

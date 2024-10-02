@@ -23,6 +23,7 @@ public:
 	bool HasFramebufferChanged();
 	void ResizeFramebuffer();
 	void UpdateFramebuffer();
+	void UpdatePerformanceStatistics(double milliseconds);
 	void ProcessCameraInput(Camera* camera);
 	void Draw();
 	void SwapBuffers();

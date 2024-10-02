@@ -6,6 +6,7 @@
 #include "Vector3.h"
 #include "RGB.h"
 #include "HitResult.h"
+#include "Ray.h"
 
 class Framebuffer;
 
@@ -24,13 +25,14 @@ public:
 private:
 
 
-	void HitSphere(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax, HitResult& hitResult);
-	void HitPlane(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax, HitResult& hitResult);
-	HitResult TraceRay(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax);
+	void HitSphere(const Ray& ray, const float tMin, const float tMax, HitResult& hitResult);
+	void HitPlane(const Ray& ray, const float tMin, const float tMax, HitResult& hitResult);
+	HitResult TraceRay(const Ray& ray, const float tMin, const float tMax);
 
 	std::vector<Vector3> m_sphereList;
 	std::vector<RGB> m_sphereColours;
 
 	Camera m_camera;
+	Vector3 m_lightDirection;
 };
 

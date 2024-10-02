@@ -83,6 +83,13 @@ void GLContext::UpdateFramebuffer()
 }
 
 // --------------------------------------------------------------------------------
+void GLContext::UpdatePerformanceStatistics(double milliseconds)
+{
+	const std::string c_statistics = std::to_string(milliseconds);
+	glfwSetWindowTitle(m_glfwWindow, c_statistics.c_str());
+}
+
+// --------------------------------------------------------------------------------
 void GLContext::ProcessCameraInput(Camera* camera)
 {
 	float currentFrameTime = (float)glfwGetTime();

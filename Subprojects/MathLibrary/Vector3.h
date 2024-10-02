@@ -22,11 +22,4 @@ private:
 	float m_z;
 };
 
-Vector3 operator+(const Vector3& lhs, const Vector3& rhs);
-Vector3 operator-(const Vector3& lhs, const Vector3& rhs);
-Vector3 operator*(const float scalar, const Vector3& vec);
-
-Vector3 Normalize(const Vector3& direction);
-
-float Dot(const Vector3& vecA, const Vector3& vecB);
-float Magnitude(const Vector3& vec);
+#include "Vector3.inl"

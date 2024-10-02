@@ -10,7 +10,7 @@
 #include <vector>
 #include <assert.h>
 #include <cmath>
-#include "Ray.h"
+#include "PerformanceCounter.h"
 
 # define M_PI 3.14159265358979323846
 
@@ -37,6 +37,7 @@ Renderer::Renderer()
 	assert(m_sphereList.size() == m_sphereColours.size());
 
 	m_camera.SetCameraLocation(Vector3(0.0f, 1.0f, 0.0f));
+	m_lightDirection = Normalize(Vector3(-1.0f, 1.0f, -1.0f));
 }
 
 // --------------------------------------------------------------------------------
@@ -84,13 +85,14 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 			const uint32_t texelByteIndex = (row * framebuffer->GetWidth() * framebuffer->GetNumChannels()) + (column * framebuffer->GetNumChannels());
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 			
-			const HitResult c_primaryHitResult = TraceRay(m_camera.GetCameraLocation(), texelCenter, 1e-5f, INFINITY);
+			const Ray c_primaryRay(m_camera.GetCameraLocation(), texelCenter);
+			const HitResult c_primaryHitResult = TraceRay(c_primaryRay, 1e-5f, INFINITY);
 			if (c_primaryHitResult.m_t != INFINITY)
 			{
-				const Vector3 lightDirection = Normalize(Vector3(-1.0f, 1.0f, -1.0f));
-				const float clampValue = std::fmin(std::fmax(Dot(lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
+				const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
 
-				const HitResult c_secondaryRayHitResult = TraceRay(c_primaryHitResult.m_intersectionPoint, lightDirection, 1e-5f, INFINITY);
+				const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
+				const HitResult c_secondaryRayHitResult = TraceRay(c_shadowRay, 1e-5f, INFINITY);
 
 				if (c_secondaryRayHitResult.m_t == INFINITY)
 				{
@@ -118,24 +120,20 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
 	}
 }
 
-
 // --------------------------------------------------------------------------------
-void Renderer::HitSphere(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax, HitResult& hitResult)
+void Renderer::HitSphere(const Ray& ray, const float tMin, const float tMax, HitResult& hitResult)
 {
-	// Calculate world space ray
-	const Ray c_ray(origin, direction); // Will go in camera later
-
 	const float sphereRadius = 0.4f;
 
 	for (uint32_t sphere = 0u; sphere < m_sphereList.size(); sphere++)
 	{
-		const Vector3 rayOriginToSphere = m_sphereList[sphere] - c_ray.Origin();
-		const float a = Dot(c_ray.Direction(), c_ray.Direction());
-		const float b = -2.0f * Dot(c_ray.Direction(), rayOriginToSphere);
+		const Vector3 rayOriginToSphere = m_sphereList[sphere] - ray.Origin();
+		const float a = Dot(ray.Direction(), ray.Direction());
+		const float b = -2.0f * Dot(ray.Direction(), rayOriginToSphere);
 		const float c = Dot(rayOriginToSphere, rayOriginToSphere) - (sphereRadius * sphereRadius);
 
 		// If an intersection has occurred
-		const float discriminant = b * b - 4 * a * c;
+		const float discriminant = b * b - 4.0f * a * c;
 		if (discriminant >= 0.0f)
 		{
 			// If the intersection is closer than previously stored distance
@@ -143,25 +141,22 @@ void Renderer::HitSphere(const Vector3& origin, const Vector3& direction, const 
 			if (t < hitResult.m_t && t >= tMin && t <= tMax)
 			{
 				hitResult.m_t = t;
-				hitResult.m_intersectionPoint = c_ray.CalculateIntersectionPoint(hitResult.m_t);
+				hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(hitResult.m_t);
 				hitResult.m_colour = m_sphereColours[sphere];
-				hitResult.m_normal = Normalize(c_ray.CalculateIntersectionPoint(t) - m_sphereList[sphere]);
+				hitResult.m_normal = Normalize(ray.CalculateIntersectionPoint(t) - m_sphereList[sphere]);
 			}
 		}
 	}
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::HitPlane(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax, HitResult& hitResult)
+void Renderer::HitPlane(const Ray& ray, const float tMin, const float tMax, HitResult& hitResult)
 {
 	// Calculate world space ray
-	const Ray c_ray(origin, direction); // Will go in camera later, direction is normalized
 	const float distance = 0.0f;
+	const Vector3 normalizedPlaneNormal = Normalize(Vector3(0.0f, 1.0f, 0.0f));
 
-	const Vector3 planeNormal(0.0f, 1.0f, 0.0f); 
-	const Vector3 normalizedPlaneNormal = Normalize(planeNormal);
-
-	const float denom = Dot(normalizedPlaneNormal, c_ray.Direction());
+	const float denom = Dot(normalizedPlaneNormal, ray.Direction());
 
 	RGB c_indigo;
 	c_indigo.m_red = 75u;
@@ -170,12 +165,12 @@ void Renderer::HitPlane(const Vector3& origin, const Vector3& direction, const f
 
 	if (std::fabs(denom) >= 1e-8f)
 	{
-		const float t = (distance - Dot(normalizedPlaneNormal, c_ray.Origin())) / denom;
+		const float t = (distance - Dot(normalizedPlaneNormal, ray.Origin())) / denom;
 
 		if (t < hitResult.m_t && t >= tMin && t <= tMax)
 		{
 			hitResult.m_t = t;
-			hitResult.m_intersectionPoint = c_ray.CalculateIntersectionPoint(hitResult.m_t);
+			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(hitResult.m_t);
 			hitResult.m_colour = c_indigo;
 			hitResult.m_normal = normalizedPlaneNormal;
 		}
@@ -183,12 +178,12 @@ void Renderer::HitPlane(const Vector3& origin, const Vector3& direction, const f
 }
 
 // --------------------------------------------------------------------------------
-HitResult Renderer::TraceRay(const Vector3& origin, const Vector3& direction, const float tMin, const float tMax)
+HitResult Renderer::TraceRay(const Ray& ray, const float tMin, const float tMax)
 {
 	HitResult hitResult;
 
-	HitSphere(origin, direction, tMin, tMax, hitResult);
-	HitPlane(origin, direction, tMin, tMax, hitResult);
+	HitSphere(ray, tMin, tMax, hitResult);
+	HitPlane(ray, tMin, tMax, hitResult);
 
 	return hitResult;
 }

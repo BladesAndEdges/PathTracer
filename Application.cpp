@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include "GLContext.h"
+#include "PerformanceCounter.h"
 #include "Renderer.h"
 
 // --------------------------------------------------------------------------------
@@ -20,9 +21,13 @@ Application::~Application()
 // --------------------------------------------------------------------------------
 void Application::Run()
 {
+	PerformanceCounter counter;
+
 	// Rendering and all that 
 	while (!m_context->ShouldClose())
 	{
+		counter.BeginTiming();
+		m_context->UpdatePerformanceStatistics(counter.GetMilliseconds());
 		m_context->Listen();
 		m_context->ProcessCameraInput(m_renderer->GetCamera());
 
@@ -37,5 +42,6 @@ void Application::Run()
 		m_context->Draw();
 
 		m_context->SwapBuffers();
+		counter.EndTiming();
 	}
 }

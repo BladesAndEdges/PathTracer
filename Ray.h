@@ -5,7 +5,6 @@
 class Ray
 {
 public:
-
 	Ray(const Vector3& origin, const Vector3& direction);
 
 	Vector3 Origin() const;

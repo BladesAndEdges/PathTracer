@@ -20,5 +20,7 @@ private:
 
 	GLContext* m_context;
 	Renderer* m_renderer;
+	double m_frameTimes[256u];
 };
 
+double CalculateAverageFrameTime(const double frameTimeInMilisecods, unsigned int frameNumber, double timings[128]);

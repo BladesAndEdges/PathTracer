@@ -103,6 +103,9 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	}
 
 	uint8_t* bytes = framebuffer->GetDataPtr();
+	//const uint32_t c_framebufferWidth = framebuffer->GetWidth();
+	//const uint32_t c_framebufferHeight = framebuffer->GetHeight();
+	//const uint32_t c_framebufferNumChannels = framebuffer->GetNumChannels();
 	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
 	{
 		for (uint32_t column = 0u; column < framebuffer->GetWidth(); column++)

@@ -33,9 +33,11 @@ void Application::Run()
 	while (!m_context->ShouldClose())
 	{
 		counter.BeginTiming();
+		m_context->Listen();
+
 		const double c_averageTime = CalculateAverageFrameTime(counter.GetMilliseconds(), frameNumber, m_frameTimes);
 		m_context->UpdatePerformanceStatistics(c_averageTime);
-		m_context->Listen();
+
 		m_context->ProcessCameraInput(m_renderer->GetCamera());
 
 		if (test = m_context->HasFramebufferChanged())

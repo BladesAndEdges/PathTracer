@@ -11,7 +11,6 @@
 
 class Framebuffer;
 
-
 class Renderer
 {
 
@@ -27,8 +26,8 @@ public:
 private:
 
 
-	void HitSphere(const Ray& ray, const float tMin, const float tMax, HitResult& hitResult);
-	void HitPlane(const Ray& ray, const float tMin, const float tMax, HitResult& hitResult);
+	void HitSphere(const Ray& ray, const float tMin, const float tMax, HitResult& out_hitResult);
+	void HitPlane(const Ray& ray, const float tMin, const float tMax, const float distance, const Vector3& normalizedPlaneNormal, RGB colour, HitResult& out_hitResult);
 	HitResult TraceRay(const Ray& ray, const float tMin, const float tMax);
 
 	std::vector<Vector3> m_sphereList;

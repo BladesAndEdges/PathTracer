@@ -29,4 +29,3 @@ private:
 	uint32_t m_texture;
 	uint8_t* m_data;
 };
-

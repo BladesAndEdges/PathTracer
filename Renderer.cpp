@@ -102,10 +102,9 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 		m_isFirstFrame = false;
 	}
 
+	//HitResult c_primaryHitResult;
+	//HitResult c_secondaryRayHitResult;
 	uint8_t* bytes = framebuffer->GetDataPtr();
-	//const uint32_t c_framebufferWidth = framebuffer->GetWidth();
-	//const uint32_t c_framebufferHeight = framebuffer->GetHeight();
-	//const uint32_t c_framebufferNumChannels = framebuffer->GetNumChannels();
 	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
 	{
 		for (uint32_t column = 0u; column < framebuffer->GetWidth(); column++)
@@ -117,13 +116,15 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 			
 			const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[index]);
-			const HitResult c_primaryHitResult = TraceRay(c_primaryRay, 1e-5f, INFINITY);
+			const HitResult c_primaryHitResult = TraceRay(c_primaryRay, 1e-5f, 50.0f);
+			//TraceRayRef(c_primaryRay, 1e-5f, INFINITY, c_primaryHitResult);
 			if (c_primaryHitResult.m_t != INFINITY)
 			{
 				const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
 
 				const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
-				const HitResult c_secondaryRayHitResult = TraceRay(c_shadowRay, 1e-5f, INFINITY);
+				const HitResult c_secondaryRayHitResult = TraceRay(c_shadowRay, 1e-5f, 50.0f);
+				//TraceRayRef(c_shadowRay, 1e-5f, INFINITY, c_secondaryRayHitResult);
 
 				if (c_secondaryRayHitResult.m_t == INFINITY)
 				{
@@ -147,12 +148,15 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				bytes[texelByteIndex + 2u] = 0u;
 				bytes[texelByteIndex + 3u] = 1u;
 			}
+
+			//c_primaryHitResult.m_t = INFINITY;
+			//c_secondaryRayHitResult.m_t = INFINITY;
 		}
 	}
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::HitSphere(const Ray& ray, const float tMin, const float tMax, HitResult& hitResult)
+void Renderer::HitSphere(const Ray& ray, const float tMin, const float tMax, HitResult& out_hitResult)
 {
 	const float sphereRadius = 0.4f;
 
@@ -169,41 +173,32 @@ void Renderer::HitSphere(const Ray& ray, const float tMin, const float tMax, Hit
 		{
 			// If the intersection is closer than previously stored distance
 			const float t = (-b - sqrtf(discriminant)) / (2.0f * a);
-			if (t < hitResult.m_t && t >= tMin && t <= tMax)
+			if (t < out_hitResult.m_t && t >= tMin && t <= tMax)
 			{
-				hitResult.m_t = t;
-				hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(hitResult.m_t);
-				hitResult.m_colour = m_sphereColours[sphere];
-				hitResult.m_normal = Normalize(ray.CalculateIntersectionPoint(t) - m_sphereList[sphere]);
+				out_hitResult.m_t = t;
+				out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+				out_hitResult.m_colour = m_sphereColours[sphere];
+				out_hitResult.m_normal = Normalize(ray.CalculateIntersectionPoint(t) - m_sphereList[sphere]);
 			}
 		}
 	}
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::HitPlane(const Ray& ray, const float tMin, const float tMax, HitResult& hitResult)
+void Renderer::HitPlane(const Ray& ray, const float tMin, const float tMax, const float distance, const Vector3& normalizedPlaneNormal, RGB colour, HitResult& out_hitResult)
 {
-	// Calculate world space ray
-	const float distance = 0.0f;
-	const Vector3 normalizedPlaneNormal = Normalize(Vector3(0.0f, 1.0f, 0.0f));
-
 	const float denom = Dot(normalizedPlaneNormal, ray.Direction());
-
-	RGB c_indigo;
-	c_indigo.m_red = 75u;
-	c_indigo.m_green = 0u;
-	c_indigo.m_blue = 130u;
 
 	if (std::fabs(denom) >= 1e-8f)
 	{
 		const float t = (distance - Dot(normalizedPlaneNormal, ray.Origin())) / denom;
 
-		if (t < hitResult.m_t && t >= tMin && t <= tMax)
+		if (t < out_hitResult.m_t && t >= tMin && t <= tMax)
 		{
-			hitResult.m_t = t;
-			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(hitResult.m_t);
-			hitResult.m_colour = c_indigo;
-			hitResult.m_normal = normalizedPlaneNormal;
+			out_hitResult.m_t = t;
+			out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+			out_hitResult.m_colour = colour;
+			out_hitResult.m_normal = normalizedPlaneNormal;
 		}
 	}
 }
@@ -213,8 +208,13 @@ HitResult Renderer::TraceRay(const Ray& ray, const float tMin, const float tMax)
 {
 	HitResult hitResult;
 
+	RGB c_indigo;
+	c_indigo.m_red = 75u;
+	c_indigo.m_green = 0u;
+	c_indigo.m_blue = 130u;
+
 	HitSphere(ray, tMin, tMax, hitResult);
-	HitPlane(ray, tMin, tMax, hitResult);
+	HitPlane(ray, tMin, tMax, 0.0f, Normalize(Vector3(0.0f, 1.0f, 0.0f)), c_indigo, hitResult);
 
 	return hitResult;
 }

@@ -17,9 +17,6 @@
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
 {
-	m_sphereList.push_back(Vector3(0.0f, 0.4f, -2.0f)); // green, in front
-	m_sphereList.push_back(Vector3(0.5f, 0.4f, -2.5f)); // blue, behind
-
 	RGB c_green;
 	c_green.m_red = 0u;
 	c_green.m_green = 255u;
@@ -30,9 +27,24 @@ Renderer::Renderer()
 	c_blue.m_green = 0u;
 	c_blue.m_blue = 255u;
 
+	for (int i = 0; i < 10u; i++)
+	{
+		for (int j = 0; j < 10u; j++)
+		{
+			const Vector3 bottomLeft(-5.0f, 0.4f, -2.0f);
+			const Vector3 position(bottomLeft.X() + i, bottomLeft.Y(), bottomLeft.Z() - j);
+			m_sphereList.push_back(position);
 
-	m_sphereColours.push_back(c_green);
-	m_sphereColours.push_back(c_blue);
+			if ((i % 2) == 0)
+			{
+				m_sphereColours.push_back(c_green);
+			}
+			else
+			{
+				m_sphereColours.push_back(c_blue);
+			}
+		}
+	}
 
 	assert(m_sphereList.size() == m_sphereColours.size());
 

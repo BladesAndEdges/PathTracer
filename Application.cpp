@@ -22,6 +22,7 @@ Application::~Application()
 void Application::Run()
 {
 	PerformanceCounter counter;
+	bool test = false;
 
 	// Rendering and all that 
 	while (!m_context->ShouldClose())
@@ -31,12 +32,12 @@ void Application::Run()
 		m_context->Listen();
 		m_context->ProcessCameraInput(m_renderer->GetCamera());
 
-		if (m_context->HasFramebufferChanged())
+		if (test = m_context->HasFramebufferChanged())
 		{
 			m_context->ResizeFramebuffer();
 		}
 
-		m_renderer->UpdateFramebufferContents(m_context->GetFramebuffer());
+		m_renderer->UpdateFramebufferContents(m_context->GetFramebuffer(), test);
 		m_context->UpdateFramebuffer();
 
 		m_context->Draw();

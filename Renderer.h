@@ -7,8 +7,10 @@
 #include "RGB.h"
 #include "HitResult.h"
 #include "Ray.h"
+#include "ViewportDesc.h"
 
 class Framebuffer;
+
 
 class Renderer
 {
@@ -20,7 +22,7 @@ public:
 	Renderer& operator=(const Renderer&) = delete;
 
 	Camera* GetCamera();
-	void UpdateFramebufferContents(Framebuffer* framebuffer);
+	void UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResized);
 
 private:
 
@@ -34,5 +36,9 @@ private:
 
 	Camera m_camera;
 	Vector3 m_lightDirection;
+	ViewportDesc m_viewportDesc;
+
+	std::vector<Vector3> m_texelCenters;
+	bool m_isFirstFrame;
 };
 

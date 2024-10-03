@@ -38,6 +38,9 @@ Renderer::Renderer()
 
 	m_camera.SetCameraLocation(Vector3(0.0f, 1.0f, 0.0f));
 	m_lightDirection = Normalize(Vector3(-1.0f, 1.0f, -1.0f));
+
+	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc)); // ?
+	m_isFirstFrame = true;
 }
 
 // --------------------------------------------------------------------------------
@@ -47,45 +50,58 @@ Camera* Renderer::GetCamera()
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer)
+void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResized)
 {
-	float aspectRatio = (float)framebuffer->GetWidth() / (float)framebuffer->GetHeight();
+	if (hasResized || m_isFirstFrame)
+	{
+		m_texelCenters.clear();
 
-	const float c_width = 2.0f;
-	const float c_height = c_width / aspectRatio;
+		m_viewportDesc.m_aspectRatio = (float)framebuffer->GetWidth() / (float)framebuffer->GetHeight();
+		m_viewportDesc.m_width = 2.0f;
+		m_viewportDesc.m_height = m_viewportDesc.m_width / m_viewportDesc.m_aspectRatio;
+		m_viewportDesc.m_halfFov = 45.0f * ((float)M_PI / 180.0f);
+		m_viewportDesc.m_distanceToPlane = ((m_viewportDesc.m_width / 2.0f) / tanf(m_viewportDesc.m_halfFov));
+		m_viewportDesc.m_texelWidth = m_viewportDesc.m_width / framebuffer->GetWidth();
+		m_viewportDesc.m_texelHeight = m_viewportDesc.m_height / framebuffer->GetHeight();
+		// Corners of the plane
+		m_viewportDesc.m_topLeftTexel = Vector3(-(m_viewportDesc.m_width / 2.0f), m_viewportDesc.m_height / 2.0f, -m_viewportDesc.m_distanceToPlane);
+		m_viewportDesc.m_bottomLeftTexel = Vector3(-(m_viewportDesc.m_width / 2.0f), -(m_viewportDesc.m_height / 2.0f), -m_viewportDesc.m_distanceToPlane);
+		m_viewportDesc.m_topRightTexel = Vector3(m_viewportDesc.m_width / 2.0f, m_viewportDesc.m_height / 2.0f, -m_viewportDesc.m_distanceToPlane);
+		m_viewportDesc.m_bottomRightTexel = Vector3(m_viewportDesc.m_width / 2.0f, -(m_viewportDesc.m_height / 2.0f), -m_viewportDesc.m_distanceToPlane);
 
-	const float halfFov = 45.0f * ((float)M_PI / 180.0f);
-	const float distanceToPlane = (c_width / 2.0f) / tanf(halfFov);
+		uint8_t* bytes = framebuffer->GetDataPtr();
+		for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
+		{
+			const float ty = (row * m_viewportDesc.m_texelHeight) / m_viewportDesc.m_height;
+			const Vector3 c_r0 = (1.0f - ty) * m_viewportDesc.m_topLeftTexel + ty * m_viewportDesc.m_bottomLeftTexel;
+			const Vector3 c_r1 = (1.0f - ty) * m_viewportDesc.m_topRightTexel + ty * m_viewportDesc.m_bottomRightTexel;
 
-	const float c_texelWidth = c_width /framebuffer->GetWidth();
-	const float c_texelHeight = c_height / framebuffer->GetHeight();
+			for (uint32_t column = 0u; column < framebuffer->GetWidth(); column++)
+			{
+				const float tx = (column * m_viewportDesc.m_texelWidth) / m_viewportDesc.m_width;
 
-	// Corners of the plane
-	const Vector3 c_topLeftTexel(-(c_width / 2.0f), c_height / 2.0f, -distanceToPlane);
-	const Vector3 c_bottomLeftTexel(-(c_width / 2.0f), -(c_height / 2.0f), -distanceToPlane);
-	const Vector3 c_topRightTexel(c_width / 2.0f, c_height / 2.0f, -distanceToPlane);
-	const Vector3 c_bottomRightTexel(c_width / 2.0f, -(c_height / 2.0f), -distanceToPlane);
+				Vector3 texelCenter = (1.0f - tx) * c_r0 + tx * c_r1;
+				texelCenter.SetX(texelCenter.X() + (m_viewportDesc.m_texelWidth / 2.0f));
+				texelCenter.SetY(texelCenter.Y() - (m_viewportDesc.m_texelHeight / 2.0f));
+				m_texelCenters.push_back(texelCenter);
+			}
+		}
+		
+		m_isFirstFrame = false;
+	}
 
 	uint8_t* bytes = framebuffer->GetDataPtr();
 	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
 	{
-		const float ty = (row * c_texelHeight) / c_height;
-		const Vector3 c_r0 = (1.0f - ty) * c_topLeftTexel + ty * c_bottomLeftTexel;
-		const Vector3 c_r1 = (1.0f - ty) * c_topRightTexel + ty * c_bottomRightTexel;
-
 		for (uint32_t column = 0u; column < framebuffer->GetWidth(); column++)
 		{
-			const float tx = (column * c_texelWidth) / c_width;
-
-			Vector3 texelCenter = (1.0f - tx) * c_r0 + tx * c_r1;
-			texelCenter.SetX(texelCenter.X() + (c_texelWidth / 2.0f));
-			texelCenter.SetY(texelCenter.Y() - (c_texelHeight / 2.0f));
+			const uint32_t index = (row * framebuffer->GetWidth() + column);
 
 			// Byte offsets
 			const uint32_t texelByteIndex = (row * framebuffer->GetWidth() * framebuffer->GetNumChannels()) + (column * framebuffer->GetNumChannels());
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 			
-			const Ray c_primaryRay(m_camera.GetCameraLocation(), texelCenter);
+			const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[index]);
 			const HitResult c_primaryHitResult = TraceRay(c_primaryRay, 1e-5f, INFINITY);
 			if (c_primaryHitResult.m_t != INFINITY)
 			{

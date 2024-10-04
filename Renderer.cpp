@@ -159,11 +159,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 void Renderer::HitSphere(const Ray& ray, const float tMin, const float tMax, HitResult& out_hitResult)
 {
 	const float sphereRadius = 0.4f;
+	const float a = Dot(ray.Direction(), ray.Direction());
 
 	for (uint32_t sphere = 0u; sphere < m_sphereList.size(); sphere++)
 	{
 		const Vector3 rayOriginToSphere = m_sphereList[sphere] - ray.Origin();
-		const float a = Dot(ray.Direction(), ray.Direction());
 		const float b = -2.0f * Dot(ray.Direction(), rayOriginToSphere);
 		const float c = Dot(rayOriginToSphere, rayOriginToSphere) - (sphereRadius * sphereRadius);
 

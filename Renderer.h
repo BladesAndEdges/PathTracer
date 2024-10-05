@@ -11,6 +11,12 @@
 
 class Framebuffer;
 
+struct sphereDiscriminantAndT
+{
+	float m_discriminant;
+	float m_t;
+};
+
 class Renderer
 {
 
@@ -25,10 +31,13 @@ public:
 
 private:
 
+	void RegenerateViewSpaceDirections(Framebuffer* framebuffer);
+	template<bool T_acceptAnyHit>
+	void HitSphere(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
+	void HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, RGB colour, HitResult& out_hitResult);
 
-	void HitSphere(const Ray& ray, const float tMin, const float tMax, HitResult& out_hitResult);
-	void HitPlane(const Ray& ray, const float tMin, const float tMax, const float distance, const Vector3& normalizedPlaneNormal, RGB colour, HitResult& out_hitResult);
-	HitResult TraceRay(const Ray& ray, const float tMin, const float tMax);
+	template<bool T_acceptAnyHit>
+	HitResult TraceRay(const Ray& ray, const float tMin);
 
 	std::vector<Vector3> m_sphereList;
 	std::vector<RGB> m_sphereColours;
@@ -39,5 +48,10 @@ private:
 
 	std::vector<Vector3> m_texelCenters;
 	bool m_isFirstFrame;
+
+	RGB c_indigo;
+
+	// Big tesst
+	std::vector<sphereDiscriminantAndT> m_sphereDiscriminantAndTValues;
 };
 

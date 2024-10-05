@@ -1,16 +1,10 @@
 #include "Renderer.h"
 
-#include "Framebuffer.h"
-
-#include <glad/glad.h>
-#include <glfw3.h>
-
-#include "Vector3.h"
-#include <math.h>
-#include <vector>
 #include <assert.h>
-#include <cmath>
+
+#include "Framebuffer.h"
 #include "PerformanceCounter.h"
+#include "Vector3.h"
 
 # define M_PI 3.14159265358979323846
 
@@ -99,9 +93,9 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 				if (c_secondaryRayHitResult.m_t == INFINITY)
 				{
-					bytes[texelByteIndex] = clampValue * c_primaryHitResult.m_colour.m_red;
-					bytes[texelByteIndex + 1u] = clampValue * c_primaryHitResult.m_colour.m_green;
-					bytes[texelByteIndex + 2u] = clampValue * c_primaryHitResult.m_colour.m_blue;
+					bytes[texelByteIndex] = uint8_t(clampValue * c_primaryHitResult.m_colour.m_red);
+					bytes[texelByteIndex + 1u] = uint8_t(clampValue * c_primaryHitResult.m_colour.m_green);
+					bytes[texelByteIndex + 2u] = uint8_t(clampValue * c_primaryHitResult.m_colour.m_blue);
 					bytes[texelByteIndex + 3u] = 1u;
 				}
 				else
@@ -142,7 +136,6 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 	m_viewportDesc.m_topRightTexel = Vector3(m_viewportDesc.m_width / 2.0f, m_viewportDesc.m_height / 2.0f, -m_viewportDesc.m_distanceToPlane);
 	m_viewportDesc.m_bottomRightTexel = Vector3(m_viewportDesc.m_width / 2.0f, -(m_viewportDesc.m_height / 2.0f), -m_viewportDesc.m_distanceToPlane);
 
-	uint8_t* bytes = framebuffer->GetDataPtr();
 	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
 	{
 		const float ty = (row * m_viewportDesc.m_texelHeight) / m_viewportDesc.m_height;

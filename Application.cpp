@@ -26,7 +26,7 @@ Application::~Application()
 void Application::Run()
 {
 	PerformanceCounter counter;
-	bool test = false;
+	bool hasResized = false;
 	uint64_t frameNumber = 0u;
 
 	// Rendering and all that 
@@ -40,12 +40,12 @@ void Application::Run()
 
 		m_context->ProcessCameraInput(m_renderer->GetCamera());
 
-		if (test = m_context->HasFramebufferChanged())
+		if ((hasResized = m_context->HasFramebufferChanged()))
 		{
 			m_context->ResizeFramebuffer();
 		}
 
-		m_renderer->UpdateFramebufferContents(m_context->GetFramebuffer(), test);
+		m_renderer->UpdateFramebufferContents(m_context->GetFramebuffer(), hasResized);
 		m_context->UpdateFramebuffer();
 
 		m_context->Draw();
@@ -58,7 +58,7 @@ void Application::Run()
 }
 
 // --------------------------------------------------------------------------------
-double CalculateAverageFrameTime(const double frameTimeInMilisecods, unsigned int frameNumber, double timings[128])
+double CalculateAverageFrameTime(const double frameTimeInMilisecods, uint64_t frameNumber, double timings[256u])
 {
 	const unsigned int arraySize = ArraySize(timings);
 	const int indexInArray = frameNumber % arraySize;

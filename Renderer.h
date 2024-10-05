@@ -1,10 +1,9 @@
 #pragma once
 
 #include<cstdint>
-#include <vector>
+#include<vector>
+
 #include "Camera.h"
-#include "Vector3.h"
-#include "RGB.h"
 #include "HitResult.h"
 #include "Ray.h"
 #include "ViewportDesc.h"

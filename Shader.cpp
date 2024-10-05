@@ -23,7 +23,10 @@ std::string Shader::readSourceCode(const char* file) const
 	bool isReady = ifs.is_open();
 	assert(isReady);
 
-	contents.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+	if (isReady)
+	{
+		contents.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+	}
 
 	return contents;
 }

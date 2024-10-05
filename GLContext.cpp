@@ -200,11 +200,11 @@ void GLContext::RegisterDebugCallback()
 }
 
 // --------------------------------------------------------------------------------
-void GLAPIENTRY DebugMessageCallback(GLenum source,
-	GLenum type,
-	GLuint id,
+void GLAPIENTRY DebugMessageCallback(GLenum,
+	GLenum,
+	GLuint,
 	GLenum severity,
-	GLsizei length,
+	GLsizei,
 	const GLchar* message,
 	const void*)
 {

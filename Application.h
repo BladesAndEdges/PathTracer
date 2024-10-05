@@ -2,6 +2,8 @@
 
 #include<stdint.h>
 
+#define FRAME_TIMINGS_BUFFER_SIZE 256
+
 class GLContext;
 class Renderer;
 
@@ -23,7 +25,7 @@ private:
 	GLContext* m_context;
 	Renderer* m_renderer;
 
-	double m_frameTimes[256u];
+	double m_frameTimes[FRAME_TIMINGS_BUFFER_SIZE];
 };
 
-double CalculateAverageFrameTime(const double frameTimeInMilisecods, uint64_t frameNumber, double frameTimes[256u]);
+double CalculateAverageFrameTime(const double frameTimeInMilisecods, uint32_t frameNumber, double buffer[FRAME_TIMINGS_BUFFER_SIZE]);

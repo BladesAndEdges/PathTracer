@@ -164,11 +164,13 @@ void Renderer::HitSphere(const Ray& ray, const float tMin, float& tMax, HitResul
 	const float a = Dot(ray.Direction(), ray.Direction());
 	const float fourTimesA = 4.0f * a;
 	const float denom = 1.0f / (2.0f * a);
+	const Vector3 doubleRayDir = -2.0f * ray.Direction();
 
+	uint32_t sphereId = UINT32_MAX;
 	for (uint32_t sphere = 0u; sphere < m_sphereList.size(); sphere++)
 	{
 		const Vector3 rayOriginToSphere = m_sphereList[sphere] - ray.Origin();
-		const float b = -2.0f * Dot(ray.Direction(), rayOriginToSphere);
+		const float b = Dot(doubleRayDir, rayOriginToSphere);
 		const float c = Dot(rayOriginToSphere, rayOriginToSphere) - sphereRadiusSquared;
 
 		// If an intersection has occurred
@@ -180,15 +182,21 @@ void Renderer::HitSphere(const Ray& ray, const float tMin, float& tMax, HitResul
 			if (t >= tMin && t <= tMax)
 			{
 				tMax = t;
-
+				
 				out_hitResult.m_t = t;
-				out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-				out_hitResult.m_colour = m_sphereColours[sphere];
-				out_hitResult.m_normal = Normalize(ray.CalculateIntersectionPoint(t) - m_sphereList[sphere]);
+
+				sphereId = sphere;
 
 				if (T_acceptAnyHit) { break; }
 			}
 		}
+	}
+
+	if (sphereId != UINT32_MAX)
+	{
+		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+		out_hitResult.m_colour = m_sphereColours[sphereId];
+		out_hitResult.m_normal = Normalize(out_hitResult.m_intersectionPoint - m_sphereList[sphereId]);
 	}
 }
 
@@ -206,6 +214,7 @@ void Renderer::HitPlane(const Ray& ray, const float tMin, float& tMax, const flo
 			tMax = t;
 
 			out_hitResult.m_t = t;
+
 			out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
 			out_hitResult.m_colour = colour;
 			out_hitResult.m_normal = normalizedPlaneNormal;

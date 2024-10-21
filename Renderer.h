@@ -50,7 +50,13 @@ private:
 
 	RGB c_indigo;
 
-	// Big tesst
-	std::vector<sphereDiscriminantAndT> m_sphereDiscriminantAndTValues;
+	std::vector<float> m_sphereRadii;
+
+	// Positional data of spheres
+	std::vector<float> m_sphereCentersX;
+	std::vector<float> m_sphereCentersY;
+	std::vector<float> m_sphereCentersZ;
+
+	// Colour data of spheres
 };
 

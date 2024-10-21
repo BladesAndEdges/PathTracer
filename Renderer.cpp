@@ -1,12 +1,15 @@
 #include "Renderer.h"
 
 #include <assert.h>
+#include <emmintrin.h>
+#include <xmmintrin.h>
 
 #include "Framebuffer.h"
 #include "PerformanceCounter.h"
 #include "Vector3.h"
 
 # define M_PI 3.14159265358979323846
+# define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
@@ -21,13 +24,26 @@ Renderer::Renderer()
 	c_blue.m_green = 0u;
 	c_blue.m_blue = 255u;
 
-	for (int i = 0; i < 10u; i++)
+	// Generate spheres
+	const float c_startingPosX = 0.0f;
+	const float c_startingPosZ = -2.0f;
+
+#ifdef RUNNING_SCALAR
+	m_sphereList.push_back(Vector3(c_startingPosX, 1.0f, c_startingPosZ));
+	m_sphereColours.push_back(c_green);
+#endif // RUNNING_SCALAR
+
+
+#ifndef RUNNING_SCALAR
+	for (int i = 0; i < 1u; i++)
 	{
-		for (int j = 0; j < 10u; j++)
+		for (int j = 0; j < 1u; j++)
 		{
-			const Vector3 bottomLeft(-5.0f, 0.4f, -2.0f);
-			const Vector3 position(bottomLeft.X() + i, bottomLeft.Y(), bottomLeft.Z() - j);
-			m_sphereList.push_back(position);
+			// Radii and positional data
+			m_sphereRadii.push_back(0.4f);
+			m_sphereCentersX.push_back(c_startingPosX + (float)i);
+			m_sphereCentersY.push_back(0.4f);
+			m_sphereCentersZ.push_back(c_startingPosZ - (float)j);
 
 			if ((i % 2) == 0)
 			{
@@ -40,9 +56,31 @@ Renderer::Renderer()
 		}
 	}
 
-	m_sphereDiscriminantAndTValues.reserve(10u * 10u * 3u);
+	// Check if the "SOA" should be padded
+	if ((m_sphereCentersX.size() % 4) != 0u)
+	{
+		const uint32_t c_numToPad = 4 - m_sphereCentersX.size() % 4;
 
-	assert(m_sphereList.size() == m_sphereColours.size());
+		for (uint32_t padding = 0u; padding < c_numToPad; padding++)
+		{
+			m_sphereRadii.push_back(0.0f);
+			m_sphereCentersX.push_back(0.0f);
+			m_sphereCentersY.push_back(0.0f);
+			m_sphereCentersZ.push_back(0.0f);
+		}
+	}
+
+	// Assert all are padded correctly
+	assert((m_sphereRadii.size() % 4u) == 0u);
+	assert((m_sphereCentersX.size() % 4u) == 0u);
+	assert((m_sphereCentersY.size() % 4u) == 0u);
+	assert((m_sphereCentersZ.size() % 4u) == 0u);
+
+	// All arrays match in size
+	assert(m_sphereRadii.size() == m_sphereCentersX.size());
+	assert(m_sphereRadii.size() == m_sphereCentersY.size());
+	assert(m_sphereRadii.size() == m_sphereCentersZ.size());
+#endif
 
 	m_camera.SetCameraLocation(Vector3(0.0f, 1.0f, 0.0f));
 	m_lightDirection = Normalize(Vector3(-1.0f, 1.0f, -1.0f));
@@ -160,19 +198,21 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 template<bool T_acceptAnyHit>
 void Renderer::HitSphere(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult)
 {
+#ifdef RUNNING_SCALAR
+	//========
 	const float sphereRadiusSquared = 0.4f * 0.4f;
 	const float a = Dot(ray.Direction(), ray.Direction());
 	const float fourTimesA = 4.0f * a;
 	const float denom = 1.0f / (2.0f * a);
 	const Vector3 doubleRayDir = -2.0f * ray.Direction();
-
+	
 	uint32_t sphereId = UINT32_MAX;
 	for (uint32_t sphere = 0u; sphere < m_sphereList.size(); sphere++)
 	{
 		const Vector3 rayOriginToSphere = m_sphereList[sphere] - ray.Origin();
 		const float b = Dot(doubleRayDir, rayOriginToSphere);
 		const float c = Dot(rayOriginToSphere, rayOriginToSphere) - sphereRadiusSquared;
-
+	
 		// If an intersection has occurred
 		const float discriminant = b * b - fourTimesA * c;
 		if (discriminant >= 0.0f)
@@ -184,9 +224,9 @@ void Renderer::HitSphere(const Ray& ray, const float tMin, float& tMax, HitResul
 				tMax = t;
 				
 				out_hitResult.m_t = t;
-
+	
 				sphereId = sphere;
-
+	
 				if (T_acceptAnyHit) { break; }
 			}
 		}
@@ -198,6 +238,158 @@ void Renderer::HitSphere(const Ray& ray, const float tMin, float& tMax, HitResul
 		out_hitResult.m_colour = m_sphereColours[sphereId];
 		out_hitResult.m_normal = Normalize(out_hitResult.m_intersectionPoint - m_sphereList[sphereId]);
 	}
+
+#endif
+#ifndef RUNNING_SCALAR
+	//========
+	// Per ray calculations
+
+	// Ray data
+	const __m128 c_rayOriginX = _mm_set1_ps(ray.Origin().X());
+	const __m128 c_rayOriginY = _mm_set1_ps(ray.Origin().Y());
+	const __m128 c_rayOriginZ = _mm_set1_ps(ray.Origin().Z());
+
+	const __m128 c_rayDirectionX = _mm_set1_ps(ray.Direction().X());
+	const __m128 c_rayDirectionY = _mm_set1_ps(ray.Direction().Y());
+	const __m128 c_rayDirectionZ = _mm_set1_ps(ray.Direction().Z());
+
+	// Calculate a = Dot(ray.Direction(), ray.Direction())
+	const __m128 c_adx = _mm_mul_ps(c_rayDirectionX, c_rayDirectionX);
+	const __m128 c_ady = _mm_mul_ps(c_rayDirectionY, c_rayDirectionY);
+	const __m128 c_adz = _mm_mul_ps(c_rayDirectionZ, c_rayDirectionZ);
+
+	const __m128 c_aa0 = _mm_add_ps(c_adx, c_ady);
+	const __m128 c_a = _mm_add_ps(c_aa0, c_adz);
+
+	//Calculate 4.0f * a
+	const __m128 c_allFours = _mm_set1_ps(4.0f);
+	const __m128 c_fourTimesA = _mm_mul_ps(c_allFours, c_a);
+
+	// Calculate -2.0f * ray.Direction()
+	const __m128 c_allNegativeTwos = _mm_set1_ps(-2.0f);
+	const __m128 c_invDoubleRayDirectionX = _mm_mul_ps(c_rayDirectionX, c_allNegativeTwos);
+	const __m128 c_invDoubleRayDirectionY = _mm_mul_ps(c_rayDirectionY, c_allNegativeTwos);
+	const __m128 c_invDoubleRayDirectionZ = _mm_mul_ps(c_rayDirectionZ, c_allNegativeTwos);
+
+	// Calculate denominator. Multiply both parts of the fraction by two. 1/2a becomes 2/4a, and reuse 4a
+	const __m128 c_allTwos = _mm_set1_ps(2.0f);
+	const __m128 c_denom = _mm_div_ps(c_allTwos, c_fourTimesA);
+
+	// "Be careful where ray origin = sphereCente
+
+	// Will be updated in the loop
+	__m128 smallestTs = _mm_set1_ps(INFINITY);
+	__m128i smallestTIndices = _mm_set1_epi32(-1);
+
+	// Loop variables
+	const __m128i c_incrementRegister = _mm_set1_epi32(4);
+	__m128i currentSphereIndices = _mm_set_epi32(3, 2, 1, 0);
+
+	const uint32_t c_numIterations = (uint32_t)(m_sphereRadii.size() / 4u);
+	for (uint32_t iteration = 0u; iteration < c_numIterations; iteration++)
+	{
+		const __m128 c_sphereRadii = _mm_loadu_ps(m_sphereRadii.data() + iteration);
+		const __m128 c_sphereRadiiSquared = _mm_mul_ps(c_sphereRadii, c_sphereRadii);
+
+		const __m128 c_sphereCentersX = _mm_loadu_ps(m_sphereCentersX.data() + iteration);
+		const __m128 c_sphereCentersY = _mm_loadu_ps(m_sphereCentersY.data() + iteration);
+		const __m128 c_sphereCentersZ = _mm_loadu_ps(m_sphereCentersZ.data() + iteration);
+
+		// RayOrigin-to-sphere vector
+		const __m128 c_rayOriginToSphereX = _mm_sub_ps(c_sphereCentersX, c_rayOriginX);
+		const __m128 c_rayOriginToSphereY = _mm_sub_ps(c_sphereCentersY, c_rayOriginY);
+		const __m128 c_rayOriginToSphereZ = _mm_sub_ps(c_sphereCentersZ, c_rayOriginZ);
+
+		// Calculate b = Dot(invDoubleRayDir, rayOriginToSphere)
+		const __m128 c_bdx = (c_invDoubleRayDirectionX, c_rayOriginToSphereX);
+		const __m128 c_bdy = (c_invDoubleRayDirectionY, c_rayOriginToSphereY);
+		const __m128 c_bdz = (c_invDoubleRayDirectionZ, c_rayOriginToSphereZ);
+
+		const __m128 c_ba0 = _mm_add_ps(c_bdx, c_bdy);
+		const __m128 c_b = _mm_add_ps(c_ba0, c_bdz);
+
+		// Calculate Dot(RayOriginToSphere, RayOriginToSphere)
+		const __m128 c_cdx = (c_rayOriginToSphereX, c_rayOriginToSphereX);
+		const __m128 c_cdy = (c_rayOriginToSphereY, c_rayOriginToSphereY);
+		const __m128 c_cdz = (c_rayOriginToSphereZ, c_rayOriginToSphereZ);
+
+		const __m128 c_ca0 = _mm_add_ps(c_cdx, c_cdy);
+		const __m128 c_ca1 = _mm_add_ps(c_ca0, c_cdz);
+
+		// Calculate c = Dot(RayOriginToSphere, RayOriginToSphere) - sphereRadiusSquared
+		const __m128 c_c = _mm_sub_ps(c_ca1, c_sphereRadiiSquared);
+
+		// Calculate discriminant
+		const __m128 c_bSquared = _mm_mul_ps(c_b, c_b);
+		const __m128 c_discriminantRhs = _mm_mul_ps(c_fourTimesA, c_c);
+		const __m128 discriminant = _mm_sub_ps(c_bSquared, c_discriminantRhs);
+
+		// Check if it intersects a sphere
+		const __m128 c_allZeros = _mm_set1_ps(0.0f);
+		const __m128 hasIntersectedMask = _mm_cmpge_ps(discriminant, c_allZeros);
+
+		// Calculate t = (-b - sqrtf(discriminant)) * denom
+		const __m128 negativeB = _mm_sub_ps(_mm_set1_ps(0.0f), c_b);
+		const __m128 sqrtDiscriminant = _mm_sqrt_ps(discriminant);
+		const __m128 tLhs = _mm_sub_ps(negativeB, sqrtDiscriminant);
+		const __m128 t = _mm_mul_ps(tLhs, c_denom);
+
+		// Create a bitmask for values between tMin and tMax in t
+		const __m128 tMinimum = _mm_set1_ps(tMin);
+		const __m128 tMaximum = _mm_set1_ps(tMax);
+
+		const __m128 tMinimumMask = _mm_cmpge_ps(t, tMinimum);
+		const __m128 tMaximumMask = _mm_cmple_ps(t, tMaximum);
+
+		// Bitwise and all the masks. Intersection, less than tMin and greater than tMax
+		const __m128 validTValuesMask = _mm_and_ps(hasIntersectedMask, _mm_and_ps(tMinimumMask, tMaximumMask));
+
+		// Get the valid ts that can then be tested against the currently stored smallest ts
+		const __m128 potentialTs = _mm_or_ps(_mm_and_ps(validTValuesMask, t), _mm_andnot_ps(validTValuesMask, tMaximum));
+
+		// Get the indices that will be kept, and the indices that should be changed
+		const __m128i c_lessThanMask = _mm_castps_si128(_mm_cmplt_ps(potentialTs, smallestTs));
+		const __m128i c_oldIndicesToKeep = _mm_andnot_si128(c_lessThanMask, smallestTIndices);
+		const __m128i c_newIndicesToUpdate = _mm_and_si128(c_lessThanMask, currentSphereIndices);
+
+		// Update values
+		smallestTIndices = _mm_or_si128(c_oldIndicesToKeep, c_newIndicesToUpdate);
+		smallestTs = _mm_min_ps(smallestTs, potentialTs);
+
+		// Update indices for next iteration
+		currentSphereIndices = _mm_add_epi32(currentSphereIndices, c_incrementRegister);
+
+		// How do you re-evaluate TMAX, without making this painful ?
+	}
+
+	// Find the smallest t in the lanes
+	// Figure out a better way to name this
+	const __m128 firstMinimumShuffle = _mm_shuffle_ps(smallestTs, smallestTs, _MM_SHUFFLE(0, 0, 2, 3));
+	const __m128 firstMinimumComparison = _mm_min_ps(smallestTs, firstMinimumShuffle);
+
+	const __m128i firstIndexShuffle = _mm_shuffle_epi32(smallestTIndices, _MM_SHUFFLE(0, 0, 2, 3));
+	const __m128i firstIndexMask = _mm_castps_si128(_mm_cmplt_ps(firstMinimumShuffle, smallestTs));
+	const __m128i firstBlahBlah = _mm_or_si128(_mm_and_si128(firstIndexMask, firstIndexShuffle), _mm_andnot_si128(firstIndexMask, smallestTIndices));
+
+	// Compare into the 0th lane
+	const __m128 secondMinimumShuffle = _mm_shuffle_ps(firstMinimumComparison, firstMinimumComparison, _MM_SHUFFLE(0, 0, 0, 1));
+	const __m128 secondComparison = _mm_min_ps(firstMinimumComparison, secondMinimumShuffle);
+
+	const __m128i secondIndexShuffle = _mm_shuffle_epi32(firstBlahBlah, _MM_SHUFFLE(0, 0, 0, 1));
+	const __m128i secondIndexMask = _mm_castps_si128(_mm_cmplt_ps(secondMinimumShuffle, firstMinimumComparison));
+	const __m128i secondBlahBlah = _mm_or_si128(_mm_and_si128(secondIndexMask, secondIndexShuffle), _mm_andnot_si128(secondIndexMask, firstBlahBlah));
+
+	tMax = _mm_cvtss_f32(secondComparison);
+	out_hitResult.m_t = _mm_cvtss_f32(secondComparison);
+	sphereId = _mm_cvtsi128_si32(secondBlahBlah);
+
+	if (sphereId > -1)
+	{
+		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+		out_hitResult.m_colour = m_sphereColours[sphereId];
+		out_hitResult.m_normal = Normalize(out_hitResult.m_intersectionPoint - m_sphereList[sphereId]);
+	}
+#endif
 }
 
 // --------------------------------------------------------------------------------

@@ -32,11 +32,11 @@ private:
 
 	void RegenerateViewSpaceDirections(Framebuffer* framebuffer);
 	template<bool T_acceptAnyHit>
-	void HitSphere(const Ray& ray, /*const int rayIndex,*/ const float tMin, float& tMax, HitResult& out_hitResult);
+	void HitSphere(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
 	void HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, RGB colour, HitResult& out_hitResult);
 
 	template<bool T_acceptAnyHit>
-	HitResult TraceRay(const Ray& ray, /*const int rayIndex,*/ const float tMin);
+	HitResult TraceRay(const Ray& ray, const float tMin);
 
 	std::vector<Vector3> m_sphereList;
 	std::vector<RGB> m_sphereColours;

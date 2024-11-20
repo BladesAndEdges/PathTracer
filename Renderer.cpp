@@ -9,7 +9,7 @@
 #include "Vector3.h"
 
 # define M_PI 3.14159265358979323846
-# define RUNNING_SCALAR
+//# define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
@@ -24,14 +24,19 @@ Renderer::Renderer()
 	c_blue.m_green = 0u;
 	c_blue.m_blue = 255u;
 
+	RGB c_black;
+	c_black.m_red = 0u;
+	c_black.m_green = 0u;
+	c_black.m_blue = 0u;
+
 	// Generate spheres
 	const float c_startingPosX = 0.0f;
 	const float c_startingPosZ = -1.0f;
 
 #ifdef RUNNING_SCALAR
-	for (int i = 0; i < 5u; i++)
+	for (int i = 0; i < 10u; i++)
 	{
-		for (int j = 0; j < 5u; j++)
+		for (int j = 0; j < 10u; j++)
 		{
 			const Vector3 c_position(c_startingPosX + (float)i, 0.4f, c_startingPosZ - (float)j);
 			m_sphereList.push_back(c_position);
@@ -50,9 +55,9 @@ Renderer::Renderer()
 
 
 #ifndef RUNNING_SCALAR
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < 10; i++)
 	{
-		for (int j = 0; j < 5u; j++)
+		for (int j = 0; j < 10u; j++)
 		{
 			// Radii and positional data
 			m_sphereRadii.push_back(0.4f);
@@ -82,6 +87,7 @@ Renderer::Renderer()
 			m_sphereCentersX.push_back(0.0f);
 			m_sphereCentersY.push_back(0.0f);
 			m_sphereCentersZ.push_back(0.0f);
+			m_sphereColours.push_back(c_black);
 		}
 	}
 
@@ -97,7 +103,7 @@ Renderer::Renderer()
 	assert(m_sphereRadii.size() == m_sphereCentersZ.size());
 #endif
 
-	m_camera.SetCameraLocation(Vector3(0.0f, 1.0f, 0.0f));
+	m_camera.SetCameraLocation(Vector3(2.0f, 1.0f, 0.0f));
 	m_lightDirection = Normalize(Vector3(-1.0f, 1.0f, -1.0f));
 
 	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc)); // ?
@@ -136,13 +142,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 			
 			const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
-			const HitResult c_primaryHitResult = TraceRay<false>(c_primaryRay, /*rayIndex,*/ 1e-5f);
+			const HitResult c_primaryHitResult = TraceRay<false>(c_primaryRay, 1e-5f);
 			if (c_primaryHitResult.m_t != INFINITY)
 			{
 				const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
 
 				const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
-				const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, /* -1,*/ 1e-5f);
+				const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, 1e-5f);
 
 				if (c_secondaryRayHitResult.m_t == INFINITY)
 				{
@@ -211,7 +217,7 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::HitSphere(const Ray& ray, /*const int rayIndex*/ const float tMin, float& tMax, HitResult& out_hitResult)
+void Renderer::HitSphere(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult)
 {
 
 #ifdef RUNNING_SCALAR
@@ -252,13 +258,15 @@ void Renderer::HitSphere(const Ray& ray, /*const int rayIndex*/ const float tMin
 	{
 		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
 		out_hitResult.m_colour = m_sphereColours[sphereId];
+		const Vector3 sphereCenter = m_sphereList[sphereId];
 		out_hitResult.m_normal = Normalize(out_hitResult.m_intersectionPoint - m_sphereList[sphereId]);
 	}
 
 #endif
 #ifndef RUNNING_SCALAR
 	//========
-	// Per ray calculations
+	const __m128 tMinimum = _mm_set1_ps(tMin);
+	const __m128 tMaximum = _mm_set1_ps(tMax);
 
 	// Ray data
 	const __m128 rayOriginX = _mm_set1_ps(ray.Origin().X());
@@ -294,22 +302,21 @@ void Renderer::HitSphere(const Ray& ray, /*const int rayIndex*/ const float tMin
 	// "Be careful where ray origin = sphereCente
 
 	// Will be updated in the loop
-	__m128 smallestTs = _mm_set1_ps(INFINITY);
+	__m128 smallestTs = _mm_set1_ps(INFINITY); //Initialize to tMaximum for one less comparison in the loop (?)
 	__m128i smallestTIndices = _mm_set1_epi32(-1);
 
 	// Loop variables
 	const __m128i c_incrementRegister = _mm_set1_epi32(4);
 	__m128i currentSphereIndices = _mm_set_epi32(3, 2, 1, 0);
 
-	const uint32_t c_numIterations = (uint32_t)(m_sphereRadii.size() / 4u);
-	for (uint32_t iteration = 0u; iteration < c_numIterations; iteration++)
+	for (uint32_t sphere = 0u; sphere < m_sphereRadii.size(); sphere+=4u)
 	{
-		const __m128 c_sphereRadii = _mm_loadu_ps(m_sphereRadii.data() + iteration);
+		const __m128 c_sphereRadii = _mm_loadu_ps(m_sphereRadii.data() + sphere);
 		const __m128 c_sphereRadiiSquared = _mm_mul_ps(c_sphereRadii, c_sphereRadii);
 
-		const __m128 c_sphereCentersX = _mm_loadu_ps(m_sphereCentersX.data() + iteration);
-		const __m128 c_sphereCentersY = _mm_loadu_ps(m_sphereCentersY.data() + iteration);
-		const __m128 c_sphereCentersZ = _mm_loadu_ps(m_sphereCentersZ.data() + iteration);
+		const __m128 c_sphereCentersX = _mm_loadu_ps(m_sphereCentersX.data() + sphere);
+		const __m128 c_sphereCentersY = _mm_loadu_ps(m_sphereCentersY.data() + sphere);
+		const __m128 c_sphereCentersZ = _mm_loadu_ps(m_sphereCentersZ.data() + sphere);
 
 		// RayOrigin-to-sphere vector
 		const __m128 rayOriginToSphereX = _mm_sub_ps(c_sphereCentersX, rayOriginX);
@@ -317,7 +324,7 @@ void Renderer::HitSphere(const Ray& ray, /*const int rayIndex*/ const float tMin
 		const __m128 rayOriginToSphereZ = _mm_sub_ps(c_sphereCentersZ, rayOriginZ);
 
 		// Calculate b = Dot(invDoubleRayDir, rayOriginToSphere)
-		const __m128 c_bdx = _mm_mul_ps(c_invDoubleRayDirectionX, rayOriginToSphereX);
+		const __m128 c_bdx = _mm_mul_ps(c_invDoubleRayDirectionX, rayOriginToSphereX); // fmadd
 		const __m128 c_bdy = _mm_mul_ps(c_invDoubleRayDirectionY, rayOriginToSphereY);
 		const __m128 c_bdz = _mm_mul_ps(c_invDoubleRayDirectionZ, rayOriginToSphereZ);
 
@@ -350,10 +357,6 @@ void Renderer::HitSphere(const Ray& ray, /*const int rayIndex*/ const float tMin
 		const __m128 tLhs = _mm_sub_ps(negativeB, sqrtDiscriminant);
 		const __m128 t = _mm_mul_ps(tLhs, c_denom);
 
-		// Create a bitmask for values between tMin and tMax in t
-		const __m128 tMinimum = _mm_set1_ps(tMin);
-		const __m128 tMaximum = _mm_set1_ps(tMax);
-
 		const __m128 tMinimumMask = _mm_cmpge_ps(t, tMinimum);
 		const __m128 tMaximumMask = _mm_cmple_ps(t, tMaximum);
 
@@ -372,10 +375,16 @@ void Renderer::HitSphere(const Ray& ray, /*const int rayIndex*/ const float tMin
 		smallestTIndices = _mm_or_si128(c_oldIndicesToKeep, c_newIndicesToUpdate);
 		smallestTs = _mm_min_ps(smallestTs, potentialTs);
 
+		if (T_acceptAnyHit)
+		{
+			if (_mm_movemask_ps(validTValuesMask)) 
+			{ 
+				break; 
+			}
+		}
+
 		// Update indices for next iteration
 		currentSphereIndices = _mm_add_epi32(currentSphereIndices, c_incrementRegister);
-
-		// How do you re-evaluate TMAX, without making this painful ?
 	}
 
 	// Find the smallest t in the lanes
@@ -405,7 +414,18 @@ void Renderer::HitSphere(const Ray& ray, /*const int rayIndex*/ const float tMin
 		out_hitResult.m_colour = m_sphereColours[sphereId];
 
 		const Vector3 sphereCenter(m_sphereCentersX[sphereId], m_sphereCentersY[sphereId], m_sphereCentersZ[sphereId]);
-		out_hitResult.m_normal = Normalize(out_hitResult.m_intersectionPoint - sphereCenter);
+
+		const Vector3 c_tempNormal = Normalize(out_hitResult.m_intersectionPoint - sphereCenter);
+
+		// Front facing and back facing normals
+		if (Dot(ray.Direction(), c_tempNormal) > 0.0f)
+		{
+			out_hitResult.m_normal = -c_tempNormal;
+		}
+		else
+		{
+			out_hitResult.m_normal = c_tempNormal;
+		}
 	}
 #endif
 }
@@ -434,11 +454,11 @@ void Renderer::HitPlane(const Ray& ray, const float tMin, float& tMax, const flo
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-HitResult Renderer::TraceRay(const Ray& ray, /*const int rayIndex,*/ const float tMin)
+HitResult Renderer::TraceRay(const Ray& ray, const float tMin)
 {
 	HitResult hitResult;
 	float tMax = INFINITY;
-	HitSphere<T_acceptAnyHit>(ray, /*rayIndex,*/ tMin, tMax, hitResult);
+	HitSphere<T_acceptAnyHit>(ray, tMin, tMax, hitResult);
 	HitPlane(ray, tMin, tMax, 0.0f, Normalize(Vector3(0.0f, 1.0f, 0.0f)), c_indigo, hitResult);
 
 	return hitResult;

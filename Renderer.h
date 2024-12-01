@@ -35,6 +35,8 @@ private:
 	void HitSphere(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
 	void HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, RGB colour, HitResult& out_hitResult);
 
+	Vector3 PathTrace(const Ray& ray, uint32_t depth);
+
 	template<bool T_acceptAnyHit>
 	HitResult TraceRay(const Ray& ray, const float tMin);
 

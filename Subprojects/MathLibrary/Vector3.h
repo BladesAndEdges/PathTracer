@@ -15,6 +15,10 @@ public:
 	void SetY(float y);
 	void SetZ(float z);
 
+	static inline Vector3 RandomVector3(float min, float max);
+	static inline Vector3 RandomUnitVector3(float min, float max);
+	static inline Vector3 RandomVector3OnHemisphere(const Vector3& surfaceNormal);
+
 private:
 
 	float m_x;

@@ -49,6 +49,18 @@ inline void Vector3::SetZ(float z)
 }
 
 // --------------------------------------------------------------------------------
+inline float RandomFloat01()
+{
+    return (float)((std::rand() / (RAND_MAX + 1.0f)));
+}
+
+// --------------------------------------------------------------------------------
+inline float RandomFloat(float min, float max)
+{
+    return min + (max - min) * RandomFloat01();
+}
+
+// --------------------------------------------------------------------------------
 inline Vector3 operator+(const Vector3& lhs, const Vector3& rhs)
 {
     return Vector3(lhs.X() + rhs.X(), lhs.Y() + rhs.Y(), lhs.Z() + rhs.Z());
@@ -89,4 +101,39 @@ inline Vector3 Normalize(const Vector3& vec)
 {
     float c_magnitude = Magnitude(vec);
     return Vector3(vec.X() / c_magnitude, vec.Y() / c_magnitude, vec.Z() / c_magnitude);
+}
+
+// --------------------------------------------------------------------------------
+inline Vector3 Vector3::RandomVector3(float min, float max)
+{
+    return Vector3(RandomFloat(min, max), RandomFloat(min, max), RandomFloat(min, max));
+}
+
+// --------------------------------------------------------------------------------
+inline Vector3 Vector3::RandomUnitVector3(float min, float max)
+{
+    while (true)
+    {
+        const Vector3 vec = RandomVector3(min, max);
+        const float mag = Magnitude(vec);
+
+        if (mag > 0.00001f)
+        {
+            return Normalize(vec);
+        }
+    }
+}
+
+// --------------------------------------------------------------------------------
+inline Vector3 Vector3::RandomVector3OnHemisphere(const Vector3& surfaceNormal)
+{
+    const Vector3 randomUnitVec = RandomUnitVector3(-1.0f, 1.0f);
+    if (Dot(randomUnitVec, surfaceNormal) > 0.0f)
+    {
+        return randomUnitVec;
+    }
+    else
+    {
+        return -randomUnitVec;
+    }
 }

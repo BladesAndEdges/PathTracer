@@ -142,36 +142,12 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 			
 			const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
-			const HitResult c_primaryHitResult = TraceRay<false>(c_primaryRay, 1e-5f);
-			if (c_primaryHitResult.m_t != INFINITY)
-			{
-				const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
+			Vector3 radiance = PathTrace(c_primaryRay, 2u);
 
-				const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
-				const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, 1e-5f);
-
-				if (c_secondaryRayHitResult.m_t == INFINITY)
-				{
-					bytes[texelByteIndex] = uint8_t(clampValue * c_primaryHitResult.m_colour.m_red);
-					bytes[texelByteIndex + 1u] = uint8_t(clampValue * c_primaryHitResult.m_colour.m_green);
-					bytes[texelByteIndex + 2u] = uint8_t(clampValue * c_primaryHitResult.m_colour.m_blue);
-					bytes[texelByteIndex + 3u] = 1u;
-				}
-				else
-				{
-					bytes[texelByteIndex] = 0u;
-					bytes[texelByteIndex + 1u] = 0u;
-					bytes[texelByteIndex + 2u] = 0u;
-					bytes[texelByteIndex + 3u] = 1u;
-				}
-			}
-			else
-			{
-				bytes[texelByteIndex] = 255u;
-				bytes[texelByteIndex + 1u] = 0u;
-				bytes[texelByteIndex + 2u] = 0u;
-				bytes[texelByteIndex + 3u] = 1u;
-			}
+			bytes[texelByteIndex] = uint8_t(radiance.X());
+			bytes[texelByteIndex + 1u] = uint8_t(radiance.Y());
+			bytes[texelByteIndex + 2u] = uint8_t(radiance.Z());
+			bytes[texelByteIndex + 3u] = 1u;
 		}
 	}
 }
@@ -450,6 +426,55 @@ void Renderer::HitPlane(const Ray& ray, const float tMin, float& tMax, const flo
 			out_hitResult.m_normal = normalizedPlaneNormal;
 		}
 	}
+}
+
+// --------------------------------------------------------------------------------
+Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
+{
+	if (depth <= 0u)
+	{
+		return Vector3(0.0f, 0.0f, 0.0f);
+	}
+
+	Vector3 radiance(0.0f, 0.0f, 0.0f);
+	const HitResult c_primaryHitResult = TraceRay<false>(ray, 1e-5f);
+	if (c_primaryHitResult.m_t != INFINITY)
+	{
+
+		// Indirect lighting
+		{
+			const Ray rayOnHemisphere = Ray(c_primaryHitResult.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(c_primaryHitResult.m_normal));
+			radiance = PathTrace(rayOnHemisphere, depth-1u);
+		}
+
+		//Direct Lighting
+		{
+			const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
+
+			const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
+			const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, 1e-5f);
+
+			if (c_secondaryRayHitResult.m_t == INFINITY)
+			{
+				Vector3 directRadiance;
+				directRadiance.SetX(clampValue * c_primaryHitResult.m_colour.m_red);
+				directRadiance.SetY(clampValue * c_primaryHitResult.m_colour.m_green);
+				directRadiance.SetZ(clampValue * c_primaryHitResult.m_colour.m_blue);
+
+				radiance = radiance + directRadiance;
+			}
+		}
+	}
+	else
+	{
+		// Sky lighting
+		radiance.SetX(0.0f);
+		radiance.SetY(0.0f);
+		radiance.SetZ(0.0f);
+	}
+
+	// Use hit result to spawn other rays
+	return radiance;
 }
 
 // --------------------------------------------------------------------------------

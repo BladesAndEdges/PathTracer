@@ -144,7 +144,6 @@
     <ClCompile Include="PerformanceCounter.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="RGB.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -156,7 +155,6 @@
     <ClInclude Include="PerformanceCounter.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Renderer.h" />
-    <ClInclude Include="RGB.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ViewportDesc.h" />
   </ItemGroup>

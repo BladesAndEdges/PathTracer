@@ -14,20 +14,33 @@
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
 {
-	RGB c_green;
-	c_green.m_red = 0u;
-	c_green.m_green = 255u;
-	c_green.m_blue = 0u;
+	// Once planes are multiple, this would be changed
+	c_indigo.SetX(0.3f);
+	c_indigo.SetY(0.0f);
+	c_indigo.SetZ(0.55f);
 
-	RGB c_blue;
-	c_blue.m_red = 0u;
-	c_blue.m_green = 0u;
-	c_blue.m_blue = 255u;
+	c_white.SetX(1.0f);
+	c_white.SetY(1.0f);
+	c_white.SetZ(1.0f);
 
-	RGB c_black;
-	c_black.m_red = 0u;
-	c_black.m_green = 0u;
-	c_black.m_blue = 0u;
+	c_grey.SetX(0.75f);
+	c_grey.SetY(0.75f);
+	c_grey.SetZ(0.75f);
+
+	Vector3 c_green;
+	c_green.SetX(0.0f);
+	c_green.SetY(1.0f);
+	c_green.SetZ(0.0f);
+
+	Vector3 c_red;
+	c_red.SetX(1.0f);
+	c_red.SetY(0.0f);
+	c_red.SetZ(0.0f);
+
+	Vector3 c_black;
+	c_black.SetX(0.0f);
+	c_black.SetY(0.0f);
+	c_black.SetZ(0.0f);
 
 	// Generate spheres
 	const float c_startingPosX = 0.0f;
@@ -55,26 +68,44 @@ Renderer::Renderer()
 
 
 #ifndef RUNNING_SCALAR
-	for (int i = 0; i < 10; i++)
-	{
-		for (int j = 0; j < 10u; j++)
-		{
-			// Radii and positional data
-			m_sphereRadii.push_back(0.4f);
-			m_sphereCentersX.push_back(c_startingPosX + (float)i);
-			m_sphereCentersY.push_back(0.4f);
-			m_sphereCentersZ.push_back(c_startingPosZ - (float)j);
+	//for (int i = 0; i < 5; i++)
+	//{
+	//	for (int j = 0; j < 5; j++)
+	//	{
+	//		// Radii and positional data
+	//		m_sphereRadii.push_back(0.4f);
+	//		m_sphereCentersX.push_back(c_startingPosX + (float)i);
+	//		m_sphereCentersY.push_back(0.4f);
+	//		m_sphereCentersZ.push_back(c_startingPosZ - (float)j);
+	//
+	//		if ((i % 2) == 0)
+	//		{
+	//			m_sphereColours.push_back(c_green);
+	//		}
+	//		else
+	//		{
+	//			m_sphereColours.push_back(c_blue);
+	//		}
+	//	}
+	//}
 
-			if ((i % 2) == 0)
-			{
-				m_sphereColours.push_back(c_green);
-			}
-			else
-			{
-				m_sphereColours.push_back(c_blue);
-			}
-		}
-	}
+	m_sphereRadii.push_back(0.7f);
+	m_sphereCentersX.push_back(c_startingPosX);
+	m_sphereCentersY.push_back(0.7f);
+	m_sphereCentersZ.push_back(c_startingPosZ);
+	m_sphereColours.push_back(c_red);
+
+	//m_sphereRadii.push_back(2.0);
+	//m_sphereCentersX.push_back(c_startingPosX + 0.1f);
+	//m_sphereCentersY.push_back(2.0f);
+	//m_sphereCentersZ.push_back(c_startingPosZ);
+	//m_sphereColours.push_back(c_white);
+
+	m_sphereRadii.push_back(0.7f);
+	m_sphereCentersX.push_back(c_startingPosX  + (2.0f * 0.7f) + 0.1f);
+	m_sphereCentersY.push_back(0.7f);
+	m_sphereCentersZ.push_back(c_startingPosZ);
+	m_sphereColours.push_back(c_green);
 
 	// Check if the "SOA" should be padded
 	if ((m_sphereCentersX.size() % 4) != 0u)
@@ -103,16 +134,11 @@ Renderer::Renderer()
 	assert(m_sphereRadii.size() == m_sphereCentersZ.size());
 #endif
 
-	m_camera.SetCameraLocation(Vector3(2.0f, 1.0f, 0.0f));
-	m_lightDirection = Normalize(Vector3(-1.0f, 1.0f, -1.0f));
+	m_camera.SetCameraLocation(Vector3(2.0f, 1.0f, 4.0f));
+	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
 
 	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc)); // ?
 	m_isFirstFrame = true;
-
-	// Once planes are multiple, this would be changed
-	c_indigo.m_red = 75u;
-	c_indigo.m_green = 0u;
-	c_indigo.m_blue = 130u;
 }
 
 // --------------------------------------------------------------------------------
@@ -140,14 +166,39 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			// Byte offsets
 			const uint32_t texelByteIndex = (row * framebuffer->GetWidth() * framebuffer->GetNumChannels()) + (column * framebuffer->GetNumChannels());
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
-			
-			const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
-			Vector3 radiance = PathTrace(c_primaryRay, 2u);
 
-			bytes[texelByteIndex] = uint8_t(radiance.X());
-			bytes[texelByteIndex + 1u] = uint8_t(radiance.Y());
-			bytes[texelByteIndex + 2u] = uint8_t(radiance.Z());
-			bytes[texelByteIndex + 3u] = 1u;
+			Vector3 radiance(0.0f, 0.0f, 0.0f);
+			const uint32_t numSamples = 2u;
+			const uint32_t depth = 8u;
+			for (uint32_t sample = 0u; sample < numSamples; sample++)
+			{
+				Vector3 texelTopLeft;
+				Vector3 texelBottomRight;
+				
+				texelTopLeft.SetX(m_texelCenters[rayIndex].X() - m_viewportDesc.m_texelWidth / 2.0f);
+				texelTopLeft.SetY(m_texelCenters[rayIndex].Y() + m_viewportDesc.m_texelHeight / 2.0f);
+				
+				texelBottomRight.SetX(m_texelCenters[rayIndex].X() + m_viewportDesc.m_texelWidth / 2.0f);
+				texelBottomRight.SetY(m_texelCenters[rayIndex].Y() - m_viewportDesc.m_texelHeight / 2.0f);
+				
+				const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
+				const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
+
+				const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, -1.0f)); 
+
+				radiance = radiance + PathTrace(c_primaryRay, depth);
+			}
+
+				radiance = Vector3(radiance.X() / (float)numSamples, radiance.Y() / (float)numSamples, radiance.Z() / (float)numSamples);
+
+				const float red = std::fmin(1.0f, radiance.X());
+				const float green = std::fmin(1.0f, radiance.Y());
+				const float blue = std::fmin(1.0f, radiance.Z());
+
+				bytes[texelByteIndex] = uint8_t(red * 255.0f);
+				bytes[texelByteIndex + 1u] = uint8_t(green * 255.0f);
+				bytes[texelByteIndex + 2u] = uint8_t(blue * 255.0f);
+				bytes[texelByteIndex + 3u] = 1u;
 		}
 	}
 }
@@ -407,7 +458,7 @@ void Renderer::HitSphere(const Ray& ray, const float tMin, float& tMax, HitResul
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, RGB colour, HitResult& out_hitResult)
+void Renderer::HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, Vector3 colour, HitResult& out_hitResult)
 {
 	const float denom = Dot(normalizedPlaneNormal, ray.Direction());
 
@@ -443,8 +494,26 @@ Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
 
 		// Indirect lighting
 		{
+			// Calculate the random direction of the outward ray
 			const Ray rayOnHemisphere = Ray(c_primaryHitResult.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(c_primaryHitResult.m_normal));
-			radiance = PathTrace(rayOnHemisphere, depth-1u);
+
+			// RENDERING EQUATION
+			
+			// We need the Li
+			const Vector3 Li = PathTrace(rayOnHemisphere, depth - 1u);
+			
+			// Elongation/cosine term, the falloff (Geometric term)
+			// We use the ray direction, instead of -ray.Direction() so that the Dot product produces a positive value
+			const float cosineTerm = std::fmin(std::fmax(Dot(rayOnHemisphere.Direction(), c_primaryHitResult.m_normal), 0.0f), 1.0f);
+			
+			// BRDF, in our case just use Lambert which is P/PI, P being the colour of the material, a vector3 [0,1] for each wavelength
+			const Vector3 brdf = (1.0f / (float)M_PI) * c_primaryHitResult.m_colour;
+
+			radiance = cosineTerm * brdf * Li;
+			
+			// Divide everything by the probability distribution function, for our case just 1/Pi
+			const float pdf = 1.0f / (2.0f * (float)M_PI);
+			radiance = Vector3(radiance.X() / pdf, radiance.Y() / pdf, radiance.Z() / pdf);
 		}
 
 		//Direct Lighting
@@ -457,9 +526,9 @@ Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
 			if (c_secondaryRayHitResult.m_t == INFINITY)
 			{
 				Vector3 directRadiance;
-				directRadiance.SetX(clampValue * c_primaryHitResult.m_colour.m_red);
-				directRadiance.SetY(clampValue * c_primaryHitResult.m_colour.m_green);
-				directRadiance.SetZ(clampValue * c_primaryHitResult.m_colour.m_blue);
+				directRadiance.SetX(clampValue * c_primaryHitResult.m_colour.X());
+				directRadiance.SetY(clampValue * c_primaryHitResult.m_colour.Y());
+				directRadiance.SetZ(clampValue * c_primaryHitResult.m_colour.Z());
 
 				radiance = radiance + directRadiance;
 			}
@@ -467,10 +536,12 @@ Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
 	}
 	else
 	{
-		// Sky lighting
-		radiance.SetX(0.0f);
-		radiance.SetY(0.0f);
-		radiance.SetZ(0.0f);
+		const float val = 0.5f * (ray.Direction().Y() + 1.0f);
+		const Vector3 skyColour = (1.0f - val) * Vector3(1.0f, 1.0f, 1.0f) + val * Vector3(0.5f, 0.7f, 1.0f);
+
+		radiance.SetX(skyColour.X());
+		radiance.SetY(skyColour.Y());
+		radiance.SetZ(skyColour.Z());
 	}
 
 	// Use hit result to spawn other rays
@@ -484,7 +555,7 @@ HitResult Renderer::TraceRay(const Ray& ray, const float tMin)
 	HitResult hitResult;
 	float tMax = INFINITY;
 	HitSphere<T_acceptAnyHit>(ray, tMin, tMax, hitResult);
-	HitPlane(ray, tMin, tMax, 0.0f, Normalize(Vector3(0.0f, 1.0f, 0.0f)), c_indigo, hitResult);
+	HitPlane(ray, tMin, tMax, 0.0f, Normalize(Vector3(0.0f, 1.0f, 0.0f)), c_grey, hitResult);
 
 	return hitResult;
 }

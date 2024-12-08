@@ -33,7 +33,7 @@ private:
 	void RegenerateViewSpaceDirections(Framebuffer* framebuffer);
 	template<bool T_acceptAnyHit>
 	void HitSphere(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
-	void HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, RGB colour, HitResult& out_hitResult);
+	void HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, Vector3 colour, HitResult& out_hitResult);
 
 	Vector3 PathTrace(const Ray& ray, uint32_t depth);
 
@@ -41,7 +41,7 @@ private:
 	HitResult TraceRay(const Ray& ray, const float tMin);
 
 	std::vector<Vector3> m_sphereList;
-	std::vector<RGB> m_sphereColours;
+	std::vector<Vector3> m_sphereColours;
 
 	Camera m_camera;
 	Vector3 m_lightDirection;
@@ -50,7 +50,9 @@ private:
 	std::vector<Vector3> m_texelCenters;
 	bool m_isFirstFrame;
 
-	RGB c_indigo;
+	Vector3 c_indigo;
+	Vector3 c_white;
+	Vector3 c_grey;
 
 	std::vector<float> m_sphereRadii;
 

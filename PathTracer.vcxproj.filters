@@ -42,9 +42,6 @@
     <ClCompile Include="HitResult.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RGB.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -72,9 +69,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HitResult.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RGB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">

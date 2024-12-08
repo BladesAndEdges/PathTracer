@@ -79,6 +79,12 @@ inline Vector3 operator*(const float scalar, const Vector3& vec)
 }
 
 // --------------------------------------------------------------------------------
+inline Vector3 operator*(const Vector3& vec1, const Vector3& vec2)
+{
+    return Vector3(vec1.X() * vec2.X(), vec1.Y() * vec2.Y(), vec1.X() * vec2.Z());
+}
+
+// --------------------------------------------------------------------------------
 inline Vector3 operator-(const Vector3& vec)
 {
     return Vector3(-vec.X(), -vec.Y(), -vec.Z());

@@ -570,6 +570,49 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 	return (0.0f <= alpha) && (alpha <= 1.0f) && (0.0f <= beta) && (beta <= 1.0f);
 }
 
+// --------------------------------------------------------------------------------
+void Renderer::HitTriangle(const Ray& ray, const Vector3& v1, const Vector3& v2, const Vector3& v3, const float tMin, float& tMax, HitResult& out_hitResult)
+{
+	const Vector3 edge1 = v2 - v1; // v0v1
+	const Vector3 edge2 = v3 - v1; // v0v2
+
+	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
+	const Vector3 pVec = Cross(ray.Direction(), edge2);
+	const float det = Dot(pVec, edge1);
+
+	const Vector3 normal = Cross(edge1, edge2);
+
+	if (std::fabs(det) >= 1e-8f)
+	{
+		const float invDet = 1.0f / det;
+
+		const Vector3 tVec = ray.Origin() - v1;
+		const float u = Dot(tVec, pVec) * invDet;
+
+		if ((u >= 0.0f) && (u <= 1.0f))
+		{
+			const Vector3 qVec = Cross(tVec, edge1);
+			const float v = Dot(ray.Direction(), qVec) * invDet;
+
+			if ((v >= 0.0f) && ((u + v) <= 1.0f))
+			{
+				const float t = Dot(edge2, qVec) * invDet;
+
+				if (t >= tMin && t <= tMax)
+				{
+					tMax = t;
+
+					out_hitResult.m_t = t;
+
+					out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+					out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+					out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+				}
+			}
+		}
+	}
+
+}
 
 // --------------------------------------------------------------------------------
 Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)

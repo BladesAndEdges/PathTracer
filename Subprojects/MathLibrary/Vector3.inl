@@ -81,7 +81,7 @@ inline Vector3 operator*(const float scalar, const Vector3& vec)
 // --------------------------------------------------------------------------------
 inline Vector3 operator*(const Vector3& vec1, const Vector3& vec2)
 {
-    return Vector3(vec1.X() * vec2.X(), vec1.Y() * vec2.Y(), vec1.X() * vec2.Z());
+    return Vector3(vec1.X() * vec2.X(), vec1.Y() * vec2.Y(), vec1.Z() * vec2.Z());
 }
 
 // --------------------------------------------------------------------------------
@@ -94,6 +94,16 @@ inline Vector3 operator-(const Vector3& vec)
 inline float Dot(const Vector3& vecA, const Vector3& vecB)
 {
     return (vecA.X() * vecB.X()) + (vecA.Y() * vecB.Y()) + (vecA.Z() * vecB.Z());
+}
+
+// --------------------------------------------------------------------------------
+inline Vector3 Cross(const Vector3& vecA, const Vector3& vecB)
+{
+    const float x = vecA.Y() * vecB.Z() - vecA.Z() * vecB.Y();
+    const float y = vecA.Z() * vecB.X() - vecA.X() * vecB.Z();
+    const float z = vecA.X() * vecB.Y() - vecA.Y() * vecB.X();
+
+    return Vector3(x, y, z);
 }
 
 // --------------------------------------------------------------------------------

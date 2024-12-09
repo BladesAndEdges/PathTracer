@@ -15,9 +15,9 @@
 Renderer::Renderer()
 {
 	// Once planes are multiple, this would be changed
-	c_indigo.SetX(0.3f);
+	c_indigo.SetX(1.0f);
 	c_indigo.SetY(0.0f);
-	c_indigo.SetZ(0.55f);
+	c_indigo.SetZ(0.0f);
 
 	c_white.SetX(1.0f);
 	c_white.SetY(1.0f);
@@ -134,10 +134,45 @@ Renderer::Renderer()
 	assert(m_sphereRadii.size() == m_sphereCentersZ.size());
 #endif
 
-	m_camera.SetCameraLocation(Vector3(2.0f, 1.0f, 4.0f));
+	const float quadSize = 4.0f;
+	const Vector3 quadPivot(-2.0f, 1.0f, -2.0f);
+
+	// Back
+	m_quadList.push_back(quadPivot);
+	m_quadUs.push_back(Vector3(quadSize, 0.0f, 0.0f));
+	m_quadVs.push_back(Vector3(0.0f, quadSize, 0.0f));
+	m_quadColours.push_back(Vector3(1.0f, 1.0f, 0.0f));
+	
+	// Left
+	m_quadList.push_back(quadPivot);
+	m_quadUs.push_back(Vector3(0.0f, 0.0f, quadSize));
+	m_quadVs.push_back(Vector3(0.0f, quadSize, 0.0f));
+	m_quadColours.push_back(Vector3(1.0f, 0.0f, 0.0f));
+
+	// Right
+	m_quadList.push_back(quadPivot + Vector3(quadSize, 0.0f, 0.0f));
+	m_quadUs.push_back(Vector3(0.0f, 0.0f, quadSize));
+	m_quadVs.push_back(Vector3(0.0f, quadSize, 0.0f));
+	m_quadColours.push_back(Vector3(0.0f, 0.0f, 1.0f));
+	
+	// Top
+	m_quadList.push_back(quadPivot + Vector3(0.0f, quadSize, 0.0f));
+	m_quadUs.push_back(Vector3(quadSize, 0.0f, 0.0f));
+	m_quadVs.push_back(Vector3(0.0f, 0.0f, quadSize));
+	m_quadColours.push_back(Vector3(1.0f, 0.7f, 0.4f));
+	
+	// Bottom
+	m_quadList.push_back(quadPivot);
+	m_quadUs.push_back(Vector3(quadSize, 0.0f, 0.0f));
+	m_quadVs.push_back(Vector3(0.0f, 0.0f, quadSize));
+	m_quadColours.push_back(Vector3(0.0f, 1.0f, 0.0f));
+	
+	// Position if flipping the z axis
+	// m_camera.SetCameraLocation(Vector3(0.0f, 2.0f, -8.0f));
+	m_camera.SetCameraLocation(Vector3(0.0f, 2.0f, 7.0f));
 	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
 
-	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc)); // ?
+	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc));
 	m_isFirstFrame = true;
 }
 
@@ -168,8 +203,8 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 
 			Vector3 radiance(0.0f, 0.0f, 0.0f);
-			const uint32_t numSamples = 2u;
-			const uint32_t depth = 8u;
+			const uint32_t numSamples = 32u;
+			const uint32_t depth = 5u;
 			for (uint32_t sample = 0u; sample < numSamples; sample++)
 			{
 				Vector3 texelTopLeft;
@@ -480,6 +515,63 @@ void Renderer::HitPlane(const Ray& ray, const float tMin, float& tMax, const flo
 }
 
 // --------------------------------------------------------------------------------
+void Renderer::HitQuad(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult)
+{
+	// If u and v are unit of length, no need to normalize
+	// Back, Left, Right, Top, Bottom
+	for (uint32_t quad = 0u; quad < m_quadList.size(); quad++)
+	{
+		const Vector3 Q = m_quadList[quad];
+		const Vector3 u = m_quadUs[quad];
+		const Vector3 v = m_quadVs[quad];
+
+		const Vector3 n = Cross(u, v);
+		Vector3 normal = Normalize(n);
+
+		const float normDenom = Dot(n, n);
+		const Vector3 w = Vector3(n.X() / normDenom, n.Y() / normDenom, n.Z() / normDenom);
+
+		const float distance = Dot(normal, Q);
+
+		const float denom = Dot(normal, ray.Direction());
+
+		if (std::fabs(denom) >= 1e-8f)
+		{
+			const float t = (distance - Dot(normal, ray.Origin())) / denom;
+
+			if (t >= tMin && t <= tMax)
+			{
+				// Determine if the hit point lies within the planar shape using its plane coordinates.
+				const Vector3 intersectionPoint = ray.CalculateIntersectionPoint(t);
+
+				const Vector3 planarHitpVector = intersectionPoint - Q;
+
+				const float alpha = Dot(w, Cross(planarHitpVector, v));
+				const float beta = Dot(w, Cross(u, planarHitpVector));
+
+				if (IsInsideQuad(alpha, beta))
+				{
+					tMax = t;
+
+					out_hitResult.m_t = t;
+
+					out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+					out_hitResult.m_colour = m_quadColours[quad];
+					out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+				}
+			}
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+bool Renderer::IsInsideQuad(const float alpha, const float beta)
+{
+	return (0.0f <= alpha) && (alpha <= 1.0f) && (0.0f <= beta) && (beta <= 1.0f);
+}
+
+
+// --------------------------------------------------------------------------------
 Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
 {
 	if (depth <= 0u)
@@ -491,7 +583,6 @@ Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
 	const HitResult c_primaryHitResult = TraceRay<false>(ray, 1e-5f);
 	if (c_primaryHitResult.m_t != INFINITY)
 	{
-
 		// Indirect lighting
 		{
 			// Calculate the random direction of the outward ray
@@ -554,7 +645,9 @@ HitResult Renderer::TraceRay(const Ray& ray, const float tMin)
 {
 	HitResult hitResult;
 	float tMax = INFINITY;
-	HitSphere<T_acceptAnyHit>(ray, tMin, tMax, hitResult);
+	//HitSphere<T_acceptAnyHit>(ray, tMin, tMax, hitResult);
+	HitQuad(ray, tMin, tMax, hitResult);
+	HitTriangle(ray, Vector3(-1.0f, 2.0f, 0.0f), Vector3(1.0f, 2.0f, 0.0f), Vector3(0.0f, 4.0f, 0.0f), tMin, tMax, hitResult);
 	HitPlane(ray, tMin, tMax, 0.0f, Normalize(Vector3(0.0f, 1.0f, 0.0f)), c_grey, hitResult);
 
 	return hitResult;

@@ -34,6 +34,8 @@ private:
 	template<bool T_acceptAnyHit>
 	void HitSphere(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
 	void HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, Vector3 colour, HitResult& out_hitResult);
+	void HitQuad(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
+	bool IsInsideQuad(const float alpha, const float beta);
 
 	Vector3 PathTrace(const Ray& ray, uint32_t depth);
 
@@ -42,6 +44,11 @@ private:
 
 	std::vector<Vector3> m_sphereList;
 	std::vector<Vector3> m_sphereColours;
+
+	std::vector<Vector3> m_quadList;
+	std::vector<Vector3> m_quadColours;
+	std::vector<Vector3> m_quadUs;
+	std::vector<Vector3> m_quadVs;
 
 	Camera m_camera;
 	Vector3 m_lightDirection;

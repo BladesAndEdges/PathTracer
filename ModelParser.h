@@ -22,6 +22,8 @@ public:
 	std::vector<float> GetPositionsY() const;
 	std::vector<float> GetPositionsZ() const;
 
+	std::vector<Face> GetFaces() const;
+
 private:
 
 	void CreateFaces(const std::string& fileName, const float scaleFactor);

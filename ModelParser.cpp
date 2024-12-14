@@ -23,6 +23,9 @@ void ModelParser::ParseFile(const char* objSourceFile, const float scaleFactor)
 	CreateFacesWithFaces(objSourceFile, scaleFactor);
 
 	Vector3 center = CalculateSceneCenterWithFaces();
+	assert(center.X() == m_center.X());
+	assert(center.Y() == m_center.Y());
+	assert(center.Z() == m_center.Z());
 }
 
 // --------------------------------------------------------------------------------
@@ -47,6 +50,11 @@ std::vector<float> ModelParser::GetPositionsY() const
 std::vector<float> ModelParser::GetPositionsZ() const
 {
 	return m_positionsZ;
+}
+
+std::vector<Face> ModelParser::GetFaces() const
+{
+	return m_faces;
 }
 
 // --------------------------------------------------------------------------------
@@ -120,24 +128,24 @@ void ModelParser::CalculateSceneCenter()
 			maxX = m_positionsX[position];
 		}
 
-		if (m_positionsY[position] < minX)
+		if (m_positionsY[position] < minY)
 		{
-			minX = m_positionsY[position];
+			minY = m_positionsY[position];
 		}
 
-		if (m_positionsY[position] > maxX)
+		if (m_positionsY[position] > maxY)
 		{
-			maxX = m_positionsY[position];
+			maxY = m_positionsY[position];
 		}
 
-		if (m_positionsZ[position] < minX)
+		if (m_positionsZ[position] < minZ)
 		{
-			minX = m_positionsZ[position];
+			minZ = m_positionsZ[position];
 		}
 
-		if (m_positionsZ[position] > maxX)
+		if (m_positionsZ[position] > maxZ)
 		{
-			maxX = m_positionsZ[position];
+			maxZ = m_positionsZ[position];
 		}
 	}
 

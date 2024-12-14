@@ -12,10 +12,11 @@
 //# define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
-Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ , const Vector3& center) 
+Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ, const std::vector<Face>& faces, const Vector3& center) 
 																													: m_positionsX(positionsX), 
 																													  m_positionsY(positionsY),
-																													  m_positionsZ(positionsZ), 
+																													  m_positionsZ(positionsZ),
+																													  m_faces(faces),
 																													  m_center(center)
 {
 	// Once planes are multiple, this would be changed
@@ -577,6 +578,8 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 // --------------------------------------------------------------------------------
 void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult)
 {
+	
+#if 0
 	// Based on Moller-Trumbore algorithm
 	// When you do the SSE, remember it is going to be += 4 and not 3. You'd have to pad in the end, similar to the spheres.
 	for (uint32_t triangleOffset = 0u; triangleOffset < m_positionsX.size(); triangleOffset += 3u)
@@ -625,51 +628,60 @@ void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitRes
 			}
 		}
 	}
+#endif
+#if 1
+	//-------------------------------------------------------------------------------------------------------------------------
+	// Based on Moller-Trumbore algorithm
+	for (uint32_t face = 0u; face < m_faces.size(); face++)
+	{
+		const Vector3 edge1 = Vector3(m_faces[face].m_faceVertices[1u].m_position[0u] - m_faces[face].m_faceVertices[0u].m_position[0u],
+			m_faces[face].m_faceVertices[1u].m_position[1u] - m_faces[face].m_faceVertices[0u].m_position[1u], 
+			m_faces[face].m_faceVertices[1u].m_position[2u] - m_faces[face].m_faceVertices[0u].m_position[2u]); // v0v1
 
-	////-------------------------------------------------------------------------------------------------------------------------
-	//// Based on Moller-Trumbore algorithm
-	//for (uint32_t face = 0u; face < m_faces.size(); face++)
-	//{
-	//	const Vector3 edge1 = m_faces[face].m_faceVertices[1u] - m_faces[face].m_faceVertices[0u]; // v0v1
-	//	const Vector3 edge2 = m_faces[face].m_faceVertices[2u] - m_faces[face].m_faceVertices[0u]; // v0v2
-	//
-	//	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
-	//	const Vector3 pVec = Cross(ray.Direction(), edge2);
-	//	const float det = Dot(pVec, edge1);
-	//
-	//	const Vector3 normal = Cross(edge1, edge2);
-	//
-	//	if (std::fabs(det) >= 1e-8f)
-	//	{
-	//		const float invDet = 1.0f / det;
-	//
-	//		const Vector3 tVec = ray.Origin() - m_faces[face].m_faceVertices[0u];
-	//		const float u = Dot(tVec, pVec) * invDet;
-	//
-	//		if ((u >= 0.0f) && (u <= 1.0f))
-	//		{
-	//			const Vector3 qVec = Cross(tVec, edge1);
-	//			const float v = Dot(ray.Direction(), qVec) * invDet;
-	//
-	//			if ((v >= 0.0f) && ((u + v) <= 1.0f))
-	//			{
-	//				const float t = Dot(edge2, qVec) * invDet;
-	//
-	//				if (t >= tMin && t <= tMax)
-	//				{
-	//					tMax = t;
-	//
-	//					out_hitResult.m_t = t;
-	//
-	//					out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-	//					out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-	//					out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
+		const Vector3 edge2 = Vector3(m_faces[face].m_faceVertices[2u].m_position[0u] - m_faces[face].m_faceVertices[0u].m_position[0u],
+			m_faces[face].m_faceVertices[2u].m_position[1u] - m_faces[face].m_faceVertices[0u].m_position[1u],
+			m_faces[face].m_faceVertices[2u].m_position[2u] - m_faces[face].m_faceVertices[0u].m_position[2u]); // v0v2
+	
+		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
+		const Vector3 pVec = Cross(ray.Direction(), edge2);
+		const float det = Dot(pVec, edge1);
+	
+		const Vector3 normal = Cross(edge1, edge2);
+	
+		if (std::fabs(det) >= 1e-8f)
+		{
+			const float invDet = 1.0f / det;
+	
+			const Vector3 tVec = ray.Origin() - Vector3(m_faces[face].m_faceVertices[0u].m_position[0u], 
+														m_faces[face].m_faceVertices[0u].m_position[1u], 
+														m_faces[face].m_faceVertices[0u].m_position[2u]);
 
+			const float u = Dot(tVec, pVec) * invDet;
+	
+			if ((u >= 0.0f) && (u <= 1.0f))
+			{
+				const Vector3 qVec = Cross(tVec, edge1);
+				const float v = Dot(ray.Direction(), qVec) * invDet;
+	
+				if ((v >= 0.0f) && ((u + v) <= 1.0f))
+				{
+					const float t = Dot(edge2, qVec) * invDet;
+	
+					if (t >= tMin && t <= tMax)
+					{
+						tMax = t;
+	
+						out_hitResult.m_t = t;
+	
+						out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+						out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+						out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+					}
+				}
+			}
+		}
+	}
+#endif
 }
 
 // --------------------------------------------------------------------------------

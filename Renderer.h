@@ -16,7 +16,7 @@ class Renderer
 
 public:
 
-	Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ, const Vector3& center);
+	Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ, const std::vector<Face>& faces, const Vector3& center);
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 

@@ -12,7 +12,11 @@
 //# define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
-Renderer::Renderer()
+Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ , const Vector3& center) 
+																													: m_positionsX(positionsX), 
+																													  m_positionsY(positionsY),
+																													  m_positionsZ(positionsZ), 
+																													  m_center(center)
 {
 	// Once planes are multiple, this would be changed
 	c_indigo.SetX(1.0f);
@@ -168,8 +172,8 @@ Renderer::Renderer()
 	m_quadColours.push_back(Vector3(0.0f, 1.0f, 0.0f));
 	
 	// Position if flipping the z axis
-	// m_camera.SetCameraLocation(Vector3(0.0f, 2.0f, -8.0f));
-	m_camera.SetCameraLocation(Vector3(0.0f, 2.0f, 7.0f));
+	m_center.SetZ(m_center.Z() + 12.0f);
+	m_camera.SetCameraLocation(m_center);
 	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
 
 	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc));
@@ -203,8 +207,8 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			assert(texelByteIndex < (framebuffer->GetWidth() * framebuffer->GetHeight() * framebuffer->GetNumChannels()));
 
 			Vector3 radiance(0.0f, 0.0f, 0.0f);
-			const uint32_t numSamples = 32u;
-			const uint32_t depth = 5u;
+			const uint32_t numSamples = 1u;
+			const uint32_t depth = 2u;
 			for (uint32_t sample = 0u; sample < numSamples; sample++)
 			{
 				Vector3 texelTopLeft;
@@ -219,7 +223,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
 				const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
 
-				const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, -1.0f)); 
+				const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, -1.0f));
 
 				radiance = radiance + PathTrace(c_primaryRay, depth);
 			}
@@ -493,13 +497,13 @@ void Renderer::HitSphere(const Ray& ray, const float tMin, float& tMax, HitResul
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, Vector3 colour, HitResult& out_hitResult)
+void Renderer::HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normal, Vector3 colour, HitResult& out_hitResult)
 {
-	const float denom = Dot(normalizedPlaneNormal, ray.Direction());
+	const float denom = Dot(normal, ray.Direction());
 
 	if (std::fabs(denom) >= 1e-8f)
 	{
-		const float t = (distance - Dot(normalizedPlaneNormal, ray.Origin())) / denom;
+		const float t = (distance - Dot(normal, ray.Origin())) / denom;
 
 		if (t >= tMin && t <= tMax)
 		{
@@ -509,7 +513,7 @@ void Renderer::HitPlane(const Ray& ray, const float tMin, float& tMax, const flo
 
 			out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
 			out_hitResult.m_colour = colour;
-			out_hitResult.m_normal = normalizedPlaneNormal;
+			out_hitResult.m_normal = normal;
 		}
 	}
 }
@@ -571,46 +575,100 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::HitTriangle(const Ray& ray, const Vector3& v1, const Vector3& v2, const Vector3& v3, const float tMin, float& tMax, HitResult& out_hitResult)
+void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult)
 {
-	const Vector3 edge1 = v2 - v1; // v0v1
-	const Vector3 edge2 = v3 - v1; // v0v2
-
-	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
-	const Vector3 pVec = Cross(ray.Direction(), edge2);
-	const float det = Dot(pVec, edge1);
-
-	const Vector3 normal = Cross(edge1, edge2);
-
-	if (std::fabs(det) >= 1e-8f)
+	// Based on Moller-Trumbore algorithm
+	// When you do the SSE, remember it is going to be += 4 and not 3. You'd have to pad in the end, similar to the spheres.
+	for (uint32_t triangleOffset = 0u; triangleOffset < m_positionsX.size(); triangleOffset += 3u)
 	{
-		const float invDet = 1.0f / det;
+		const Vector3 edge1 = Vector3(m_positionsX[triangleOffset + 1u] - m_positionsX[triangleOffset],
+									  m_positionsY[triangleOffset + 1u] - m_positionsY[triangleOffset],
+									  m_positionsZ[triangleOffset + 1u] - m_positionsZ[triangleOffset]);
 
-		const Vector3 tVec = ray.Origin() - v1;
-		const float u = Dot(tVec, pVec) * invDet;
+		const Vector3 edge2 = Vector3(m_positionsX[triangleOffset + 2u] - m_positionsX[triangleOffset],
+									  m_positionsY[triangleOffset + 2u] - m_positionsY[triangleOffset],
+									  m_positionsZ[triangleOffset + 2u] - m_positionsZ[triangleOffset]);
 
-		if ((u >= 0.0f) && (u <= 1.0f))
+		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
+		const Vector3 pVec = Cross(ray.Direction(), edge2);
+		const float det = Dot(pVec, edge1);
+
+		const Vector3 normal = Cross(edge1, edge2);
+
+		if (std::fabs(det) >= 1e-8f)
 		{
-			const Vector3 qVec = Cross(tVec, edge1);
-			const float v = Dot(ray.Direction(), qVec) * invDet;
+			const float invDet = 1.0f / det;
 
-			if ((v >= 0.0f) && ((u + v) <= 1.0f))
+			const Vector3 tVec = ray.Origin() - Vector3(m_positionsX[0u], m_positionsY[0u], m_positionsZ[0u]);
+			const float u = Dot(tVec, pVec) * invDet;
+
+			if ((u >= 0.0f) && (u <= 1.0f))
 			{
-				const float t = Dot(edge2, qVec) * invDet;
+				const Vector3 qVec = Cross(tVec, edge1);
+				const float v = Dot(ray.Direction(), qVec) * invDet;
 
-				if (t >= tMin && t <= tMax)
+				if ((v >= 0.0f) && ((u + v) <= 1.0f))
 				{
-					tMax = t;
+					const float t = Dot(edge2, qVec) * invDet;
 
-					out_hitResult.m_t = t;
+					if (t >= tMin && t <= tMax)
+					{
+						tMax = t;
 
-					out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-					out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-					out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+						out_hitResult.m_t = t;
+
+						out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+						out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+						out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+					}
 				}
 			}
 		}
 	}
+
+	////-------------------------------------------------------------------------------------------------------------------------
+	//// Based on Moller-Trumbore algorithm
+	//for (uint32_t face = 0u; face < m_faces.size(); face++)
+	//{
+	//	const Vector3 edge1 = m_faces[face].m_faceVertices[1u] - m_faces[face].m_faceVertices[0u]; // v0v1
+	//	const Vector3 edge2 = m_faces[face].m_faceVertices[2u] - m_faces[face].m_faceVertices[0u]; // v0v2
+	//
+	//	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
+	//	const Vector3 pVec = Cross(ray.Direction(), edge2);
+	//	const float det = Dot(pVec, edge1);
+	//
+	//	const Vector3 normal = Cross(edge1, edge2);
+	//
+	//	if (std::fabs(det) >= 1e-8f)
+	//	{
+	//		const float invDet = 1.0f / det;
+	//
+	//		const Vector3 tVec = ray.Origin() - m_faces[face].m_faceVertices[0u];
+	//		const float u = Dot(tVec, pVec) * invDet;
+	//
+	//		if ((u >= 0.0f) && (u <= 1.0f))
+	//		{
+	//			const Vector3 qVec = Cross(tVec, edge1);
+	//			const float v = Dot(ray.Direction(), qVec) * invDet;
+	//
+	//			if ((v >= 0.0f) && ((u + v) <= 1.0f))
+	//			{
+	//				const float t = Dot(edge2, qVec) * invDet;
+	//
+	//				if (t >= tMin && t <= tMax)
+	//				{
+	//					tMax = t;
+	//
+	//					out_hitResult.m_t = t;
+	//
+	//					out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+	//					out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+	//					out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
 }
 
@@ -653,10 +711,10 @@ Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
 		//Direct Lighting
 		{
 			const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
-
+			
 			const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
 			const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, 1e-5f);
-
+			
 			if (c_secondaryRayHitResult.m_t == INFINITY)
 			{
 				Vector3 directRadiance;
@@ -672,7 +730,7 @@ Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
 	{
 		const float val = 0.5f * (ray.Direction().Y() + 1.0f);
 		const Vector3 skyColour = (1.0f - val) * Vector3(1.0f, 1.0f, 1.0f) + val * Vector3(0.5f, 0.7f, 1.0f);
-
+	
 		radiance.SetX(skyColour.X());
 		radiance.SetY(skyColour.Y());
 		radiance.SetZ(skyColour.Z());
@@ -689,8 +747,8 @@ HitResult Renderer::TraceRay(const Ray& ray, const float tMin)
 	HitResult hitResult;
 	float tMax = INFINITY;
 	//HitSphere<T_acceptAnyHit>(ray, tMin, tMax, hitResult);
-	HitQuad(ray, tMin, tMax, hitResult);
-	HitTriangle(ray, Vector3(-1.0f, 2.0f, 0.0f), Vector3(1.0f, 2.0f, 0.0f), Vector3(0.0f, 4.0f, 0.0f), tMin, tMax, hitResult);
+	//HitQuad(ray, tMin, tMax, hitResult);
+	HitTriangle(ray, tMin, tMax, hitResult);
 	HitPlane(ray, tMin, tMax, 0.0f, Normalize(Vector3(0.0f, 1.0f, 0.0f)), c_grey, hitResult);
 
 	return hitResult;

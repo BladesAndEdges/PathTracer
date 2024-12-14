@@ -141,21 +141,27 @@
     <ClCompile Include="GLContext.cpp" />
     <ClCompile Include="HitResult.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ModelParser.cpp" />
     <ClCompile Include="PerformanceCounter.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Face.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="GLContext.h" />
     <ClInclude Include="HitResult.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="ModelParser.h" />
     <ClInclude Include="PerformanceCounter.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="Vertex.h" />
     <ClInclude Include="ViewportDesc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

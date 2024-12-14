@@ -4,24 +4,19 @@
 #include<vector>
 
 #include "Camera.h"
+#include "Face.h"
 #include "HitResult.h"
 #include "Ray.h"
 #include "ViewportDesc.h"
 
 class Framebuffer;
 
-struct sphereDiscriminantAndT
-{
-	float m_discriminant;
-	float m_t;
-};
-
 class Renderer
 {
 
 public:
 
-	Renderer();
+	Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ, const Vector3& center);
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 
@@ -36,7 +31,7 @@ private:
 	void HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, Vector3 colour, HitResult& out_hitResult);
 	void HitQuad(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
 	bool IsInsideQuad(const float alpha, const float beta);
-	void HitTriangle(const Ray& ray, const Vector3& v1, const Vector3& v2, const Vector3& v3, const float tMin, float& tMax, HitResult& out_hitResult);
+	void HitTriangle(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
 
 	Vector3 PathTrace(const Ray& ray, uint32_t depth);
 
@@ -69,6 +64,12 @@ private:
 	std::vector<float> m_sphereCentersY;
 	std::vector<float> m_sphereCentersZ;
 
-	// Colour data of spheres
+	std::vector<Face> m_faces;
+	Vector3 m_center;
+
+	// SSE for triangles
+	std::vector<float> m_positionsX;
+	std::vector<float> m_positionsY;
+	std::vector<float> m_positionsZ;
 };
 

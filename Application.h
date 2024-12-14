@@ -5,6 +5,7 @@
 #define FRAME_TIMINGS_BUFFER_SIZE 256
 
 class GLContext;
+class ModelParser;
 class Renderer;
 
 class Application
@@ -23,6 +24,7 @@ public:
 private:
 
 	GLContext* m_context;
+	ModelParser* m_parser;
 	Renderer* m_renderer;
 
 	double m_frameTimes[FRAME_TIMINGS_BUFFER_SIZE];

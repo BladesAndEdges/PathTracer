@@ -26,6 +26,8 @@ void ModelParser::ParseFile(const char* objSourceFile, const float scaleFactor)
 	assert(center.X() == m_center.X());
 	assert(center.Y() == m_center.Y());
 	assert(center.Z() == m_center.Z());
+
+	CheckBothhMatch();
 }
 
 // --------------------------------------------------------------------------------
@@ -342,6 +344,17 @@ void ModelParser::TriangulateWithFaces(const std::vector<Vertex>& vertices, std:
 		face.m_faceVertices[2] = vertices[triangle + 2];
 
 		faces.push_back(face);
+	}
+}
+
+// --------------------------------------------------------------------------------
+void ModelParser::CheckBothhMatch()
+{
+	for (uint32_t face = 0u; face < m_faces.size(); face++)
+	{
+		assert(m_faces[face].m_faceVertices[0u] == Vertex(m_positionsX[3u * face], m_positionsY[3u * face], m_positionsZ[3u * face]));
+		assert(m_faces[face].m_faceVertices[1u] == Vertex(m_positionsX[3u * face + 1u], m_positionsY[3u * face + 1u], m_positionsZ[3u * face + 1u]));
+		assert(m_faces[face].m_faceVertices[2u] == Vertex(m_positionsX[3u * face + 2u], m_positionsY[3u * face + 2u], m_positionsZ[3u * face + 2u]));
 	}
 }
 

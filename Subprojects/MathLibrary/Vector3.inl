@@ -91,6 +91,12 @@ inline Vector3 operator-(const Vector3& vec)
 }
 
 // --------------------------------------------------------------------------------
+inline bool operator==(const Vector3& vecA, const Vector3& vecB)
+{
+    return (vecA.X() == vecB.X()) && (vecA.Y() == vecB.Y()) && (vecA.Z() == vecB.Z());
+}
+
+// --------------------------------------------------------------------------------
 inline float Dot(const Vector3& vecA, const Vector3& vecB)
 {
     return (vecA.X() * vecB.X()) + (vecA.Y() * vecB.Y()) + (vecA.Z() * vecB.Z());

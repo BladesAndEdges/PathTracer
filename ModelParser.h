@@ -42,6 +42,8 @@ private:
 
 	//----------------------------------------------
 
+	void CheckBothhMatch();
+
 	std::vector<float> m_positionsX;
 	std::vector<float> m_positionsY;
 	std::vector<float> m_positionsZ;

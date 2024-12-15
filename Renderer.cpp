@@ -579,7 +579,7 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult)
 {
 	
-#if 0
+#if 1
 	// Based on Moller-Trumbore algorithm
 	// When you do the SSE, remember it is going to be += 4 and not 3. You'd have to pad in the end, similar to the spheres.
 	for (uint32_t triangleOffset = 0u; triangleOffset < m_positionsX.size(); triangleOffset += 3u)
@@ -602,7 +602,7 @@ void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitRes
 		{
 			const float invDet = 1.0f / det;
 
-			const Vector3 tVec = ray.Origin() - Vector3(m_positionsX[0u], m_positionsY[0u], m_positionsZ[0u]);
+			const Vector3 tVec = ray.Origin() - Vector3(m_positionsX[triangleOffset], m_positionsY[triangleOffset], m_positionsZ[triangleOffset]);
 			const float u = Dot(tVec, pVec) * invDet;
 
 			if ((u >= 0.0f) && (u <= 1.0f))
@@ -629,11 +629,20 @@ void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitRes
 		}
 	}
 #endif
-#if 1
+#if 0
 	//-------------------------------------------------------------------------------------------------------------------------
 	// Based on Moller-Trumbore algorithm
 	for (uint32_t face = 0u; face < m_faces.size(); face++)
 	{
+		const uint32_t triangleOffset = 3u * face;
+		const Vector3 edge1v = Vector3(m_positionsX[triangleOffset + 1u] - m_positionsX[triangleOffset],
+			m_positionsY[triangleOffset + 1u] - m_positionsY[triangleOffset],
+			m_positionsZ[triangleOffset + 1u] - m_positionsZ[triangleOffset]);
+
+		const Vector3 edge2v = Vector3(m_positionsX[triangleOffset + 2u] - m_positionsX[triangleOffset],
+			m_positionsY[triangleOffset + 2u] - m_positionsY[triangleOffset],
+			m_positionsZ[triangleOffset + 2u] - m_positionsZ[triangleOffset]);
+
 		const Vector3 edge1 = Vector3(m_faces[face].m_faceVertices[1u].m_position[0u] - m_faces[face].m_faceVertices[0u].m_position[0u],
 			m_faces[face].m_faceVertices[1u].m_position[1u] - m_faces[face].m_faceVertices[0u].m_position[1u], 
 			m_faces[face].m_faceVertices[1u].m_position[2u] - m_faces[face].m_faceVertices[0u].m_position[2u]); // v0v1
@@ -641,6 +650,9 @@ void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitRes
 		const Vector3 edge2 = Vector3(m_faces[face].m_faceVertices[2u].m_position[0u] - m_faces[face].m_faceVertices[0u].m_position[0u],
 			m_faces[face].m_faceVertices[2u].m_position[1u] - m_faces[face].m_faceVertices[0u].m_position[1u],
 			m_faces[face].m_faceVertices[2u].m_position[2u] - m_faces[face].m_faceVertices[0u].m_position[2u]); // v0v2
+
+		assert(edge1 == edge1v);
+		assert(edge2 == edge2v);
 	
 		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 		const Vector3 pVec = Cross(ray.Direction(), edge2);

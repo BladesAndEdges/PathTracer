@@ -7,6 +7,7 @@
 #include "Face.h"
 #include "HitResult.h"
 #include "Ray.h"
+#include "Triangle4.h"
 #include "ViewportDesc.h"
 
 class Framebuffer;
@@ -16,7 +17,8 @@ class Renderer
 
 public:
 
-	Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ, const std::vector<Face>& faces, const Vector3& center);
+	Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ,
+		const std::vector<Triangle4>& triangle4s, const std::vector<Face>& faces, const Vector3& center);
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 
@@ -68,8 +70,12 @@ private:
 	Vector3 m_center;
 
 	// SSE for triangles
+	std::vector<Triangle4> m_triangle4s;
+
+	// Scalar for triangles
 	std::vector<float> m_positionsX;
 	std::vector<float> m_positionsY;
 	std::vector<float> m_positionsZ;
+
 };
 

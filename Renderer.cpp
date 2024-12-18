@@ -10,14 +10,17 @@
 
 # define M_PI 3.14159265358979323846
 //# define RUNNING_SCALAR
+#define RUNNING_SCALAR_WITHOUT_FACES
 
 // --------------------------------------------------------------------------------
-Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ, const std::vector<Face>& faces, const Vector3& center) 
-																													: m_positionsX(positionsX), 
-																													  m_positionsY(positionsY),
-																													  m_positionsZ(positionsZ),
-																													  m_faces(faces),
-																													  m_center(center)
+Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ,
+	const std::vector<Triangle4>& triangle4s, const std::vector<Face>& faces, const Vector3& center)	
+																										: m_positionsX(positionsX), 
+																										  m_positionsY(positionsY),
+																										  m_positionsZ(positionsZ),
+																										  m_triangle4s(triangle4s),
+																										  m_faces(faces),
+																										  m_center(center)
 {
 	// Once planes are multiple, this would be changed
 	c_indigo.SetX(1.0f);
@@ -578,8 +581,10 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 // --------------------------------------------------------------------------------
 void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult)
 {
-	
-#if 1
+#ifndef RUNNING_SSE_TRI4
+	//for(uint32_t triangle = 0; triangle <)
+#endif
+#ifdef RUNNING_SCALAR_WITHOUT_FACES
 	// Based on Moller-Trumbore algorithm
 	// When you do the SSE, remember it is going to be += 4 and not 3. You'd have to pad in the end, similar to the spheres.
 	for (uint32_t triangleOffset = 0u; triangleOffset < m_positionsX.size(); triangleOffset += 3u)
@@ -629,20 +634,11 @@ void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitRes
 		}
 	}
 #endif
-#if 0
+#if RUNNING_SCALAR_WITH_FACES
 	//-------------------------------------------------------------------------------------------------------------------------
 	// Based on Moller-Trumbore algorithm
 	for (uint32_t face = 0u; face < m_faces.size(); face++)
 	{
-		const uint32_t triangleOffset = 3u * face;
-		const Vector3 edge1v = Vector3(m_positionsX[triangleOffset + 1u] - m_positionsX[triangleOffset],
-			m_positionsY[triangleOffset + 1u] - m_positionsY[triangleOffset],
-			m_positionsZ[triangleOffset + 1u] - m_positionsZ[triangleOffset]);
-
-		const Vector3 edge2v = Vector3(m_positionsX[triangleOffset + 2u] - m_positionsX[triangleOffset],
-			m_positionsY[triangleOffset + 2u] - m_positionsY[triangleOffset],
-			m_positionsZ[triangleOffset + 2u] - m_positionsZ[triangleOffset]);
-
 		const Vector3 edge1 = Vector3(m_faces[face].m_faceVertices[1u].m_position[0u] - m_faces[face].m_faceVertices[0u].m_position[0u],
 			m_faces[face].m_faceVertices[1u].m_position[1u] - m_faces[face].m_faceVertices[0u].m_position[1u], 
 			m_faces[face].m_faceVertices[1u].m_position[2u] - m_faces[face].m_faceVertices[0u].m_position[2u]); // v0v1
@@ -650,9 +646,6 @@ void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitRes
 		const Vector3 edge2 = Vector3(m_faces[face].m_faceVertices[2u].m_position[0u] - m_faces[face].m_faceVertices[0u].m_position[0u],
 			m_faces[face].m_faceVertices[2u].m_position[1u] - m_faces[face].m_faceVertices[0u].m_position[1u],
 			m_faces[face].m_faceVertices[2u].m_position[2u] - m_faces[face].m_faceVertices[0u].m_position[2u]); // v0v2
-
-		assert(edge1 == edge1v);
-		assert(edge2 == edge2v);
 	
 		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 		const Vector3 pVec = Cross(ray.Direction(), edge2);

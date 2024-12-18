@@ -16,18 +16,10 @@ void ModelParser::ParseFile(const char* objSourceFile, const float scaleFactor)
 	assert(objSourceFile != nullptr);
 
 	// For SSE
-	CreateFaces(objSourceFile, scaleFactor);
-	CalculateSceneCenter();
+	//CreateTriangles(objSourceFile, scaleFactor);
 
-	//For scalar
-	CreateFacesWithFaces(objSourceFile, scaleFactor);
-
-	Vector3 center = CalculateSceneCenterWithFaces();
-	assert(center.X() == m_center.X());
-	assert(center.Y() == m_center.Y());
-	assert(center.Z() == m_center.Z());
-
-	CheckBothhMatch();
+	// For scalar, with SOAs
+	CreateTriangles2(objSourceFile, scaleFactor);
 }
 
 // --------------------------------------------------------------------------------
@@ -37,30 +29,34 @@ Vector3 ModelParser::GetCenter() const
 }
 
 // --------------------------------------------------------------------------------
+std::vector<Triangle4> ModelParser::GetTriangle4Data() const
+{
+	return m_triangle4s;
+}
+
 std::vector<float> ModelParser::GetPositionsX() const
 {
 	return m_positionsX;
 }
 
-// --------------------------------------------------------------------------------
 std::vector<float> ModelParser::GetPositionsY() const
 {
 	return m_positionsY;
 }
 
-// --------------------------------------------------------------------------------
 std::vector<float> ModelParser::GetPositionsZ() const
 {
 	return m_positionsZ;
 }
 
+// --------------------------------------------------------------------------------
 std::vector<Face> ModelParser::GetFaces() const
 {
 	return m_faces;
 }
 
 // --------------------------------------------------------------------------------
-void ModelParser::CreateFaces(const std::string& fileName, const float scaleFactor)
+void ModelParser::CreateTriangles(const std::string& fileName, const float scaleFactor)
 {
 	std::ifstream ifs(fileName);
 
@@ -71,9 +67,13 @@ void ModelParser::CreateFaces(const std::string& fileName, const float scaleFact
 
 	std::string prefix;
 
-	std::vector<float> positionsX;
-	std::vector<float> positionsY;
-	std::vector<float> positionsZ;
+	std::vector<float> readPositionsX;
+	std::vector<float> readPositionsY;
+	std::vector<float> readPositionsZ;
+
+	std::vector<float> triangulatedPositionsX;
+	std::vector<float> triangulatedPositionsY;
+	std::vector<float> triangulatedPositionsZ;
 
 	while (ifs >> prefix)
 	{
@@ -83,9 +83,9 @@ void ModelParser::CreateFaces(const std::string& fileName, const float scaleFact
 			float x, y, z;
 			ifs >> x >> y >> z;
 
-			positionsX.push_back(x);
-			positionsY.push_back(y);
-			positionsZ.push_back(z);
+			readPositionsX.push_back(x);
+			readPositionsY.push_back(y);
+			readPositionsZ.push_back(z);
 		}
 
 		// This is done per line, so the total number of faces to compute the currentMesh needs to be re-iterated
@@ -99,70 +99,179 @@ void ModelParser::CreateFaces(const std::string& fileName, const float scaleFact
 			std::vector<float> faceY;
 			std::vector<float> faceZ;
 
-			ParseAttributes(line, scaleFactor, positionsX, positionsY, positionsZ, faceX, faceY, faceZ);
-			Triangulate(faceX, faceY, faceZ);
+			ParseAttributes(line, scaleFactor, readPositionsX, readPositionsY, readPositionsZ, faceX, faceY, faceZ);
+			Triangulate(faceX, faceY, faceZ, triangulatedPositionsX, triangulatedPositionsY, triangulatedPositionsZ);
 		}
+	}
+
+	CalculateSceneCenter(readPositionsX, readPositionsY, readPositionsZ);
+	CreateTriangle4s(triangulatedPositionsX, triangulatedPositionsY, triangulatedPositionsZ);
+}
+
+// --------------------------------------------------------------------------------
+void ModelParser::Triangulate(const std::vector<float>& faceValuesX, const std::vector<float>& faceValuesY, const std::vector<float>& faceValuesZ,
+	std::vector<float>& out_triangulatedPosX, std::vector<float>& out_triangulatedPosY, std::vector<float>& out_triangulatedPosZ)
+{
+	for (uint32_t triangle = 0u; triangle < faceValuesX.size() - 2u; triangle++)
+	{
+		out_triangulatedPosX.push_back(faceValuesX[0u]);
+		out_triangulatedPosY.push_back(faceValuesY[0u]);
+		out_triangulatedPosZ.push_back(faceValuesZ[0u]);
+
+		out_triangulatedPosX.push_back(faceValuesX[triangle + 1u]);
+		out_triangulatedPosY.push_back(faceValuesY[triangle + 1u]);
+		out_triangulatedPosZ.push_back(faceValuesZ[triangle + 1u]);
+
+		out_triangulatedPosX.push_back(faceValuesX[triangle + 2u]);
+		out_triangulatedPosY.push_back(faceValuesY[triangle + 2u]);
+		out_triangulatedPosZ.push_back(faceValuesZ[triangle + 2u]);
 	}
 }
 
 // --------------------------------------------------------------------------------
-void ModelParser::CalculateSceneCenter()
+void ModelParser::CalculateSceneCenter(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ)
 {
 	// For SSE
-	float minX = m_positionsX[0u];
+	float minX = positionsX[0u];
 	float maxX = minX;
 
-	float minY = m_positionsY[0u];
+	float minY = positionsY[0u];
 	float maxY = minY;
 
-	float minZ = m_positionsZ[0u];
+	float minZ = positionsZ[0u];
 	float maxZ = minZ;
 
-	for (uint32_t position = 1u; position < m_positionsX.size(); position++)
+	for (uint32_t position = 1u; position < positionsX.size(); position++)
 	{
-		if (m_positionsX[position] < minX)
+		if (positionsX[position] < minX)
 		{
-			minX = m_positionsX[position];
+			minX = positionsX[position];
 		}
 
-		if (m_positionsX[position] > maxX)
+		if (positionsX[position] > maxX)
 		{
-			maxX = m_positionsX[position];
+			maxX = positionsX[position];
 		}
 
-		if (m_positionsY[position] < minY)
+		if (positionsY[position] < minY)
 		{
-			minY = m_positionsY[position];
+			minY = positionsY[position];
 		}
 
-		if (m_positionsY[position] > maxY)
+		if (positionsY[position] > maxY)
 		{
-			maxY = m_positionsY[position];
+			maxY = positionsY[position];
 		}
 
-		if (m_positionsZ[position] < minZ)
+		if (positionsZ[position] < minZ)
 		{
-			minZ = m_positionsZ[position];
+			minZ = positionsZ[position];
 		}
 
-		if (m_positionsZ[position] > maxZ)
+		if (positionsZ[position] > maxZ)
 		{
-			maxZ = m_positionsZ[position];
+			maxZ = positionsZ[position];
 		}
 	}
 
 	m_center.SetX((minX + maxX) / 2.0f);
 	m_center.SetY((minY + maxY) / 2.0f);
 	m_center.SetZ((minZ + maxZ) / 2.0f);
+}
 
-	// For scalar
+// --------------------------------------------------------------------------------
+void ModelParser::CreateTriangle4s(std::vector<float>& triangulatedPosX, std::vector<float> triangulatedPosY, std::vector<float> triangulatedPosZ)
+{
+	//Make sure the amount of triangles is a multiple of 4
+	if ((triangulatedPosX.size() % 4u) != 0u)
+	{
+		const uint32_t c_numToPad = 4u - triangulatedPosX.size() % 4u;
+
+		for (uint32_t padding = 0u; padding < c_numToPad; padding++)
+		{
+			triangulatedPosX.push_back(0.0f);
+			triangulatedPosY.push_back(0.0f);
+			triangulatedPosZ.push_back(0.0f);
+		}
+	}
+
+	// Create SSE data
+	for (uint32_t triangle = 0u; triangle < triangulatedPosX.size(); triangle += 4u)
+	{
+
+	}
+}
+
+void ModelParser::CreateTriangles2(const std::string& fileName, const float scaleFactor)
+{
+	std::ifstream ifs(fileName);
+
+	if (!ifs.is_open())
+	{
+		throw std::exception("Could not read Mesh Data!");
+	}
+
+	std::string prefix;
+
+	std::vector<float> readPositionsX;
+	std::vector<float> readPositionsY;
+	std::vector<float> readPositionsZ;
+
+	while (ifs >> prefix)
+	{
+		// For SSE
+		if (prefix == "v")
+		{
+			float x, y, z;
+			ifs >> x >> y >> z;
+
+			readPositionsX.push_back(x);
+			readPositionsY.push_back(y);
+			readPositionsZ.push_back(z);
+		}
+
+		// This is done per line, so the total number of faces to compute the currentMesh needs to be re-iterated
+		// I will need to consider doing a single Vertex array, which would make the levels of indirection here substantially easier
+		if (prefix == "f")
+		{
+			std::string line;
+			std::getline(ifs, line);
+
+			std::vector<float> faceX;
+			std::vector<float> faceY;
+			std::vector<float> faceZ;
+
+			ParseAttributes(line, scaleFactor, readPositionsX, readPositionsY, readPositionsZ, faceX, faceY, faceZ);
+			Triangulate2(faceX, faceY, faceZ);
+		}
+	}
+}
+
+void ModelParser::Triangulate2(const std::vector<float>& faceX, const std::vector<float>& faceY, const std::vector<float>& faceZ)
+{
+	// For SSE
+	const uint32_t vertexCount = (uint32_t)faceX.size();
+
+	for (uint32_t triangle = 0u; triangle < vertexCount - 2u; triangle++)
+	{
+		m_positionsX.push_back(faceX[0u]);
+		m_positionsY.push_back(faceY[0u]);
+		m_positionsZ.push_back(faceZ[0u]);
+
+		m_positionsX.push_back(faceX[triangle + 1u]);
+		m_positionsY.push_back(faceY[triangle + 1u]);
+		m_positionsZ.push_back(faceZ[triangle + 1u]);
+
+		m_positionsX.push_back(faceX[triangle + 2u]);
+		m_positionsY.push_back(faceY[triangle + 2u]);
+		m_positionsZ.push_back(faceZ[triangle + 2u]);
+	}
 }
 
 // --------------------------------------------------------------------------------
 void ModelParser::ParseAttributes(const std::string& line, const float scaleFactor, std::vector<float>& positionsX, std::vector<float>& positionsY,
 	std::vector<float>& positionsZ, std::vector<float>& out_faceX, std::vector<float>& out_faceY, std::vector<float>& out_faceZ)
 {
-	std::vector<Vector3> vertices;
 	const char whitespace = ' ';
 
 	std::istringstream lineStringStream(line);
@@ -204,27 +313,6 @@ void ModelParser::ParseAttributes(const std::string& line, const float scaleFact
 	}
 }
 
-// --------------------------------------------------------------------------------
-void ModelParser::Triangulate(const std::vector<float>& faceX, const std::vector<float>& faceY, const std::vector<float>& faceZ)
-{
-	// For SSE
-	const uint32_t vertexCount = (uint32_t)faceX.size();
-
-	for (uint32_t triangle = 0u; triangle < vertexCount - 2u; triangle++)
-	{
-		m_positionsX.push_back(faceX[0u]);
-		m_positionsY.push_back(faceY[0u]);
-		m_positionsZ.push_back(faceZ[0u]);
-
-		m_positionsX.push_back(faceX[triangle + 1u]);
-		m_positionsY.push_back(faceY[triangle + 1u]);
-		m_positionsZ.push_back(faceZ[triangle + 1u]);
-
-		m_positionsX.push_back(faceX[triangle + 2u]);
-		m_positionsY.push_back(faceY[triangle + 2u]);
-		m_positionsZ.push_back(faceZ[triangle + 2u]);
-	}
-}
 // --------------------------------------------------------------------------------
 void ModelParser::CreateFacesWithFaces(const std::string& fileName, const float scaleFactor)
 {
@@ -344,17 +432,6 @@ void ModelParser::TriangulateWithFaces(const std::vector<Vertex>& vertices, std:
 		face.m_faceVertices[2] = vertices[triangle + 2];
 
 		faces.push_back(face);
-	}
-}
-
-// --------------------------------------------------------------------------------
-void ModelParser::CheckBothhMatch()
-{
-	for (uint32_t face = 0u; face < m_faces.size(); face++)
-	{
-		assert(m_faces[face].m_faceVertices[0u] == Vertex(m_positionsX[3u * face], m_positionsY[3u * face], m_positionsZ[3u * face]));
-		assert(m_faces[face].m_faceVertices[1u] == Vertex(m_positionsX[3u * face + 1u], m_positionsY[3u * face + 1u], m_positionsZ[3u * face + 1u]));
-		assert(m_faces[face].m_faceVertices[2u] == Vertex(m_positionsX[3u * face + 2u], m_positionsY[3u * face + 2u], m_positionsZ[3u * face + 2u]));
 	}
 }
 

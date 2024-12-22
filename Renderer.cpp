@@ -10,6 +10,7 @@
 
 # define M_PI 3.14159265358979323846
 //# define RUNNING_SCALAR
+//#define RUNNING_SCALAR_TRI4
 #define RUNNING_SCALAR_WITHOUT_FACES
 
 // --------------------------------------------------------------------------------
@@ -176,7 +177,7 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 	m_quadColours.push_back(Vector3(0.0f, 1.0f, 0.0f));
 	
 	// Position if flipping the z axis
-	m_center.SetZ(m_center.Z() + 12.0f);
+	m_center.SetZ(m_center.Z() + 3.0f);
 	m_camera.SetCameraLocation(m_center);
 	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
 
@@ -579,10 +580,149 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult)
+void Renderer::HitTriangle(const Ray& ray, /*const uint32_t rayIndex,*/ const float tMin, float& tMax, HitResult& out_hitResult)
 {
-#ifndef RUNNING_SSE_TRI4
-	//for(uint32_t triangle = 0; triangle <)
+	//assert(rayIndex >= 0u);
+
+#ifdef RUNNING_SCALAR_TRI4
+
+	std::vector<float> smallestTs(4u, INFINITY);
+	std::vector<uint32_t> tri4Ids(4u, UINT32_MAX);
+
+	std::vector<float> pvecX(4u);
+	std::vector<float> pvecY(4u);
+	std::vector<float> pvecZ(4u);
+
+	std::vector<float> tvecX(4u);
+	std::vector<float> tvecY(4u);
+	std::vector<float> tvecZ(4u);
+
+	std::vector<float> qvecX(4u);
+	std::vector<float> qvecY(4u);
+	std::vector<float> qvecZ(4u);
+
+	std::vector<float> u(4u);
+	std::vector<float> v(4u);
+
+	std::vector<float> determinants(4u);
+
+	for (uint32_t currentTri4 = 0u; currentTri4 < m_triangle4s.size(); currentTri4++)
+	{
+		// pvecX
+		for (uint32_t currentX = 0u; currentX < m_triangle4s[currentTri4].m_edge2Z.size(); currentX++)
+		{
+			pvecX[currentX] = ray.Direction().Y() * m_triangle4s[currentTri4].m_edge2Z[currentX] -
+				ray.Direction().Z() * m_triangle4s[currentTri4].m_edge2Y[currentX];
+		}
+
+		// pvecY
+		for (uint32_t currentY = 0u; currentY < m_triangle4s[currentTri4].m_edge2X.size(); currentY++)
+		{
+			pvecY[currentY] = ray.Direction().Z() * m_triangle4s[currentTri4].m_edge2X[currentY] -
+				ray.Direction().X() * m_triangle4s[currentTri4].m_edge2Z[currentY];
+		}
+
+		// pvecZ
+		for (uint32_t currentZ = 0u; currentZ < m_triangle4s[currentTri4].m_edge2Y.size(); currentZ++)
+		{
+			pvecZ[currentZ] = ray.Direction().X() * m_triangle4s[currentTri4].m_edge2Y[currentZ] -
+				ray.Direction().Y() * m_triangle4s[currentTri4].m_edge2X[currentZ];
+		}
+
+		// Determinants
+		for (uint32_t det = 0u; det < pvecX.size(); det++)
+		{
+			determinants[det] = pvecX[det] * m_triangle4s[currentTri4].m_edge1X[det] +
+				pvecY[det] * m_triangle4s[currentTri4].m_edge1Y[det] +
+				pvecZ[det] * m_triangle4s[currentTri4].m_edge1Z[det];
+		}
+
+		// Calculating ts
+		for (uint32_t det = 0u; det < determinants.size(); det++)
+		{
+			if (std::abs(determinants[det]) >= 1e-8f)
+			{
+				const float invDet = 1.0f / determinants[det];
+
+				// Calculate tVec
+				tvecX[det] = ray.Origin().X() - m_triangle4s[currentTri4].m_v0X[det];
+				tvecY[det] = ray.Origin().Y() - m_triangle4s[currentTri4].m_v0Y[det];
+				tvecZ[det] = ray.Origin().Z() - m_triangle4s[currentTri4].m_v0Z[det];
+
+				// Calculate u
+				u[det] = (tvecX[det] * pvecX[det] +
+					tvecY[det] * pvecY[det] +
+					tvecZ[det] * pvecZ[det]) * invDet;
+
+				if ((u[det] >= 0.0f) && (u[det] <= 1.0f))
+				{
+					// Calculating qVec
+					qvecX[det] = tvecY[det] * m_triangle4s[currentTri4].m_edge1Z[det] -
+						tvecZ[det] * m_triangle4s[currentTri4].m_edge1Y[det];
+
+					qvecY[det] = tvecZ[det] * m_triangle4s[currentTri4].m_edge1X[det] -
+						tvecX[det] * m_triangle4s[currentTri4].m_edge1Z[det];
+
+					qvecZ[det] = tvecX[det] * m_triangle4s[currentTri4].m_edge1Y[det] -
+						tvecY[det] * m_triangle4s[currentTri4].m_edge1X[det];
+
+					// Calculate v
+					v[det] = (ray.Direction().X() * qvecX[det] +
+						ray.Direction().Y() * qvecY[det] +
+						ray.Direction().Z() * qvecZ[det]) * invDet;
+
+					if ((v[det] >= 0.0f) && ((u[det] + v[det]) <= 1.0f))
+					{
+						const float potentialT = (m_triangle4s[currentTri4].m_edge2X[det] * qvecX[det] +
+							m_triangle4s[currentTri4].m_edge2Y[det] * qvecY[det] +
+							m_triangle4s[currentTri4].m_edge2Z[det] * qvecZ[det]) * invDet;
+
+						// Update smallestT at that index
+						if (potentialT < smallestTs[det])
+						{
+							smallestTs[det] = potentialT;
+							tri4Ids[det] = currentTri4;
+						}
+					}
+				}
+
+			}
+		}
+	}
+
+	// Find smallest T
+	float t = INFINITY;
+	int triId = -1;
+	int tri4Id = -1;
+	for (uint32_t currentT = 0u; currentT < smallestTs.size(); currentT++)
+	{
+		if (smallestTs[currentT] < t)
+		{
+			t = smallestTs[currentT];
+			triId = currentT;
+			tri4Id = tri4Ids[currentT];
+		}
+	}
+
+	// Update hit result
+	if ((t < tMax) && (t >= tMin))
+	{
+		tMax = t;
+
+		out_hitResult.m_t = t;
+
+		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+
+		// Calculate normal
+		const Vector3 edge1 = Vector3(m_triangle4s[tri4Id].m_edge1X[triId], m_triangle4s[tri4Id].m_edge1Y[triId], m_triangle4s[tri4Id].m_edge1Z[triId]);
+		const Vector3 edge2 = Vector3(m_triangle4s[tri4Id].m_edge2X[triId], m_triangle4s[tri4Id].m_edge2Y[triId], m_triangle4s[tri4Id].m_edge2Z[triId]);
+		
+		const Vector3 normal = Cross(edge1, edge2);
+
+		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+
+		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+	}
 #endif
 #ifdef RUNNING_SCALAR_WITHOUT_FACES
 	// Based on Moller-Trumbore algorithm
@@ -634,6 +774,7 @@ void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitRes
 		}
 	}
 #endif
+}
 #if RUNNING_SCALAR_WITH_FACES
 	//-------------------------------------------------------------------------------------------------------------------------
 	// Based on Moller-Trumbore algorithm
@@ -687,10 +828,9 @@ void Renderer::HitTriangle(const Ray& ray, const float tMin, float& tMax, HitRes
 		}
 	}
 #endif
-}
 
 // --------------------------------------------------------------------------------
-Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
+Vector3 Renderer::PathTrace(const Ray& ray, /*const uint32_t rayIndex,*/ uint32_t depth)
 {
 	if (depth <= 0u)
 	{
@@ -759,7 +899,7 @@ Vector3 Renderer::PathTrace(const Ray& ray, uint32_t depth)
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-HitResult Renderer::TraceRay(const Ray& ray, const float tMin)
+HitResult Renderer::TraceRay(const Ray& ray, /*const uint32_t rayIndex,*/ const float tMin)
 {
 	HitResult hitResult;
 	float tMax = INFINITY;

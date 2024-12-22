@@ -16,7 +16,7 @@ void ModelParser::ParseFile(const char* objSourceFile, const float scaleFactor)
 	assert(objSourceFile != nullptr);
 
 	// For SSE
-	//CreateTriangles(objSourceFile, scaleFactor);
+	CreateTriangles(objSourceFile, scaleFactor);
 
 	// For scalar, with SOAs
 	CreateTriangles2(objSourceFile, scaleFactor);
@@ -183,23 +183,88 @@ void ModelParser::CalculateSceneCenter(const std::vector<float>& positionsX, con
 void ModelParser::CreateTriangle4s(std::vector<float>& triangulatedPosX, std::vector<float> triangulatedPosY, std::vector<float> triangulatedPosZ)
 {
 	//Make sure the amount of triangles is a multiple of 4
-	if ((triangulatedPosX.size() % 4u) != 0u)
+	const uint32_t numTriangles = (uint32_t)triangulatedPosX.size() / 3u;
+	if ((numTriangles % 4u) != 0u)
 	{
-		const uint32_t c_numToPad = 4u - triangulatedPosX.size() % 4u;
+		const uint32_t c_numToPad = 4u - numTriangles % 4u;
 
 		for (uint32_t padding = 0u; padding < c_numToPad; padding++)
 		{
-			triangulatedPosX.push_back(0.0f);
-			triangulatedPosY.push_back(0.0f);
-			triangulatedPosZ.push_back(0.0f);
+			for (uint32_t vertex = 0u; vertex < 3u; vertex++)
+			{
+				triangulatedPosX.push_back(0.0f);
+				triangulatedPosY.push_back(0.0f);
+				triangulatedPosZ.push_back(0.0f);
+			}
 		}
 	}
 
 	// Create SSE data
-	for (uint32_t triangle = 0u; triangle < triangulatedPosX.size(); triangle += 4u)
+	const uint32_t updatedNumTriangles = (uint32_t)triangulatedPosX.size() / 3u;
+	for (uint32_t triangle = 0u; triangle < updatedNumTriangles; triangle += 4u)
 	{
+		Triangle4 tri4;
 
+		const uint32_t tri0Offset = triangle * 3u;
+		const uint32_t tri1Offset = (triangle + 1u) * 3u;
+		const uint32_t tri2Offset = (triangle + 2u) * 3u;
+		const uint32_t tri3Offset = (triangle + 3u) * 3u;
+
+		//Triangle 0
+		tri4.m_v0X.push_back(triangulatedPosX[tri0Offset]);
+		tri4.m_v0Y.push_back(triangulatedPosY[tri0Offset]);
+		tri4.m_v0Z.push_back(triangulatedPosZ[tri0Offset]);
+
+		tri4.m_edge1X.push_back(triangulatedPosX[tri0Offset + 1u] - triangulatedPosX[tri0Offset]);
+		tri4.m_edge1Y.push_back(triangulatedPosY[tri0Offset + 1u] - triangulatedPosY[tri0Offset]);
+		tri4.m_edge1Z.push_back(triangulatedPosZ[tri0Offset + 1u] - triangulatedPosZ[tri0Offset]);
+
+		tri4.m_edge2X.push_back(triangulatedPosX[tri0Offset + 2u] - triangulatedPosX[tri0Offset]);
+		tri4.m_edge2Y.push_back(triangulatedPosY[tri0Offset + 2u] - triangulatedPosY[tri0Offset]);
+		tri4.m_edge2Z.push_back(triangulatedPosZ[tri0Offset + 2u] - triangulatedPosZ[tri0Offset]);
+
+		//Triangle 1
+		tri4.m_v0X.push_back(triangulatedPosX[tri1Offset]);
+		tri4.m_v0Y.push_back(triangulatedPosY[tri1Offset]);
+		tri4.m_v0Z.push_back(triangulatedPosZ[tri1Offset]);
+
+		tri4.m_edge1X.push_back(triangulatedPosX[tri1Offset + 1u] - triangulatedPosX[tri1Offset]);
+		tri4.m_edge1Y.push_back(triangulatedPosY[tri1Offset + 1u] - triangulatedPosY[tri1Offset]);
+		tri4.m_edge1Z.push_back(triangulatedPosZ[tri1Offset + 1u] - triangulatedPosZ[tri1Offset]);
+
+		tri4.m_edge2X.push_back(triangulatedPosX[tri1Offset + 2u] - triangulatedPosX[tri1Offset]);
+		tri4.m_edge2Y.push_back(triangulatedPosY[tri1Offset + 2u] - triangulatedPosY[tri1Offset]);
+		tri4.m_edge2Z.push_back(triangulatedPosZ[tri1Offset + 2u] - triangulatedPosZ[tri1Offset]);
+
+		//Triangle 2
+		tri4.m_v0X.push_back(triangulatedPosX[tri2Offset]);
+		tri4.m_v0Y.push_back(triangulatedPosY[tri2Offset]);
+		tri4.m_v0Z.push_back(triangulatedPosZ[tri2Offset]);
+
+		tri4.m_edge1X.push_back(triangulatedPosX[tri2Offset + 1u] - triangulatedPosX[tri2Offset]);
+		tri4.m_edge1Y.push_back(triangulatedPosY[tri2Offset + 1u] - triangulatedPosY[tri2Offset]);
+		tri4.m_edge1Z.push_back(triangulatedPosZ[tri2Offset + 1u] - triangulatedPosZ[tri2Offset]);
+
+		tri4.m_edge2X.push_back(triangulatedPosX[tri2Offset + 2u] - triangulatedPosX[tri2Offset]);
+		tri4.m_edge2Y.push_back(triangulatedPosY[tri2Offset + 2u] - triangulatedPosY[tri2Offset]);
+		tri4.m_edge2Z.push_back(triangulatedPosZ[tri2Offset + 2u] - triangulatedPosZ[tri2Offset]);
+
+		//Triangle 3
+		tri4.m_v0X.push_back(triangulatedPosX[tri3Offset]);
+		tri4.m_v0Y.push_back(triangulatedPosY[tri3Offset]);
+		tri4.m_v0Z.push_back(triangulatedPosZ[tri3Offset]);
+
+		tri4.m_edge1X.push_back(triangulatedPosX[tri3Offset + 1u] - triangulatedPosX[tri3Offset]);
+		tri4.m_edge1Y.push_back(triangulatedPosY[tri3Offset + 1u] - triangulatedPosY[tri3Offset]);
+		tri4.m_edge1Z.push_back(triangulatedPosZ[tri3Offset + 1u] - triangulatedPosZ[tri3Offset]);
+
+		tri4.m_edge2X.push_back(triangulatedPosX[tri3Offset + 2u] - triangulatedPosX[tri3Offset]);
+		tri4.m_edge2Y.push_back(triangulatedPosY[tri3Offset + 2u] - triangulatedPosY[tri3Offset]);
+		tri4.m_edge2Z.push_back(triangulatedPosZ[tri3Offset + 2u] - triangulatedPosZ[tri3Offset]);
+
+		m_triangle4s.push_back(tri4);
 	}
+
 }
 
 void ModelParser::CreateTriangles2(const std::string& fileName, const float scaleFactor)

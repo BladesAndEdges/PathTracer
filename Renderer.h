@@ -33,12 +33,12 @@ private:
 	void HitPlane(const Ray& ray, const float tMin, float& tMax, const float distance, const Vector3& normalizedPlaneNormal, Vector3 colour, HitResult& out_hitResult);
 	void HitQuad(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
 	bool IsInsideQuad(const float alpha, const float beta);
-	void HitTriangle(const Ray& ray, /*const uint32_t rayIndex,*/ const float tMin, float& tMax, HitResult& out_hitResult);
+	void HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
 
-	Vector3 PathTrace(const Ray& ray, /*const uint32_t rayIndex,*/ uint32_t depth);
+	Vector3 PathTrace(const Ray& ray, const uint32_t rayIndex,uint32_t depth);
 
 	template<bool T_acceptAnyHit>
-	HitResult TraceRay(const Ray& ray, /*const uint32_t rayIndex,*/ const float tMin);
+	HitResult TraceRay(const Ray& ray, const uint32_t rayIndex, const float tMin);
 
 	std::vector<Vector3> m_sphereList;
 	std::vector<Vector3> m_sphereColours;

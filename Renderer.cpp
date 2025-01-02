@@ -181,6 +181,40 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 
 	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc));
 	m_isFirstFrame = true;
+
+	// testing/sanity check
+	for (uint32_t triangleOffset = 0u; triangleOffset < m_positionsX.size(); triangleOffset+=3u)
+	{
+		const Vector3 edge1 = Vector3(m_positionsX[triangleOffset + 1u] - m_positionsX[triangleOffset],
+			m_positionsY[triangleOffset + 1u] - m_positionsY[triangleOffset],
+			m_positionsZ[triangleOffset + 1u] - m_positionsZ[triangleOffset]);
+
+		const Vector3 edge2 = Vector3(m_positionsX[triangleOffset + 2u] - m_positionsX[triangleOffset],
+			m_positionsY[triangleOffset + 2u] - m_positionsY[triangleOffset],
+			m_positionsZ[triangleOffset + 2u] - m_positionsZ[triangleOffset]);
+
+		const Vector3 v0 = Vector3(m_positionsX[triangleOffset], m_positionsY[triangleOffset], m_positionsZ[triangleOffset]);
+
+		uint32_t currentTri4Id = 0u;
+
+		if (triangleOffset <= 9u) { currentTri4Id = 0u; }
+		else if (triangleOffset <= 21u) { currentTri4Id = 1u; }
+		else { currentTri4Id = 2u; }
+
+		const uint32_t currentTriId = (triangleOffset / 3u) % 4u;
+
+		assert(m_triangle4s[currentTri4Id].m_edge1X[currentTriId] == edge1.X());
+		assert(m_triangle4s[currentTri4Id].m_edge1Y[currentTriId] == edge1.Y());
+		assert(m_triangle4s[currentTri4Id].m_edge1Z[currentTriId] == edge1.Z());
+		
+		assert(m_triangle4s[currentTri4Id].m_edge2X[currentTriId] == edge2.X());
+		assert(m_triangle4s[currentTri4Id].m_edge2Y[currentTriId] == edge2.Y());
+		assert(m_triangle4s[currentTri4Id].m_edge2Z[currentTriId] == edge2.Z());
+		
+		assert(m_triangle4s[currentTri4Id].m_v0X[currentTriId] == v0.X());
+		assert(m_triangle4s[currentTri4Id].m_v0Y[currentTriId] == v0.Y());
+		assert(m_triangle4s[currentTri4Id].m_v0Z[currentTriId] == v0.Z());
+	}
 }
 
 // --------------------------------------------------------------------------------
@@ -226,25 +260,24 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			{
 
 				Vector3 radiance(0.0f, 0.0f, 0.0f);
-				const uint32_t numSamples = 1u;
-				const uint32_t depth = 1u;
+				const uint32_t numSamples = 8u;
+				const uint32_t depth = 8u;
 
 				for (uint32_t sample = 0u; sample < numSamples; sample++)
 				{
-					//Vector3 texelTopLeft;
-					//Vector3 texelBottomRight;
-					//
-					//texelTopLeft.SetX(m_texelCenters[rayIndex].X() - m_viewportDesc.m_texelWidth / 2.0f);
-					//texelTopLeft.SetY(m_texelCenters[rayIndex].Y() + m_viewportDesc.m_texelHeight / 2.0f);
-					//
-					//texelBottomRight.SetX(m_texelCenters[rayIndex].X() + m_viewportDesc.m_texelWidth / 2.0f);
-					//texelBottomRight.SetY(m_texelCenters[rayIndex].Y() - m_viewportDesc.m_texelHeight / 2.0f);
-					//
-					//const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
-					//const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
+					Vector3 texelTopLeft;
+					Vector3 texelBottomRight;
+					
+					texelTopLeft.SetX(m_texelCenters[rayIndex].X() - m_viewportDesc.m_texelWidth / 2.0f);
+					texelTopLeft.SetY(m_texelCenters[rayIndex].Y() + m_viewportDesc.m_texelHeight / 2.0f);
+					
+					texelBottomRight.SetX(m_texelCenters[rayIndex].X() + m_viewportDesc.m_texelWidth / 2.0f);
+					texelBottomRight.SetY(m_texelCenters[rayIndex].Y() - m_viewportDesc.m_texelHeight / 2.0f);
+					
+					const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
+					const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
 
-					const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
-					//const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, -1.0f));
+					const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, -1.0f));
 
 					radiance = radiance + PathTrace(c_primaryRay, rayIndex, depth);
 				}
@@ -261,18 +294,18 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				const HitResult primaryHr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
 
-				const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, primaryHr.m_normal), 0.0f), 1.0f);
+				//const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, primaryHr.m_normal), 0.0f), 1.0f);
 
 				if (primaryHr.m_t != INFINITY)
 				{
 					const Ray c_shadowRay(primaryHr.m_intersectionPoint, m_lightDirection);
 					const HitResult shadowHr = TraceRay<true>(c_shadowRay, rayIndex, 1e-5f);
 
-					red = (shadowHr.m_t == INFINITY) ? clampValue * 1.0f : 0.0f;
-					green = (shadowHr.m_t == INFINITY) ? clampValue * 1.0f : 0.0f;
-					blue = (shadowHr.m_t == INFINITY) ? clampValue * 1.0f : 0.0f;
+					red = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
+					green = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
+					blue = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
 				}
-				else
+				else 
 				{
 					red = 0.7f;
 					green = 0.7f;
@@ -535,7 +568,7 @@ void Renderer::HitSphere(const Ray& ray, const float tMin, float& tMax, HitResul
 		{
 			if (_mm_movemask_ps(validTValuesMask)) 
 			{ 
-				break; 
+				break;
 			}
 		}
 
@@ -668,6 +701,7 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 //#define RUNNING_SCALAR_WITHOUT_FACES
 
 // --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
 void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
 	assert(rayIndex >= 0u);
@@ -702,8 +736,15 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 	std::vector<Vector3> potentialColours(4u);
 	std::vector<Vector3> testNormals(4u);
 
+	bool hitFound = false;
+
 	for (uint32_t currentTri4 = 0u; currentTri4 < m_triangle4s.size(); currentTri4++)
 	{
+		if (hitFound)
+		{
+			break;
+		}
+
 		// pvecX
 		for (uint32_t currentX = 0u; currentX < m_triangle4s[currentTri4].m_edge2Z.size(); currentX++)
 		{
@@ -751,7 +792,7 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 			const Vector3 edge1 = Vector3(m_triangle4s[currentTri4].m_edge1X[i], m_triangle4s[currentTri4].m_edge1Y[i], m_triangle4s[currentTri4].m_edge1Z[i]);
 			const Vector3 edge2 = Vector3(m_triangle4s[currentTri4].m_edge2X[i], m_triangle4s[currentTri4].m_edge2Y[i], m_triangle4s[currentTri4].m_edge2Z[i]);
 
-			testNormals[i] = Cross(edge1, edge2);
+			testNormals[i] = Normalize(Cross(edge1, edge2));
 		}
 
 		// Determinants
@@ -803,12 +844,18 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 							m_triangle4s[currentTri4].m_edge2Z[det] * qvecZ[det]) * invDet;
 
 						// Update smallestT at that index
-						if (potentialT <= smallestTs[det])
+						if ((potentialT >= tMin) && (potentialT <= tMax))
 						{
 							smallestTs[det] = potentialT;
 							tri4Ids[det] = currentTri4;
 							potentialNormals[det] = testNormals[det];
 							potentialColours[det] = Vector3(1.0f, 0.55f, 0.0f);
+
+							if (T_acceptAnyHit)
+							{
+								hitFound = true;
+								break;
+							}
 						}
 					}
 				}
@@ -836,20 +883,13 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 	}
 
 	// Update hit result
-	if ((t < tMax) && (t >= tMin))
+	if ((t <= tMax) && (t >= tMin))
 	{
 		tMax = t;
 
 		out_hitResult.m_t = t;
 
 		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-
-		// Calculate normal
-		//const Vector3 edge1 = Vector3(m_triangle4s[tri4Id].m_edge1X[triId], m_triangle4s[tri4Id].m_edge1Y[triId], m_triangle4s[tri4Id].m_edge1Z[triId]);
-		//const Vector3 edge2 = Vector3(m_triangle4s[tri4Id].m_edge2X[triId], m_triangle4s[tri4Id].m_edge2Y[triId], m_triangle4s[tri4Id].m_edge2Z[triId]);
-		//
-		//const Vector3 normal = Cross(edge1, edge2);
-		out_hitResult.m_colour = Vector3(1.0f, 0.0f, 0.0f);
 
 		out_hitResult.m_colour = colour;
 
@@ -901,13 +941,16 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 
 						out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
 						
-						out_hitResult.m_colour = Vector3(1.0f, 0.0f, 0.0f);
-						
 						out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
 
 						out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
 						out_hitResult.m_primitiveId = triangleOffset / 3u;
+
+						if (T_acceptAnyHit)
+						{
+							break;
+						}
 					}
 				}
 			}
@@ -915,59 +958,6 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 	}
 #endif
 }
-#if RUNNING_SCALAR_WITH_FACES
-	//-------------------------------------------------------------------------------------------------------------------------
-	// Based on Moller-Trumbore algorithm
-	for (uint32_t face = 0u; face < m_faces.size(); face++)
-	{
-		const Vector3 edge1 = Vector3(m_faces[face].m_faceVertices[1u].m_position[0u] - m_faces[face].m_faceVertices[0u].m_position[0u],
-			m_faces[face].m_faceVertices[1u].m_position[1u] - m_faces[face].m_faceVertices[0u].m_position[1u], 
-			m_faces[face].m_faceVertices[1u].m_position[2u] - m_faces[face].m_faceVertices[0u].m_position[2u]); // v0v1
-
-		const Vector3 edge2 = Vector3(m_faces[face].m_faceVertices[2u].m_position[0u] - m_faces[face].m_faceVertices[0u].m_position[0u],
-			m_faces[face].m_faceVertices[2u].m_position[1u] - m_faces[face].m_faceVertices[0u].m_position[1u],
-			m_faces[face].m_faceVertices[2u].m_position[2u] - m_faces[face].m_faceVertices[0u].m_position[2u]); // v0v2
-	
-		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
-		const Vector3 pVec = Cross(ray.Direction(), edge2);
-		const float det = Dot(pVec, edge1);
-	
-		const Vector3 normal = Cross(edge1, edge2);
-	
-		if (std::fabs(det) >= 1e-8f)
-		{
-			const float invDet = 1.0f / det;
-	
-			const Vector3 tVec = ray.Origin() - Vector3(m_faces[face].m_faceVertices[0u].m_position[0u], 
-														m_faces[face].m_faceVertices[0u].m_position[1u], 
-														m_faces[face].m_faceVertices[0u].m_position[2u]);
-
-			const float u = Dot(tVec, pVec) * invDet;
-	
-			if ((u >= 0.0f) && (u <= 1.0f))
-			{
-				const Vector3 qVec = Cross(tVec, edge1);
-				const float v = Dot(ray.Direction(), qVec) * invDet;
-	
-				if ((v >= 0.0f) && ((u + v) <= 1.0f))
-				{
-					const float t = Dot(edge2, qVec) * invDet;
-	
-					if ((t >= tMin) && (t <= tMax))
-					{
-						tMax = t;
-	
-						out_hitResult.m_t = t;
-	
-						out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-						out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-						out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-					}
-				}
-			}
-		}
-	}
-#endif
 
 // --------------------------------------------------------------------------------
 Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t depth)
@@ -1018,11 +1008,6 @@ Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t de
 				directRadiance.SetX(clampValue * c_primaryHitResult.m_colour.X());
 				directRadiance.SetY(clampValue * c_primaryHitResult.m_colour.Y());
 				directRadiance.SetZ(clampValue * c_primaryHitResult.m_colour.Z());
-
-				//Vector3 directRadiance;
-				//directRadiance.SetX(c_primaryHitResult.m_colour.X());
-				//directRadiance.SetY(c_primaryHitResult.m_colour.Y());
-				//directRadiance.SetZ(c_primaryHitResult.m_colour.Z());
 			
 				radiance = radiance + directRadiance;
 			}
@@ -1050,7 +1035,7 @@ HitResult Renderer::TraceRay(const Ray& ray, const uint32_t rayIndex, const floa
 	float tMax = INFINITY;
 	//HitSphere<T_acceptAnyHit>(ray, tMin, tMax, hitResult);
 	//HitQuad(ray, tMin, tMax, hitResult);
-	HitTriangle(ray, rayIndex, tMin, tMax, hitResult);
+	HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
 	//HitPlane(ray, tMin, tMax, 0.0f, Normalize(Vector3(0.0f, 1.0f, 0.0f)), c_grey, hitResult);
 
 	return hitResult;

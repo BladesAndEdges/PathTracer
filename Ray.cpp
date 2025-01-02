@@ -3,6 +3,7 @@
 // --------------------------------------------------------------------------------
 Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin)
 {
+	// In case not normalized
 	m_normalizedRayDir = Normalize(direction);
 }
 

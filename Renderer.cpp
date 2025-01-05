@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <emmintrin.h>
 #include <xmmintrin.h>
+#include <immintrin.h>
 
 #include "Framebuffer.h"
 #include "PerformanceCounter.h"
@@ -260,24 +261,25 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			{
 
 				Vector3 radiance(0.0f, 0.0f, 0.0f);
-				const uint32_t numSamples = 8u;
-				const uint32_t depth = 8u;
+				const uint32_t numSamples = 1u;
+				const uint32_t depth = 1u;
 
 				for (uint32_t sample = 0u; sample < numSamples; sample++)
 				{
-					Vector3 texelTopLeft;
-					Vector3 texelBottomRight;
-					
-					texelTopLeft.SetX(m_texelCenters[rayIndex].X() - m_viewportDesc.m_texelWidth / 2.0f);
-					texelTopLeft.SetY(m_texelCenters[rayIndex].Y() + m_viewportDesc.m_texelHeight / 2.0f);
-					
-					texelBottomRight.SetX(m_texelCenters[rayIndex].X() + m_viewportDesc.m_texelWidth / 2.0f);
-					texelBottomRight.SetY(m_texelCenters[rayIndex].Y() - m_viewportDesc.m_texelHeight / 2.0f);
-					
-					const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
-					const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
-
-					const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, -1.0f));
+					//Vector3 texelTopLeft;
+					//Vector3 texelBottomRight;
+					//
+					//texelTopLeft.SetX(m_texelCenters[rayIndex].X() - m_viewportDesc.m_texelWidth / 2.0f);
+					//texelTopLeft.SetY(m_texelCenters[rayIndex].Y() + m_viewportDesc.m_texelHeight / 2.0f);
+					//
+					//texelBottomRight.SetX(m_texelCenters[rayIndex].X() + m_viewportDesc.m_texelWidth / 2.0f);
+					//texelBottomRight.SetY(m_texelCenters[rayIndex].Y() - m_viewportDesc.m_texelHeight / 2.0f);
+					//
+					//const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
+					//const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
+					//
+					//const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, -1.0f));
+					const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(m_texelCenters[rayIndex]));
 
 					radiance = radiance + PathTrace(c_primaryRay, rayIndex, depth);
 				}
@@ -697,7 +699,8 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 	return (0.0f <= alpha) && (alpha <= 1.0f) && (0.0f <= beta) && (beta <= 1.0f);
 }
 
-#define RUNNING_SCALAR_TRI4
+
+//#define RUNNING_SCALAR_TRI4
 //#define RUNNING_SCALAR_WITHOUT_FACES
 
 // --------------------------------------------------------------------------------
@@ -705,6 +708,198 @@ template<bool T_acceptAnyHit>
 void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
 	assert(rayIndex >= 0u);
+
+#ifndef RUNNING_SCALAR_WITHOUT_FACES
+
+	// Constant registers
+	const __m128 c_epsilon = _mm_set1_ps(1e-8f);
+	const __m128 c_allZeros = _mm_set1_ps(0.0f);
+	const __m128 c_allOnes = _mm_set1_ps(1.0f);
+
+	// Ray data
+	const __m128 rayOriginX = _mm_set1_ps(ray.Origin().X());
+	const __m128 rayOriginY = _mm_set1_ps(ray.Origin().Y());
+	const __m128 rayOriginZ = _mm_set1_ps(ray.Origin().Z());
+
+	const __m128 rayDirectionX = _mm_set1_ps(ray.Direction().X());
+	const __m128 rayDirectionY = _mm_set1_ps(ray.Direction().Y());
+	const __m128 rayDirectionZ = _mm_set1_ps(ray.Direction().Z());
+
+	const __m128 tMinimum = _mm_set1_ps(tMin);
+	const __m128 tMaximum = _mm_set1_ps(tMax);
+
+	// Output global smallest Ts
+	__m128 smallestTs = _mm_set1_ps(INFINITY);
+	__m128i smallestPrimitiveIds = _mm_set1_epi32(-1);
+
+	// Loop variables
+	const __m128i c_incrementRegister = _mm_set1_epi32(4);
+	__m128i primitiveIds = _mm_set_epi32(3, 2, 1, 0);
+
+	for (uint32_t currentTri4 = 0u; currentTri4 < m_triangle4s.size(); currentTri4++)
+	{
+		// Load tri4 data
+		const __m128 edge1X = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge1X.data());
+		const __m128 edge1Y = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge1Y.data());
+		const __m128 edge1Z = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge1Z.data());
+
+		const __m128 edge2X = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge2X.data());
+		const __m128 edge2Y = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge2Y.data());
+		const __m128 edge2Z = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge2Z.data());
+
+		const __m128 v0X = _mm_loadu_ps(m_triangle4s[currentTri4].m_v0X.data());
+		const __m128 v0Y = _mm_loadu_ps(m_triangle4s[currentTri4].m_v0Y.data());
+		const __m128 v0Z = _mm_loadu_ps(m_triangle4s[currentTri4].m_v0Z.data());
+
+		// Calculate pvec
+		const __m128 pvecXLHS = _mm_mul_ps(rayDirectionY, edge2Z);
+		const __m128 pvecXRHS = _mm_mul_ps(rayDirectionZ, edge2Y);
+		const __m128 pvecX = _mm_sub_ps(pvecXLHS, pvecXRHS);
+
+		const __m128 pvecYLHS = _mm_mul_ps(rayDirectionZ, edge2X);
+		const __m128 pvecYRHS = _mm_mul_ps(rayDirectionX, edge2Z);
+		const __m128 pvecY = _mm_sub_ps(pvecYLHS, pvecYRHS);
+
+		const __m128 pvecZLHS = _mm_mul_ps(rayDirectionX, edge2Y);
+		const __m128 pvecZRHS = _mm_mul_ps(rayDirectionY, edge2X);
+		const __m128 pvecZ = _mm_sub_ps(pvecZLHS, pvecZRHS);
+
+		// Calculate normals
+
+		// Calculate determinants
+		const __m128 detDotX = _mm_mul_ps(pvecX, edge1X); // fmadd: _mm_fmadd_ps(), header is already added
+		const __m128 detDotY = _mm_mul_ps(pvecY, edge1Y);
+		const __m128 detDotZ = _mm_mul_ps(pvecZ, edge1Z);
+
+		const __m128 detAddXY = _mm_add_ps(detDotX, detDotY);
+		const __m128 determinants = _mm_add_ps(detAddXY, detDotZ);
+
+		const __m128 signMask = _mm_set1_ps(-0.0f);
+		const __m128 absDeterminants = _mm_andnot_ps(signMask, determinants);
+
+		// Calculate intersection mask
+		const __m128 hasIntersectedMask = _mm_cmpge_ps(absDeterminants, c_epsilon); // mask
+
+		// Calculate inverse determinant
+		const __m128 invDeterminant = _mm_div_ps(c_allOnes, determinants);
+		
+		// Calculate tvec
+		const __m128 tvecX = _mm_sub_ps(rayOriginX, v0X);
+		const __m128 tvecY = _mm_sub_ps(rayOriginY, v0Y);
+		const __m128 tvecZ = _mm_sub_ps(rayOriginZ, v0Z);
+		
+		// Calculate u
+		const __m128 uDotX = _mm_mul_ps(tvecX, pvecX);
+		const __m128 uDotY = _mm_mul_ps(tvecY, pvecY);
+		const __m128 uDotZ = _mm_mul_ps(tvecZ, pvecZ);
+		
+		const __m128 uAddXY = _mm_add_ps(uDotX, uDotY);
+		const __m128 uAddFinal = _mm_add_ps(uAddXY, uDotZ);
+		const __m128 u = _mm_mul_ps(uAddFinal, invDeterminant);
+		
+		// Calculate u mask
+		const __m128 uIsGreaterEqual0 = _mm_cmpge_ps(u, c_allZeros);
+		const __m128 uIsLessEqual1 = _mm_cmple_ps(u, c_allOnes);
+		const __m128 isUValidMask = _mm_and_ps(uIsGreaterEqual0, uIsLessEqual1); // mask
+		
+		// Calculate qvec
+		const __m128 qvecXLHS = _mm_mul_ps(tvecY, edge1Z);
+		const __m128 qvecXRHS = _mm_mul_ps(tvecZ, edge1Y);
+		const __m128 qvecX = _mm_sub_ps(qvecXLHS, qvecXRHS);
+		
+		const __m128 qvecYLHS = _mm_mul_ps(tvecZ, edge1X);
+		const __m128 qvecYRHS = _mm_mul_ps(tvecX, edge1Z);
+		const __m128 qvecY = _mm_sub_ps(qvecYLHS, qvecYRHS);
+		
+		const __m128 qvecZLHS = _mm_mul_ps(tvecX, edge1Y);
+		const __m128 qvecZRHS = _mm_mul_ps(tvecY, edge1X);
+		const __m128 qvecZ = _mm_sub_ps(qvecZLHS, qvecZRHS);
+		
+		// Calculate v
+		const __m128 vDotX = _mm_mul_ps(rayDirectionX, qvecX);
+		const __m128 vDotY = _mm_mul_ps(rayDirectionY, qvecY);
+		const __m128 vDotZ = _mm_mul_ps(rayDirectionZ, qvecZ);
+		
+		const __m128 vAddXY = _mm_add_ps(vDotX, vDotY);
+		const __m128 vAddFinal = _mm_add_ps(vAddXY, vDotZ);
+		const __m128 v = _mm_mul_ps(vAddFinal, invDeterminant);
+		
+		// Calculate v masks
+		const __m128 vIsGreaterEqual0 = _mm_cmpge_ps(v, c_allZeros);
+		
+		const __m128 uAddV = _mm_add_ps(u, v);
+		const __m128 uAddVLessEqual1 = _mm_cmple_ps(uAddV, c_allOnes);
+		
+		const __m128 isInsideTriangleMask = _mm_and_ps(vIsGreaterEqual0, uAddVLessEqual1); // mask
+		
+		// Calculate t
+		const __m128 tDotX = _mm_mul_ps(edge2X, qvecX);
+		const __m128 tDotY = _mm_mul_ps(edge2Y, qvecY);
+		const __m128 tDotZ = _mm_mul_ps(edge2Z, qvecZ);
+		
+		const __m128 tAddXY = _mm_add_ps(tDotX, tDotY);
+		const __m128 tAddFinal = _mm_add_ps(tAddXY, tDotZ);
+		const __m128 t = _mm_mul_ps(tAddFinal, invDeterminant);
+		
+		// Between tMin and tMax masks
+		const __m128 tMoreThanTMin = _mm_cmpge_ps(t, tMinimum);
+		const __m128 tLessThanTMax = _mm_cmple_ps(t, tMaximum);
+		const __m128 tCheckMask = _mm_and_ps(tMoreThanTMin, tLessThanTMax);
+		
+		// Validity mask
+		const __m128 tValidityMask = _mm_and_ps(_mm_and_ps(_mm_and_ps(hasIntersectedMask, isUValidMask), isInsideTriangleMask), tCheckMask);
+		
+		// Valid local values
+		const __m128 validLocalTs = _mm_or_ps(_mm_and_ps(tValidityMask, t), _mm_andnot_ps(tValidityMask, tMaximum));
+
+		// Update smallest ts
+		smallestTs = _mm_min_ps(smallestTs, validLocalTs);
+
+		const __m128i primIdsToChange = _mm_and_si128(_mm_castps_si128(tValidityMask), primitiveIds);
+		const __m128i primIdsToKeep = _mm_andnot_si128(_mm_castps_si128(tValidityMask), smallestPrimitiveIds);
+		smallestPrimitiveIds = _mm_or_si128(primIdsToChange, primIdsToKeep);
+
+		if (T_acceptAnyHit) // ?
+		{
+			if (_mm_movemask_ps(tValidityMask))
+			{
+				break;
+			}
+		}
+
+		// Update increment values
+		primitiveIds = _mm_add_epi32(primitiveIds, c_incrementRegister);
+	}
+
+	// Smallest T and it's primitive id in the XY lanes
+	const __m128 minTShuffleXY = _mm_shuffle_ps(smallestTs, smallestTs, _MM_SHUFFLE(0, 0, 2, 3));
+	const __m128 minTComparisonXY = _mm_min_ps(smallestTs, minTShuffleXY);
+
+	// Smallest T and it's primitive Id now sotred in the 0th lane
+	const __m128 minTShuffleX = _mm_shuffle_ps(minTComparisonXY, minTComparisonXY, _MM_SHUFFLE(0, 0, 0, 1));
+	const __m128 minTComparisonX = _mm_min_ps(minTComparisonXY, minTShuffleX);
+
+	const __m128i primIdShuffleXY = _mm_shuffle_epi32(smallestPrimitiveIds, _MM_SHUFFLE(0, 0, 2, 3));
+	const __m128i primIdMaskXY = _mm_castps_si128(_mm_cmplt_ps(minTShuffleXY, smallestTs));
+	const __m128i primIdToKeepXY = _mm_or_si128(_mm_and_si128(primIdMaskXY, primIdShuffleXY), _mm_andnot_si128(primIdMaskXY, smallestPrimitiveIds));
+
+	const __m128i primIdShuffleX = _mm_shuffle_epi32(primIdToKeepXY, _MM_SHUFFLE(0, 0, 0, 1));
+	const __m128i primIdMaskX = _mm_castps_si128(_mm_cmplt_ps(minTShuffleX, minTComparisonXY));
+	const __m128i primIdtoKeepX = _mm_or_si128(_mm_and_si128(primIdMaskX, primIdShuffleX), _mm_andnot_si128(primIdMaskX, primIdToKeepXY));
+
+	const int primitiveId = _mm_cvtsi128_si32(primIdtoKeepX);
+	if (primitiveId > -1)
+	{
+		tMax = _mm_cvtss_f32(minTComparisonX);
+
+		out_hitResult.m_t = _mm_cvtss_f32(minTComparisonX);
+
+		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+		out_hitResult.m_colour = Vector3(1.0f, 0.0f, 0.0f);
+	}
+
+
+#endif
 
 #ifdef RUNNING_SCALAR_TRI4
 
@@ -969,59 +1164,59 @@ Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t de
 
 	Vector3 radiance(0.0f, 0.0f, 0.0f);
 	const HitResult c_primaryHitResult = TraceRay<false>(ray, rayIndex, 1e-5f);
-	if (c_primaryHitResult.m_t != INFINITY)
-	{
-		// Indirect lighting
-		{
-			// Calculate the random direction of the outward ray
-			const Ray rayOnHemisphere = Ray(c_primaryHitResult.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(c_primaryHitResult.m_normal));
-	
-			// RENDERING EQUATION
-			
-			// We need the Li
-			const Vector3 Li = PathTrace(rayOnHemisphere, rayIndex, depth - 1u);
-			
-			// Elongation/cosine term, the falloff (Geometric term)
-			// We use the ray direction, instead of -ray.Direction() so that the Dot product produces a positive value
-			const float cosineTerm = std::fmin(std::fmax(Dot(rayOnHemisphere.Direction(), c_primaryHitResult.m_normal), 0.0f), 1.0f);
-			
-			// BRDF, in our case just use Lambert which is P/PI, P being the colour of the material, a vector3 [0,1] for each wavelength
-			const Vector3 brdf = (1.0f / (float)M_PI) * c_primaryHitResult.m_colour;
-	
-			radiance = cosineTerm * brdf * Li;
-			
-			// Divide everything by the probability distribution function, for our case just 1/Pi
-			const float pdf = 1.0f / (2.0f * (float)M_PI);
-			radiance = Vector3(radiance.X() / pdf, radiance.Y() / pdf, radiance.Z() / pdf);
-		}
-	
-		//Direct Lighting
-		{
-			const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
-			
-			const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
-			const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, rayIndex, 1e-5f);
-			
-			if (c_secondaryRayHitResult.m_t == INFINITY)
-			{
-				Vector3 directRadiance;
-				directRadiance.SetX(clampValue * c_primaryHitResult.m_colour.X());
-				directRadiance.SetY(clampValue * c_primaryHitResult.m_colour.Y());
-				directRadiance.SetZ(clampValue * c_primaryHitResult.m_colour.Z());
-			
-				radiance = radiance + directRadiance;
-			}
-		}
-	}
-	else
-	{
-		const float val = 0.5f * (ray.Direction().Y() + 1.0f);
-		const Vector3 skyColour = (1.0f - val) * Vector3(1.0f, 1.0f, 1.0f) + val * Vector3(0.5f, 0.7f, 1.0f);
-	
-		radiance.SetX(skyColour.X());
-		radiance.SetY(skyColour.Y());
-		radiance.SetZ(skyColour.Z());
-	}
+	//if (c_primaryHitResult.m_t != INFINITY)
+	//{
+	//	// Indirect lighting
+	//	{
+	//		// Calculate the random direction of the outward ray
+	//		const Ray rayOnHemisphere = Ray(c_primaryHitResult.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(c_primaryHitResult.m_normal));
+	//
+	//		// RENDERING EQUATION
+	//		
+	//		// We need the Li
+	//		const Vector3 Li = PathTrace(rayOnHemisphere, rayIndex, depth - 1u);
+	//		
+	//		// Elongation/cosine term, the falloff (Geometric term)
+	//		// We use the ray direction, instead of -ray.Direction() so that the Dot product produces a positive value
+	//		const float cosineTerm = std::fmin(std::fmax(Dot(rayOnHemisphere.Direction(), c_primaryHitResult.m_normal), 0.0f), 1.0f);
+	//		
+	//		// BRDF, in our case just use Lambert which is P/PI, P being the colour of the material, a vector3 [0,1] for each wavelength
+	//		const Vector3 brdf = (1.0f / (float)M_PI) * c_primaryHitResult.m_colour;
+	//
+	//		radiance = cosineTerm * brdf * Li;
+	//		
+	//		// Divide everything by the probability distribution function, for our case just 1/Pi
+	//		const float pdf = 1.0f / (2.0f * (float)M_PI);
+	//		radiance = Vector3(radiance.X() / pdf, radiance.Y() / pdf, radiance.Z() / pdf);
+	//	}
+	//
+	//	//Direct Lighting
+	//	{
+	//		const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
+	//		
+	//		const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
+	//		const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, rayIndex, 1e-5f);
+	//		
+	//		if (c_secondaryRayHitResult.m_t == INFINITY)
+	//		{
+	//			Vector3 directRadiance;
+	//			directRadiance.SetX(clampValue * c_primaryHitResult.m_colour.X());
+	//			directRadiance.SetY(clampValue * c_primaryHitResult.m_colour.Y());
+	//			directRadiance.SetZ(clampValue * c_primaryHitResult.m_colour.Z());
+	//		
+	//			radiance = radiance + directRadiance;
+	//		}
+	//	}
+	//}
+	//else
+	//{
+	//	const float val = 0.5f * (ray.Direction().Y() + 1.0f);
+	//	const Vector3 skyColour = (1.0f - val) * Vector3(1.0f, 1.0f, 1.0f) + val * Vector3(0.5f, 0.7f, 1.0f);
+	//
+	//	radiance.SetX(skyColour.X());
+	//	radiance.SetY(skyColour.Y());
+	//	radiance.SetZ(skyColour.Z());
+	//}
 	
 	// Use hit result to spawn other rays
 	return radiance;

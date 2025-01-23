@@ -49,7 +49,7 @@ private:
 	std::vector<float> m_positionsZ;
 
 	// Scalar with faces implementation
-	void CreateFacesWithFaces(const std::string& fileName, const float scaleFactor);
+	void CreateTriangles3(const std::string& fileName, const float scaleFactor);
 	void ParseAttributesWithFaces(const std::string& line, const float scaleFactor, std::vector<Vertex>& vertices);
 	Vector3 CalculateSceneCenterWithFaces();
 	void TriangulateWithFaces(const std::vector<Vertex>& vertices, std::vector<Face>& faces);

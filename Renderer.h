@@ -10,6 +10,7 @@
 #include "Triangle4.h"
 #include "ViewportDesc.h"
 
+class BVHBuilder;
 class Framebuffer;
 
 class Renderer
@@ -34,8 +35,9 @@ private:
 	void HitQuad(const Ray& ray, const float tMin, float& tMax, HitResult& out_hitResult);
 	bool IsInsideQuad(const float alpha, const float beta);
 
+	// Debug build contains an extra ray index paramater
 	template<bool T_acceptAnyHit>
-	void HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
+	void HitTriangles(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
 
 	Vector3 PathTrace(const Ray& ray, const uint32_t rayIndex,uint32_t depth);
 
@@ -78,6 +80,21 @@ private:
 	std::vector<float> m_positionsX;
 	std::vector<float> m_positionsY;
 	std::vector<float> m_positionsZ;
+
+	BVHBuilder* m_bvhBuilder;
+
+	template<bool T_acceptAnyHit>
+	void TraverseBVH(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
+
+	template<bool T_acceptAnyHit>
+	void DFSTraversal(const uint32_t innerNodeStartIndex, const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
+
+	template<bool T_acceptAnyHit>
+	HitResult TraceRayAgainstBVH(const Ray& ray, const uint32_t rayIndex, const float tMin);
+
+	template<bool T_acceptAnyHit>
+	void HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
+
 
 };
 

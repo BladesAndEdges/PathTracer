@@ -5,6 +5,7 @@
 #include <xmmintrin.h>
 #include <immintrin.h>
 
+#include "BVHBuilder.h"
 #include "Framebuffer.h"
 #include "PerformanceCounter.h"
 #include "Vector3.h"
@@ -177,33 +178,37 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 	
 	// Position if flipping the z axis
 	m_center.SetZ(m_center.Z() + 3.0f);
+	//m_center = Vector3(-0.00999999046f, 2.84188843f, -0.0159187317f); // For sponza
+
+
 	m_camera.SetCameraLocation(m_center);
 	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
 
 	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc));
 	m_isFirstFrame = true;
-
+	
 	// testing/sanity check
+#ifdef _DEBUG
+	uint32_t currentTri4Id = 0u;
 	for (uint32_t triangleOffset = 0u; triangleOffset < m_positionsX.size(); triangleOffset+=3u)
 	{
 		const Vector3 edge1 = Vector3(m_positionsX[triangleOffset + 1u] - m_positionsX[triangleOffset],
 			m_positionsY[triangleOffset + 1u] - m_positionsY[triangleOffset],
 			m_positionsZ[triangleOffset + 1u] - m_positionsZ[triangleOffset]);
-
+	
 		const Vector3 edge2 = Vector3(m_positionsX[triangleOffset + 2u] - m_positionsX[triangleOffset],
 			m_positionsY[triangleOffset + 2u] - m_positionsY[triangleOffset],
 			m_positionsZ[triangleOffset + 2u] - m_positionsZ[triangleOffset]);
-
+	
 		const Vector3 v0 = Vector3(m_positionsX[triangleOffset], m_positionsY[triangleOffset], m_positionsZ[triangleOffset]);
+	
+		if ((triangleOffset != 0u) && ((triangleOffset % 12u) == 0u))
+		{
+			currentTri4Id++;
+		}
 
-		uint32_t currentTri4Id = 0u;
-
-		if (triangleOffset <= 9u) { currentTri4Id = 0u; }
-		else if (triangleOffset <= 21u) { currentTri4Id = 1u; }
-		else { currentTri4Id = 2u; }
-
-		const uint32_t currentTriId = (triangleOffset / 3u) % 4u;
-
+		const uint32_t currentTriId = (triangleOffset % 12u) / 3u;
+	
 		assert(m_triangle4s[currentTri4Id].m_edge1X[currentTriId] == edge1.X());
 		assert(m_triangle4s[currentTri4Id].m_edge1Y[currentTriId] == edge1.Y());
 		assert(m_triangle4s[currentTri4Id].m_edge1Z[currentTriId] == edge1.Z());
@@ -216,6 +221,9 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 		assert(m_triangle4s[currentTri4Id].m_v0Y[currentTriId] == v0.Y());
 		assert(m_triangle4s[currentTri4Id].m_v0Z[currentTriId] == v0.Z());
 	}
+#endif
+
+	m_bvhBuilder = new BVHBuilder(m_faces);
 }
 
 // --------------------------------------------------------------------------------
@@ -701,16 +709,22 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 
 
 //#define RUNNING_SCALAR_TRI4
+//#define RUNNING_SSE
 //#define RUNNING_SCALAR_WITHOUT_FACES
+#define RUNNING_SCALAR_WITH_FACES
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
+void Renderer::HitTriangles(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
+#ifdef _DEBUG
 	assert(rayIndex >= 0u);
+#endif
+#ifdef NDEBUG
+	(void)(rayIndex);
+#endif
 
-#ifndef RUNNING_SCALAR_WITHOUT_FACES
-
+#ifdef RUNNING_SSE
 	// Constant registers
 	const __m128 c_epsilon = _mm_set1_ps(1e-8f);
 	const __m128 c_allZeros = _mm_set1_ps(0.0f);
@@ -763,8 +777,6 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 		const __m128 pvecZLHS = _mm_mul_ps(rayDirectionX, edge2Y);
 		const __m128 pvecZRHS = _mm_mul_ps(rayDirectionY, edge2X);
 		const __m128 pvecZ = _mm_sub_ps(pvecZLHS, pvecZRHS);
-
-		// Calculate normals
 
 		// Calculate determinants
 		const __m128 detDotX = _mm_mul_ps(pvecX, edge1X); // fmadd: _mm_fmadd_ps(), header is already added
@@ -852,14 +864,17 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 		// Valid local values
 		const __m128 validLocalTs = _mm_or_ps(_mm_and_ps(tValidityMask, t), _mm_andnot_ps(tValidityMask, tMaximum));
 
+		const __m128i isSmallestInLaneMask = _mm_castps_si128(_mm_cmplt_ps(validLocalTs, smallestTs));
+
+		// This changes to 7 as the mask thinks it should in fact change it for whatever reason
+		const __m128i primIdsToChange = _mm_and_si128(isSmallestInLaneMask, primitiveIds);
+		const __m128i primIdsToKeep = _mm_andnot_si128(isSmallestInLaneMask, smallestPrimitiveIds);
+		smallestPrimitiveIds = _mm_or_si128(primIdsToChange, primIdsToKeep);
+
 		// Update smallest ts
 		smallestTs = _mm_min_ps(smallestTs, validLocalTs);
 
-		const __m128i primIdsToChange = _mm_and_si128(_mm_castps_si128(tValidityMask), primitiveIds);
-		const __m128i primIdsToKeep = _mm_andnot_si128(_mm_castps_si128(tValidityMask), smallestPrimitiveIds);
-		smallestPrimitiveIds = _mm_or_si128(primIdsToChange, primIdsToKeep);
-
-		if (T_acceptAnyHit) // ?
+		if (T_acceptAnyHit) // This runs all the time for the sse version, the T_AcceptAnyHit runs only if the hit triangle returns something for the non-sse
 		{
 			if (_mm_movemask_ps(tValidityMask))
 			{
@@ -895,12 +910,25 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 		out_hitResult.m_t = _mm_cvtss_f32(minTComparisonX);
 
 		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-		out_hitResult.m_colour = Vector3(1.0f, 0.0f, 0.0f);
+		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);;
+
+		out_hitResult.m_primitiveId = primitiveId;
+
+		const uint32_t tri4Id = primitiveId / 4u;
+		const uint32_t triId = primitiveId % 4;
+		const Vector3 edge1 = Vector3(m_triangle4s[tri4Id].m_edge1X[triId],
+			m_triangle4s[tri4Id].m_edge1Y[triId],
+			m_triangle4s[tri4Id].m_edge1Z[triId]);
+
+		const Vector3 edge2 = Vector3(m_triangle4s[tri4Id].m_edge2X[triId],
+			m_triangle4s[tri4Id].m_edge2Y[triId],
+			m_triangle4s[tri4Id].m_edge2Z[triId]);
+
+		const Vector3 normal = Normalize(Cross(edge1, edge2));
+
+		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 	}
-
-
 #endif
-
 #ifdef RUNNING_SCALAR_TRI4
 
 	std::vector<float> smallestTs(4u, INFINITY);
@@ -1093,6 +1121,67 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 		out_hitResult.m_primitiveId = (tri4Id * 4u) + triId;
 	}
 #endif
+#ifdef RUNNING_SCALAR_WITH_FACES
+
+	for (uint32_t triangle = 0u; triangle < m_faces.size(); triangle++)
+	{
+		const Vector3 edge1 = Vector3(m_faces[triangle].m_faceVertices[1u].m_position[0u] - m_faces[triangle].m_faceVertices[0u].m_position[0u],
+									  m_faces[triangle].m_faceVertices[1u].m_position[1u] - m_faces[triangle].m_faceVertices[0u].m_position[1u],
+									  m_faces[triangle].m_faceVertices[1u].m_position[2u] - m_faces[triangle].m_faceVertices[0u].m_position[2u]);
+
+		const Vector3 edge2 = Vector3(m_faces[triangle].m_faceVertices[2u].m_position[0u] - m_faces[triangle].m_faceVertices[0u].m_position[0u],
+									  m_faces[triangle].m_faceVertices[2u].m_position[1u] - m_faces[triangle].m_faceVertices[0u].m_position[1u],
+									  m_faces[triangle].m_faceVertices[2u].m_position[2u] - m_faces[triangle].m_faceVertices[0u].m_position[2u]);
+
+		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
+		const Vector3 pVec = Cross(ray.Direction(), edge2);
+		const float det = Dot(pVec, edge1);
+
+		const Vector3 normal = Normalize(Cross(edge1, edge2));
+
+		if (std::fabs(det) >= 1e-8f)
+		{
+			const float invDet = 1.0f / det;
+
+			const Vector3 tVec = ray.Origin() - Vector3(m_faces[triangle].m_faceVertices[0u].m_position[0u], 
+														m_faces[triangle].m_faceVertices[0u].m_position[1u], 
+														m_faces[triangle].m_faceVertices[0u].m_position[2u]);
+
+			const float u = Dot(tVec, pVec) * invDet;
+
+			if ((u >= 0.0f) && (u <= 1.0f))
+			{
+				const Vector3 qVec = Cross(tVec, edge1);
+				const float v = Dot(ray.Direction(), qVec) * invDet;
+
+				if ((v >= 0.0f) && ((u + v) <= 1.0f))
+				{
+					const float t = Dot(edge2, qVec) * invDet;
+
+					if ((t >= tMin) && (t <= tMax))
+					{
+						tMax = t;
+
+						out_hitResult.m_t = t;
+
+						out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+
+						out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+
+						out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+
+						out_hitResult.m_primitiveId = triangle;
+
+						if (T_acceptAnyHit)
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+#endif
 #ifdef RUNNING_SCALAR_WITHOUT_FACES
 	// Based on Moller-Trumbore algorithm
 	// When you do the SSE, remember it is going to be += 4 and not 3. You'd have to pad in the end, similar to the spheres.
@@ -1154,6 +1243,7 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 #endif
 }
 
+//#define TRACE_AGAINST_BVH
 // --------------------------------------------------------------------------------
 Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t depth)
 {
@@ -1163,63 +1253,192 @@ Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t de
 	}
 
 	Vector3 radiance(0.0f, 0.0f, 0.0f);
+
+#ifdef TRACE_AGAINST_BVH
+	const HitResult c_primaryHitResult = TraceRayAgainstBVH<false>(ray, rayIndex, 1e-5f);
+#endif
+#ifndef TRACE_AGAINST_BVH
 	const HitResult c_primaryHitResult = TraceRay<false>(ray, rayIndex, 1e-5f);
-	//if (c_primaryHitResult.m_t != INFINITY)
-	//{
-	//	// Indirect lighting
-	//	{
-	//		// Calculate the random direction of the outward ray
-	//		const Ray rayOnHemisphere = Ray(c_primaryHitResult.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(c_primaryHitResult.m_normal));
-	//
-	//		// RENDERING EQUATION
-	//		
-	//		// We need the Li
-	//		const Vector3 Li = PathTrace(rayOnHemisphere, rayIndex, depth - 1u);
-	//		
-	//		// Elongation/cosine term, the falloff (Geometric term)
-	//		// We use the ray direction, instead of -ray.Direction() so that the Dot product produces a positive value
-	//		const float cosineTerm = std::fmin(std::fmax(Dot(rayOnHemisphere.Direction(), c_primaryHitResult.m_normal), 0.0f), 1.0f);
-	//		
-	//		// BRDF, in our case just use Lambert which is P/PI, P being the colour of the material, a vector3 [0,1] for each wavelength
-	//		const Vector3 brdf = (1.0f / (float)M_PI) * c_primaryHitResult.m_colour;
-	//
-	//		radiance = cosineTerm * brdf * Li;
-	//		
-	//		// Divide everything by the probability distribution function, for our case just 1/Pi
-	//		const float pdf = 1.0f / (2.0f * (float)M_PI);
-	//		radiance = Vector3(radiance.X() / pdf, radiance.Y() / pdf, radiance.Z() / pdf);
-	//	}
-	//
-	//	//Direct Lighting
-	//	{
-	//		const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
-	//		
-	//		const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
-	//		const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, rayIndex, 1e-5f);
-	//		
-	//		if (c_secondaryRayHitResult.m_t == INFINITY)
-	//		{
-	//			Vector3 directRadiance;
-	//			directRadiance.SetX(clampValue * c_primaryHitResult.m_colour.X());
-	//			directRadiance.SetY(clampValue * c_primaryHitResult.m_colour.Y());
-	//			directRadiance.SetZ(clampValue * c_primaryHitResult.m_colour.Z());
-	//		
-	//			radiance = radiance + directRadiance;
-	//		}
-	//	}
-	//}
-	//else
-	//{
-	//	const float val = 0.5f * (ray.Direction().Y() + 1.0f);
-	//	const Vector3 skyColour = (1.0f - val) * Vector3(1.0f, 1.0f, 1.0f) + val * Vector3(0.5f, 0.7f, 1.0f);
-	//
-	//	radiance.SetX(skyColour.X());
-	//	radiance.SetY(skyColour.Y());
-	//	radiance.SetZ(skyColour.Z());
-	//}
+#endif // !TRACE_AGAINST_BVH
+
+	if (c_primaryHitResult.m_t != INFINITY)
+	{
+		// Indirect lighting
+		{
+			// Calculate the random direction of the outward ray
+			const Ray rayOnHemisphere = Ray(c_primaryHitResult.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(c_primaryHitResult.m_normal));
+	
+			// RENDERING EQUATION
+			
+			// We need the Li
+			const Vector3 Li = PathTrace(rayOnHemisphere, rayIndex, depth - 1u);
+			
+			// Elongation/cosine term, the falloff (Geometric term)
+			// We use the ray direction, instead of -ray.Direction() so that the Dot product produces a positive value
+			const float cosineTerm = std::fmin(std::fmax(Dot(rayOnHemisphere.Direction(), c_primaryHitResult.m_normal), 0.0f), 1.0f);
+			
+			// BRDF, in our case just use Lambert which is P/PI, P being the colour of the material, a vector3 [0,1] for each wavelength
+			const Vector3 brdf = (1.0f / (float)M_PI) * c_primaryHitResult.m_colour;
+	
+			radiance = cosineTerm * brdf * Li;
+			
+			// Divide everything by the probability distribution function, for our case just 1/Pi
+			const float pdf = 1.0f / (2.0f * (float)M_PI);
+			radiance = Vector3(radiance.X() / pdf, radiance.Y() / pdf, radiance.Z() / pdf);
+		}
+	
+		//Direct Lighting
+		{
+			const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
+			
+			const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
+#ifdef TRACE_AGAINST_BVH
+			const HitResult c_secondaryRayHitResult = TraceRayAgainstBVH<false>(c_shadowRay, rayIndex, 1e-5f);
+#endif
+#ifndef TRACE_AGAINST_BVH
+			const HitResult c_secondaryRayHitResult = TraceRay<false>(c_shadowRay, rayIndex, 1e-5f);
+#endif // !TRACE_AGAINST_BVH
+			
+			if (c_secondaryRayHitResult.m_t == INFINITY)
+			{
+				Vector3 directRadiance;
+				directRadiance.SetX(clampValue * c_primaryHitResult.m_colour.X());
+				directRadiance.SetY(clampValue * c_primaryHitResult.m_colour.Y());
+				directRadiance.SetZ(clampValue * c_primaryHitResult.m_colour.Z());
+			
+				radiance = radiance + directRadiance;
+			}
+		}
+	}
+	else
+	{
+		const float val = 0.5f * (ray.Direction().Y() + 1.0f);
+		const Vector3 skyColour = (1.0f - val) * Vector3(1.0f, 1.0f, 1.0f) + val * Vector3(0.5f, 0.7f, 1.0f);
+	
+		radiance.SetX(skyColour.X());
+		radiance.SetY(skyColour.Y());
+		radiance.SetZ(skyColour.Z());
+	}
 	
 	// Use hit result to spawn other rays
 	return radiance;
+}
+
+// --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
+void Renderer::TraverseBVH(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
+{
+	bool hasHit = false;
+	DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
+}
+
+// --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
+void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
+{
+	if (m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_leftIsLeaf)
+	{
+		const uint32_t triangleNodeIndex = m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_leftChild;
+		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
+	}
+	else
+	{
+		DFSTraversal<T_acceptAnyHit>(m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+	}
+
+	// Early exit on left branch
+	if (out_hasHit) { return; }
+
+	if (m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_rightIsLeaf)
+	{
+		const uint32_t triangleNodeIndex = m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_rightChild;
+		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
+	}
+	else
+	{
+		DFSTraversal<T_acceptAnyHit>(m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+	}
+
+	// Early exit on right branch
+	if (out_hasHit) { return; }
+}
+
+// --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
+HitResult Renderer::TraceRayAgainstBVH(const Ray& ray, const uint32_t rayIndex, const float tMin)
+{
+	HitResult hitResult;
+	float tMax = INFINITY;
+	TraverseBVH<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
+	return hitResult;
+}
+
+// --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
+void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit)
+{
+#ifdef _DEBUG
+	assert(rayIndex >= 0u);
+#endif
+#ifdef NDEBUG
+	(void)(rayIndex);
+#endif
+
+	const Vector3 edge1 = Vector3(m_faces[triangleIndex].m_faceVertices[1u].m_position[0u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[0u],
+		m_faces[triangleIndex].m_faceVertices[1u].m_position[1u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[1u],
+		m_faces[triangleIndex].m_faceVertices[1u].m_position[2u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[2u]);
+
+	const Vector3 edge2 = Vector3(m_faces[triangleIndex].m_faceVertices[2u].m_position[0u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[0u],
+		m_faces[triangleIndex].m_faceVertices[2u].m_position[1u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[1u],
+		m_faces[triangleIndex].m_faceVertices[2u].m_position[2u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[2u]);
+
+	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
+	const Vector3 pVec = Cross(ray.Direction(), edge2);
+	const float det = Dot(pVec, edge1);
+
+	const Vector3 normal = Normalize(Cross(edge1, edge2));
+
+	if (std::fabs(det) >= 1e-8f)
+	{
+		const float invDet = 1.0f / det;
+
+		const Vector3 tVec = ray.Origin() - Vector3(m_faces[triangleIndex].m_faceVertices[0u].m_position[0u],
+			m_faces[triangleIndex].m_faceVertices[0u].m_position[1u],
+			m_faces[triangleIndex].m_faceVertices[0u].m_position[2u]);
+
+		const float u = Dot(tVec, pVec) * invDet;
+
+		if ((u >= 0.0f) && (u <= 1.0f))
+		{
+			const Vector3 qVec = Cross(tVec, edge1);
+			const float v = Dot(ray.Direction(), qVec) * invDet;
+
+			if ((v >= 0.0f) && ((u + v) <= 1.0f))
+			{
+				const float t = Dot(edge2, qVec) * invDet;
+
+				if ((t >= tMin) && (t <= tMax))
+				{
+					tMax = t;
+
+					out_hitResult.m_t = t;
+
+					out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
+
+					out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+
+					out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+
+					out_hitResult.m_primitiveId = triangleIndex;
+
+					if (T_acceptAnyHit)
+					{
+						out_hasHit = true;
+					}
+				}
+			}
+		}
+	}
 }
 
 // --------------------------------------------------------------------------------
@@ -1230,7 +1449,7 @@ HitResult Renderer::TraceRay(const Ray& ray, const uint32_t rayIndex, const floa
 	float tMax = INFINITY;
 	//HitSphere<T_acceptAnyHit>(ray, tMin, tMax, hitResult);
 	//HitQuad(ray, tMin, tMax, hitResult);
-	HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
+	HitTriangles<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
 	//HitPlane(ray, tMin, tMax, 0.0f, Normalize(Vector3(0.0f, 1.0f, 0.0f)), c_grey, hitResult);
 
 	return hitResult;

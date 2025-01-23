@@ -20,6 +20,9 @@ void ModelParser::ParseFile(const char* objSourceFile, const float scaleFactor)
 
 	// For scalar, with SOAs
 	CreateTriangles2(objSourceFile, scaleFactor);
+
+	// For scalar, with faces
+	CreateTriangles3(objSourceFile, scaleFactor);
 }
 
 // --------------------------------------------------------------------------------
@@ -379,7 +382,7 @@ void ModelParser::ParseAttributes(const std::string& line, const float scaleFact
 }
 
 // --------------------------------------------------------------------------------
-void ModelParser::CreateFacesWithFaces(const std::string& fileName, const float scaleFactor)
+void ModelParser::CreateTriangles3(const std::string& fileName, const float scaleFactor)
 {
 	std::ifstream ifs(fileName);
 

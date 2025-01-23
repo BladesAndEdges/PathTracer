@@ -2,6 +2,8 @@
 
 #include "Vector3.h"
 
+struct AABB;
+
 class Ray
 {
 public:
@@ -17,3 +19,4 @@ private:
 	Vector3 m_normalizedRayDir;
 };
 
+bool RayAABBIntersection(const Ray& ray, const AABB& aabb);

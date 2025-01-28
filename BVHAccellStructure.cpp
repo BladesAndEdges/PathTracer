@@ -1,31 +1,43 @@
-#include "BVHBuilder.h"
+#include "BVHAccellStructure.h"
 
 #include <assert.h>
 #include <cmath>
-#include "BVHNode.h"
 
 // --------------------------------------------------------------------------------
-BVHBuilder::BVHBuilder(const std::vector<Face>& triangles) : m_triangles(triangles)
+BVHAccellStructure::BVHAccellStructure(const std::vector<Triangle>& triangles, const BVHPartitionStrategy& bvhPartitionStrategy) : m_triangles(triangles)
 {
-	const ConstructResult cs = ConstructNode(0u, (uint32_t)triangles.size());
+	std::vector<Centroid> centroids;
+	centroids.resize(triangles.size());
+
+	for (uint32_t triangle = 0u; triangle < triangles.size(); triangle++)
+	{
+		const AABB aabb = CalculateAABB(triangle);
+
+		centroids[triangle].m_triangleIndex = triangle;
+		centroids[triangle].m_centroid[0u] = 0.5f * aabb.min[0u] + 0.5f * aabb.max[0u];
+		centroids[triangle].m_centroid[1u] = 0.5f * aabb.min[1u] + 0.5f * aabb.max[1u];
+		centroids[triangle].m_centroid[2u] = 0.5f * aabb.min[2u] + 0.5f * aabb.max[2u];
+	}
+
+	const ConstructResult cr = ConstructNode(centroids, 0u, (uint32_t)centroids.size() - 1u, bvhPartitionStrategy);
 }
 
 // --------------------------------------------------------------------------------
-const TriangleNode& BVHBuilder::GetTriangleNode(uint32_t index) const
+const TriangleNode& BVHAccellStructure::GetTriangleNode(uint32_t index) const
 {
-	assert(index < m_triNodes.size());
-	return m_triNodes[index];
+	assert(index < m_triangleNodes.size());
+	return m_triangleNodes[index];
 }
 
 // --------------------------------------------------------------------------------
-const InnerNode& BVHBuilder::GetInnerNode(uint32_t index) const
+const InnerNode& BVHAccellStructure::GetInnerNode(uint32_t index) const
 {
 	assert(index < m_innerNodes.size());
 	return m_innerNodes[index];
 }
 
 // --------------------------------------------------------------------------------
-AABB BVHBuilder::CalculateAABB(uint32_t firstTriIndex)
+AABB BVHAccellStructure::CalculateAABB(uint32_t firstTriIndex)
 {
 	float minX = m_triangles[firstTriIndex].m_faceVertices[0u].m_position[0u];
 	float minY = m_triangles[firstTriIndex].m_faceVertices[0u].m_position[1u];
@@ -97,20 +109,24 @@ AABB MergeAABB(AABB leftAABB, AABB rightAABB)
 }
 
 // --------------------------------------------------------------------------------
-ConstructResult BVHBuilder::ConstructNode(uint32_t triangleStartPos, uint32_t triCount)
+// NOTE TO SELF: The aabb computed for the triangle is used for TRAVERSAL, 
+// the aabb computed from the centroids is only used to decide on an appropraite split
+// the two aabbs computed are not equivalent, spatially.
+ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroids, const uint32_t start, 
+	const uint32_t end, const BVHPartitionStrategy& bvhPartitionStrategy)
 {
 	ConstructResult cs;
 
-	if (triCount == 1u)
+	if (end == start)
 	{
 		TriangleNode node;
-		node.m_index = (uint32_t)m_triNodes.size(); // This works only due to us moving left-to-right along the triangle array
+		node.m_index = centroids[start].m_triangleIndex;
 
 		cs.isLeaf = true;
-		cs.m_index = (uint32_t)m_triNodes.size();
-		cs.m_aabb = CalculateAABB((uint32_t)m_triNodes.size());
+		cs.m_index = centroids[start].m_triangleIndex;
+		cs.m_aabb = CalculateAABB(centroids[start].m_triangleIndex);
 
-		m_triNodes.push_back(node);
+		m_triangleNodes.push_back(node);
 	}
 	else
 	{ 
@@ -118,9 +134,39 @@ ConstructResult BVHBuilder::ConstructNode(uint32_t triangleStartPos, uint32_t tr
 		const uint32_t innerNodeIndex = (uint32_t)m_innerNodes.size();
 		m_innerNodes.push_back(node);
 
-		const uint32_t leftCount = triCount / 2u;
-		const ConstructResult left = ConstructNode(triangleStartPos, leftCount);
-		const ConstructResult right = ConstructNode(leftCount, triCount - leftCount);
+		uint32_t leftStart, leftEnd;
+		uint32_t rightStart, rightEnd;
+		switch (bvhPartitionStrategy)
+		{
+		case BVHPartitionStrategy::HalfWayPoint:
+		{
+			const uint32_t centroidsInNode = (end - start) + 1u;
+			const uint32_t numInLeftSubtree = centroidsInNode / 2u;
+
+			leftStart = start;
+			leftEnd = (start + numInLeftSubtree) - 1u;
+			rightStart = leftEnd + 1u;
+			rightEnd = end;
+
+			break;
+		}
+
+		default:
+		{
+			const uint32_t centroidsInNode = (end - start) + 1u;
+			const uint32_t numInLeftSubtree = centroidsInNode / 2u;
+
+			leftStart = start;
+			leftEnd = (start + numInLeftSubtree) - 1u;
+			rightStart = leftEnd + 1u;
+			rightEnd = end;
+
+			break;
+		}
+		}
+
+		const ConstructResult left = ConstructNode(centroids, leftStart, leftEnd, bvhPartitionStrategy);
+		const ConstructResult right = ConstructNode(centroids, rightStart, rightEnd, bvhPartitionStrategy);
 
 		m_innerNodes[innerNodeIndex].m_leftChild = left.m_index;
 		m_innerNodes[innerNodeIndex].m_leftAABB = left.m_aabb;

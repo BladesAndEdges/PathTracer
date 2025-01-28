@@ -178,7 +178,7 @@ void GLContext::CreateGLFWWindow()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	m_glfwWindow = glfwCreateWindow(640u, 480u, "Path Tracer", nullptr, nullptr);
+	m_glfwWindow = glfwCreateWindow(400u, 400u, "Path Tracer", nullptr, nullptr);
 
 	glfwMakeContextCurrent(m_glfwWindow);
 }

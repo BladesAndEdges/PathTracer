@@ -4,13 +4,13 @@
 #include<vector>
 
 #include "Camera.h"
-#include "Face.h"
 #include "HitResult.h"
 #include "Ray.h"
+#include "Triangle.h"
 #include "Triangle4.h"
 #include "ViewportDesc.h"
 
-class BVHBuilder;
+class BVHAccellStructure;
 class Framebuffer;
 
 class Renderer
@@ -19,7 +19,7 @@ class Renderer
 public:
 
 	Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ,
-		const std::vector<Triangle4>& triangle4s, const std::vector<Face>& faces, const Vector3& center);
+		const std::vector<Triangle4>& triangle4s, const std::vector<Triangle>& faces, const Vector3& center);
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 
@@ -70,7 +70,7 @@ private:
 	std::vector<float> m_sphereCentersY;
 	std::vector<float> m_sphereCentersZ;
 
-	std::vector<Face> m_faces;
+	std::vector<Triangle> m_faces;
 	Vector3 m_center;
 
 	// SSE for triangles
@@ -81,7 +81,7 @@ private:
 	std::vector<float> m_positionsY;
 	std::vector<float> m_positionsZ;
 
-	BVHBuilder* m_bvhBuilder;
+	BVHAccellStructure* m_bvhAccellStructure;
 
 	template<bool T_acceptAnyHit>
 	void TraverseBVH(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
@@ -94,7 +94,5 @@ private:
 
 	template<bool T_acceptAnyHit>
 	void HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
-
-
 };
 

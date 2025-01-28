@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "Face.h"
+#include "Triangle.h"
 #include "Triangle4.h"
 #include "Vector3.h"
 #include "Vertex.h"
@@ -26,7 +26,7 @@ public:
 	std::vector<float> GetPositionsY() const;
 	std::vector<float> GetPositionsZ() const;
 
-	std::vector<Face> GetFaces() const;
+	std::vector<Triangle> GetFaces() const;
 
 private:
 
@@ -52,11 +52,11 @@ private:
 	void CreateTriangles3(const std::string& fileName, const float scaleFactor);
 	void ParseAttributesWithFaces(const std::string& line, const float scaleFactor, std::vector<Vertex>& vertices);
 	Vector3 CalculateSceneCenterWithFaces();
-	void TriangulateWithFaces(const std::vector<Vertex>& vertices, std::vector<Face>& faces);
+	void TriangulateWithFaces(const std::vector<Vertex>& vertices, std::vector<Triangle>& faces);
 
 	std::vector<Vector3> m_positions;
 	std::vector<Vertex> m_vertices;
-	std::vector<Face> m_faces;
+	std::vector<Triangle> m_faces;
 
 	Vector3 m_center;
 };

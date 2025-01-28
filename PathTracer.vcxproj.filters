@@ -57,7 +57,7 @@
     <ClCompile Include="Triangle4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BVHBuilder.cpp">
+    <ClCompile Include="BVHAccellStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,7 +95,7 @@
     <ClInclude Include="ModelParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Face.h">
+    <ClInclude Include="Triangle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Vertex.h">
@@ -107,7 +107,7 @@
     <ClInclude Include="Triangle4.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BVHBuilder.h">
+    <ClInclude Include="BVHAccellStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BVHNode.h">

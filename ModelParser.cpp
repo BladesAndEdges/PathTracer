@@ -53,7 +53,7 @@ std::vector<float> ModelParser::GetPositionsZ() const
 }
 
 // --------------------------------------------------------------------------------
-std::vector<Face> ModelParser::GetFaces() const
+std::vector<Triangle> ModelParser::GetFaces() const
 {
 	return m_faces;
 }
@@ -418,7 +418,7 @@ void ModelParser::CreateTriangles3(const std::string& fileName, const float scal
 
 			std::vector<Vertex> faceVertices;
 			ParseAttributesWithFaces(line, scaleFactor, faceVertices);
-			std::vector<Face> faces;
+			std::vector<Triangle> faces;
 			TriangulateWithFaces(faceVertices, faces);
 
 			m_faces.insert(std::end(m_faces), std::begin(faces), std::end(faces));
@@ -487,13 +487,13 @@ void ModelParser::ParseAttributesWithFaces(const std::string& line, const float 
 }
 
 // --------------------------------------------------------------------------------
-void ModelParser::TriangulateWithFaces(const std::vector<Vertex>& vertices, std::vector<Face>& faces)
+void ModelParser::TriangulateWithFaces(const std::vector<Vertex>& vertices, std::vector<Triangle>& faces)
 {
 	const int vertexCount = (int)vertices.size();
 
 	for (int triangle = 0; triangle < vertexCount - 2; triangle++)
 	{
-		Face face;
+		Triangle face;
 
 		face.m_faceVertices[0] = vertices[0];
 		face.m_faceVertices[1] = vertices[triangle + 1];

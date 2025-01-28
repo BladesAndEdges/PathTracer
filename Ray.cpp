@@ -1,7 +1,6 @@
 #include "Ray.h"
 
-#include "BVHNode.h"
-#include "BVHBuilder.h"
+#include "BVHAccellStructure.h"
 
 // --------------------------------------------------------------------------------
 Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin)

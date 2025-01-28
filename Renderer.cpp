@@ -5,17 +5,18 @@
 #include <xmmintrin.h>
 #include <immintrin.h>
 
-#include "BVHBuilder.h"
+#include "BVHAccellStructure.h"
 #include "Framebuffer.h"
 #include "PerformanceCounter.h"
 #include "Vector3.h"
 
 # define M_PI 3.14159265358979323846
+#define TRACE_AGAINST_BVH
 //#define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ,
-	const std::vector<Triangle4>& triangle4s, const std::vector<Face>& faces, const Vector3& center)	
+	const std::vector<Triangle4>& triangle4s, const std::vector<Triangle>& faces, const Vector3& center)	
 																										: m_positionsX(positionsX), 
 																										  m_positionsY(positionsY),
 																										  m_positionsZ(positionsZ),
@@ -223,7 +224,7 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 	}
 #endif
 
-	m_bvhBuilder = new BVHBuilder(m_faces);
+	m_bvhAccellStructure = new BVHAccellStructure(m_faces, BVHPartitionStrategy::HalfWayPoint);
 }
 
 // --------------------------------------------------------------------------------
@@ -302,14 +303,26 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			if (cKeyState > 0u)
 			{
 				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				
+#ifdef TRACE_AGAINST_BVH
+				const HitResult primaryHr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifndef TRACE_AGAINST_BVH
 				const HitResult primaryHr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif // !TRACE_AGAINST_BVH
 
 				//const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, primaryHr.m_normal), 0.0f), 1.0f);
 
 				if (primaryHr.m_t != INFINITY)
 				{
 					const Ray c_shadowRay(primaryHr.m_intersectionPoint, m_lightDirection);
-					const HitResult shadowHr = TraceRay<true>(c_shadowRay, rayIndex, 1e-5f);
+					
+#ifdef TRACE_AGAINST_BVH
+					const HitResult shadowHr = TraceRayAgainstBVH<false>(c_shadowRay, rayIndex, 1e-5f);
+#endif
+#ifndef TRACE_AGAINST_BVH
+					const HitResult shadowHr = TraceRay<false>(c_shadowRay, rayIndex, 1e-5f);
+#endif // !TRACE_AGAINST_BVH
 
 					red = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
 					green = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
@@ -326,7 +339,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			if (vKeyState > 0u)
 			{
 				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				
+#ifdef TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifndef TRACE_AGAINST_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif // !TRACE_AGAINST_BVH
 
 				const float maxDepth = 10.0f;
 
@@ -338,7 +357,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			if (bKeyState > 0u)
 			{
 				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				
+#ifdef TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifndef TRACE_AGAINST_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif // !TRACE_AGAINST_BVH
 
 				const float maxDepth = 10.0f;
 
@@ -350,7 +375,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			if (nKeyState > 0u)
 			{
 				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				
+#ifdef TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifndef TRACE_AGAINST_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif // !TRACE_AGAINST_BVH
 
 				red = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.X() + 0.5f : 0.0f;
 				green = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Y() + 0.5f : 0.0f;
@@ -360,7 +391,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			if (mKeyState > 0u)
 			{
 				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+
+#ifdef TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifndef TRACE_AGAINST_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif // !TRACE_AGAINST_BVH
 
 				red = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].X() : 0.0f;
 				green = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Y() : 0.0f;
@@ -1242,8 +1279,6 @@ void Renderer::HitTriangles(const Ray& ray, const uint32_t rayIndex, const float
 	}
 #endif
 }
-
-//#define TRACE_AGAINST_BVH
 // --------------------------------------------------------------------------------
 Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t depth)
 {
@@ -1336,31 +1371,40 @@ void Renderer::TraverseBVH(const Ray& ray, const uint32_t rayIndex, const float 
 template<bool T_acceptAnyHit>
 void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
-	if (m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_leftIsLeaf)
+	const InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
+
+	bool hasHitLeft = false;
+	if (node.m_leftIsLeaf)
 	{
-		const uint32_t triangleNodeIndex = m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_leftChild;
+		const uint32_t triangleNodeIndex = node.m_leftChild;
 		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
 	}
 	else
 	{
-		DFSTraversal<T_acceptAnyHit>(m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		if ((hasHitLeft = RayAABBIntersection(ray, node.m_leftAABB)))
+		{
+			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		}
 	}
 
 	// Early exit on left branch
-	if (out_hasHit) { return; }
+	hasHitLeft = false;
+	if (out_hasHit || hasHitLeft) { return; }
 
-	if (m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_rightIsLeaf)
+	if (node.m_rightIsLeaf)
 	{
-		const uint32_t triangleNodeIndex = m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_rightChild;
+		const uint32_t triangleNodeIndex = node.m_rightChild;
 		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
 	}
 	else
 	{
-		DFSTraversal<T_acceptAnyHit>(m_bvhBuilder->GetInnerNode(innerNodeStartIndex).m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		if (RayAABBIntersection(ray, node.m_rightAABB))
+		{
+			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		}
 	}
 
-	// Early exit on right branch
-	if (out_hasHit) { return; }
+	// No need for early exits, as the function would exit either way
 }
 
 // --------------------------------------------------------------------------------

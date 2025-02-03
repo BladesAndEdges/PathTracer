@@ -1,11 +1,15 @@
 #include "BVHAccellStructure.h"
 
 #include <assert.h>
+#include <algorithm>
 #include <cmath>
 
 // --------------------------------------------------------------------------------
 BVHAccellStructure::BVHAccellStructure(const std::vector<Triangle>& triangles, const BVHPartitionStrategy& bvhPartitionStrategy) : m_triangles(triangles)
 {
+	// Debug triangles because cornell's numbers are annoying as hell to work with
+
+
 	std::vector<Centroid> centroids;
 	centroids.resize(triangles.size());
 
@@ -109,6 +113,26 @@ AABB MergeAABB(AABB leftAABB, AABB rightAABB)
 }
 
 // --------------------------------------------------------------------------------
+uint32_t ChooseAxisForPartition(const float minX, const float maxX, const float minY, const float maxY, const float minZ, const float maxZ)
+{
+	const float xLength = maxX - minX;
+	const float yLength = maxY - minY;
+	const float zLength = maxZ - minZ;
+
+	if ((yLength > xLength) && (yLength > zLength))
+	{
+			return 1u;
+	}
+
+	if ((zLength > xLength) && (zLength > yLength))
+	{
+			return 2u;
+	}
+
+	return 0u;
+}
+
+// --------------------------------------------------------------------------------
 // NOTE TO SELF: The aabb computed for the triangle is used for TRAVERSAL, 
 // the aabb computed from the centroids is only used to decide on an appropraite split
 // the two aabbs computed are not equivalent, spatially.
@@ -150,7 +174,91 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 
 			break;
 		}
+		case BVHPartitionStrategy::HalfWayLongestAxis:
+		{
+			// TODO: Maybe make a Min/Max for Vector3 to make this easier
+			float centroidMin[3u] = { centroids[start].m_centroid[0u], centroids[start].m_centroid[1u] , centroids[start].m_centroid[2u] };
+			float centroidMax[3u] = { centroids[start].m_centroid[0u], centroids[start].m_centroid[1u] , centroids[start].m_centroid[2u] };
 
+			// Calculate the bounding box for the centroids
+			for (uint32_t centroidStart = start + 1u; centroidStart < end + 1u; centroidStart++)
+			{
+				if (centroidMin[0u] > centroids[centroidStart].m_centroid[0u])
+				{
+					centroidMin[0u] = centroids[centroidStart].m_centroid[0u];
+				}
+
+				if (centroidMax[0u] < centroids[centroidStart].m_centroid[0u])
+				{
+					centroidMax[0u] = centroids[centroidStart].m_centroid[0u];
+				}
+
+				if (centroidMin[1u] > centroids[centroidStart].m_centroid[1u])
+				{
+					centroidMin[1u] = centroids[centroidStart].m_centroid[1u];
+				}
+
+				if (centroidMax[1u] < centroids[centroidStart].m_centroid[1u])
+				{
+					centroidMax[1u] = centroids[centroidStart].m_centroid[1u];
+				}
+
+				if (centroidMin[2u] > centroids[centroidStart].m_centroid[2u])
+				{
+					centroidMin[2u] = centroids[centroidStart].m_centroid[2u];
+				}
+
+				if (centroidMax[2u] < centroids[centroidStart].m_centroid[2u])
+				{
+					centroidMax[2u] = centroids[centroidStart].m_centroid[2u];
+				}
+			}
+
+			// Calculate the longest axis
+			const uint32_t axis = ChooseAxisForPartition(centroidMin[0u], centroidMax[0u], centroidMin[1u], centroidMax[1u], centroidMin[2u], centroidMax[2u]);
+
+			const float splitPoint = centroidMin[axis] + ((centroidMax[axis] - centroidMin[axis]) / 2.0f);
+
+			auto iterator = std::partition(centroids.begin() + start, centroids.begin() + end + 1, [&](Centroid& centroid) { return centroid.m_centroid[axis] < splitPoint; });
+
+			const uint32_t indexOfRightNode = (uint32_t)std::distance(centroids.begin(), iterator);
+
+			// The issue is by the time we have two nodes, due to the values, 
+			// we calculate a min/max that is the same point. So finding a splitPoint returns the min/max value
+			// Now in the partition section, the issue becomes that both nodes end up at the right node
+			// So for that iteration we get leftStart, leftEnd, rightStart and rightEnd all equal to 0 on the below lines
+			// This ends up continuing infinitely after that, I believe (have not checked it as it is late) ...
+
+			if ((end - start) == 1u)
+			{
+				leftStart = start;
+				leftEnd = start;
+				rightStart = end;
+				rightEnd = end;
+			}
+			else
+			{
+				leftStart = start;
+				leftEnd = (indexOfRightNode == 0u) ? indexOfRightNode : indexOfRightNode - 1u;
+				rightStart = indexOfRightNode;
+				rightEnd = end;
+
+				// Recalculate if all nodes end up on a single child
+				// Use halfway split on the nodes
+				if ((leftEnd == end) || (rightStart == start))
+				{
+					const uint32_t centroidsInNode = (end - start) + 1u;
+					const uint32_t numInLeftSubtree = centroidsInNode / 2u;
+
+					leftStart = start;
+					leftEnd = (start + numInLeftSubtree) - 1u;
+					rightStart = leftEnd + 1u;
+					rightEnd = end;
+				}
+			}
+
+			break;
+		}
 		default:
 		{
 			const uint32_t centroidsInNode = (end - start) + 1u;

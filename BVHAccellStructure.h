@@ -9,7 +9,8 @@
 // This idea is taken from pbrt, 4th edition
 enum class BVHPartitionStrategy
 {
-	HalfWayPoint
+	HalfWayPoint, 
+	HalfWayLongestAxis
 };
 
 // --------------------------------------------------------------------------------

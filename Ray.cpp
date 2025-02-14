@@ -3,7 +3,7 @@
 #include "BVHAccellStructure.h"
 
 // --------------------------------------------------------------------------------
-Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin)
+Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin), m_aabbIntersectionTests(0u), m_triangleIntersectionTests(0u)
 {
 	// In case not normalized
 	m_normalizedRayDir = Normalize(direction);
@@ -36,8 +36,10 @@ const float gamma(int n) {
 
 // --------------------------------------------------------------------------------
 // Function implementation follows the PBRT version https://pbr-book.org/4ed/Shapes/Basic_Shape_Interface
-bool RayAABBIntersection(const Ray& ray, const AABB& aabb)
+bool RayAABBIntersection(Ray& ray, const AABB& aabb)
 {
+	ray.m_aabbIntersectionTests++;
+
 	float t0 = 0.0f;
 	float t1 = INFINITY;
 
@@ -61,6 +63,9 @@ bool RayAABBIntersection(const Ray& ray, const AABB& aabb)
 		//Update t0 and t1, based on the tigher bounds after planes clip the ray
 		t0 = (tNear > t0) ? tNear : t0;
 		t1 = (tFar < t1) ? tFar : t1;
+
+		// If no overlap detected
+		if (t0 > t1) { return false; }
 	}
 
 	return true;

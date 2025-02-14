@@ -37,12 +37,12 @@ private:
 
 	// Debug build contains an extra ray index paramater
 	template<bool T_acceptAnyHit>
-	void HitTriangles(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
+	void HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
 
-	Vector3 PathTrace(const Ray& ray, const uint32_t rayIndex,uint32_t depth);
+	Vector3 PathTrace(Ray& ray, const uint32_t rayIndex,uint32_t depth);
 
 	template<bool T_acceptAnyHit>
-	HitResult TraceRay(const Ray& ray, const uint32_t rayIndex, const float tMin);
+	HitResult TraceRay(Ray& ray, const uint32_t rayIndex, const float tMin);
 
 	std::vector<Vector3> m_sphereList;
 	std::vector<Vector3> m_sphereColours;
@@ -84,15 +84,15 @@ private:
 	BVHAccellStructure* m_bvhAccellStructure;
 
 	template<bool T_acceptAnyHit>
-	void TraverseBVH(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
+	void TraverseBVH(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
 
 	template<bool T_acceptAnyHit>
-	void DFSTraversal(const uint32_t innerNodeStartIndex, const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
+	void DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
-	HitResult TraceRayAgainstBVH(const Ray& ray, const uint32_t rayIndex, const float tMin);
+	HitResult TraceRayAgainstBVH(Ray& ray, const uint32_t rayIndex, const float tMin);
 
 	template<bool T_acceptAnyHit>
-	void HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
+	void HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
 };
 

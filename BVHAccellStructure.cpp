@@ -105,9 +105,9 @@ AABB MergeAABB(AABB leftAABB, AABB rightAABB)
 	aabb.min[1u] = std::fmin(leftAABB.min[1u], rightAABB.min[1u]);
 	aabb.min[2u] = std::fmin(leftAABB.min[2u], rightAABB.min[2u]);
 
-	aabb.max[0u] = std::fmin(leftAABB.max[0u], rightAABB.max[0u]);
-	aabb.max[1u] = std::fmin(leftAABB.max[1u], rightAABB.max[1u]);
-	aabb.max[2u] = std::fmin(leftAABB.max[2u], rightAABB.max[2u]);
+	aabb.max[0u] = std::fmax(leftAABB.max[0u], rightAABB.max[0u]);
+	aabb.max[1u] = std::fmax(leftAABB.max[1u], rightAABB.max[1u]);
+	aabb.max[2u] = std::fmax(leftAABB.max[2u], rightAABB.max[2u]);
 
 	return aabb;
 }

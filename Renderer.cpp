@@ -224,7 +224,7 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 	}
 #endif
 
-	m_bvhAccellStructure = new BVHAccellStructure(m_faces, BVHPartitionStrategy::HalfWayPoint);
+	m_bvhAccellStructure = new BVHAccellStructure(m_faces, BVHPartitionStrategy::HalfWayLongestAxis);
 }
 
 // --------------------------------------------------------------------------------
@@ -241,11 +241,17 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 		RegenerateViewSpaceDirections(framebuffer);
 	}
 
+	std::vector<uint32_t> aabbIntersectionsCount;
+	std::vector<uint32_t> triangleIntersectionsCount;
+	aabbIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
+	triangleIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
+
 	const SHORT cKeyState = GetAsyncKeyState(0x43);
 	const SHORT vKeyState = GetAsyncKeyState(0x56);
 	const SHORT bKeyState = GetAsyncKeyState(0x42);
 	const SHORT nKeyState = GetAsyncKeyState(0x4E);
 	const SHORT mKeyState = GetAsyncKeyState(0x4D);
+	const SHORT xKeyState = GetAsyncKeyState(0x58);
 
 	const Vector3 primitiveDebugColours[5u] = { Vector3(0.94f, 0.34f, 0.30f), Vector3(0.30f, 0.94f, 0.70f), Vector3(0.51f, 0.70f, 0.96f), 
 		Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
@@ -266,12 +272,12 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			float green = 0.0f;
 			float blue = 0.0f;
 
-			if ((cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u))
+			if ((cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u) && (xKeyState == 0u))
 			{
 
 				Vector3 radiance(0.0f, 0.0f, 0.0f);
 				const uint32_t numSamples = 1u;
-				const uint32_t depth = 1u;
+				const uint32_t depth = 2u;
 
 				for (uint32_t sample = 0u; sample < numSamples; sample++)
 				{
@@ -288,7 +294,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 					//const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
 					//
 					//const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, -1.0f));
-					const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(m_texelCenters[rayIndex]));
+					Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(m_texelCenters[rayIndex]));
 
 					radiance = radiance + PathTrace(c_primaryRay, rayIndex, depth);
 				}
@@ -300,9 +306,59 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				blue = std::fmin(1.0f, radiance.Z());
 			}
 
+			if (xKeyState > 0u)
+			{
+				// Ray values reset here, so no need to do a reset on the vector
+				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+
+#ifdef TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+				aabbIntersectionsCount[rayIndex] = (c_primaryRay.m_aabbIntersectionTests);
+				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
+#endif
+#ifndef TRACE_AGAINST_BVH
+				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
+#endif // !TRACE_AGAINST_BVH
+
+				if ((row == framebuffer->GetHeight() - 1u) && (column == framebuffer->GetWidth() - 1u))
+				{
+					// Average aabb intersections for primary rays
+					uint32_t averageAABBVisits = 0u;
+					for (uint32_t i = 0u; i < aabbIntersectionsCount.size(); i++)
+					{
+						averageAABBVisits += aabbIntersectionsCount[i];
+					}
+
+					averageAABBVisits = averageAABBVisits / (uint32_t)aabbIntersectionsCount.size();
+
+					char msgBuffer1[128u];
+					sprintf_s(msgBuffer1, "Average AABB visits: %u \n", averageAABBVisits);
+					OutputDebugStringA(msgBuffer1);
+
+
+					// Average triangle intersections for primary rays
+					uint32_t averageTriangleVisits = 0u;
+					for (uint32_t i = 0u; i < triangleIntersectionsCount.size(); i++)
+					{
+						averageTriangleVisits += triangleIntersectionsCount[i];
+					}
+
+					averageTriangleVisits = averageTriangleVisits / (uint32_t)triangleIntersectionsCount.size();
+
+					char msgBuffer2[128u];
+					sprintf_s(msgBuffer2, "Average Triangle visits: %u \n", averageTriangleVisits);
+					OutputDebugStringA(msgBuffer2);
+				}
+
+				red = 0.0f;
+				green = 1.0f;
+				blue = 0.0f;
+			}
+
 			if (cKeyState > 0u)
 			{
-				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
 #ifdef TRACE_AGAINST_BVH
 				const HitResult primaryHr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
@@ -315,7 +371,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 				if (primaryHr.m_t != INFINITY)
 				{
-					const Ray c_shadowRay(primaryHr.m_intersectionPoint, m_lightDirection);
+					Ray c_shadowRay(primaryHr.m_intersectionPoint, m_lightDirection);
 					
 #ifdef TRACE_AGAINST_BVH
 					const HitResult shadowHr = TraceRayAgainstBVH<false>(c_shadowRay, rayIndex, 1e-5f);
@@ -338,7 +394,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 			if (vKeyState > 0u)
 			{
-				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
 #ifdef TRACE_AGAINST_BVH
 				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
@@ -356,7 +412,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 			if (bKeyState > 0u)
 			{
-				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
 #ifdef TRACE_AGAINST_BVH
 				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
@@ -374,7 +430,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 			if (nKeyState > 0u)
 			{
-				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
 #ifdef TRACE_AGAINST_BVH
 				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
@@ -390,7 +446,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 			if (mKeyState > 0u)
 			{
-				const Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 
 #ifdef TRACE_AGAINST_BVH
 				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
@@ -752,7 +808,7 @@ bool Renderer::IsInsideQuad(const float alpha, const float beta)
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::HitTriangles(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
+void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);
@@ -1280,7 +1336,7 @@ void Renderer::HitTriangles(const Ray& ray, const uint32_t rayIndex, const float
 #endif
 }
 // --------------------------------------------------------------------------------
-Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t depth)
+Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 {
 	if (depth <= 0u)
 	{
@@ -1301,7 +1357,7 @@ Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t de
 		// Indirect lighting
 		{
 			// Calculate the random direction of the outward ray
-			const Ray rayOnHemisphere = Ray(c_primaryHitResult.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(c_primaryHitResult.m_normal));
+			Ray rayOnHemisphere = Ray(c_primaryHitResult.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(c_primaryHitResult.m_normal));
 	
 			// RENDERING EQUATION
 			
@@ -1326,7 +1382,7 @@ Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t de
 		{
 			const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
 			
-			const Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
+			Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
 #ifdef TRACE_AGAINST_BVH
 			const HitResult c_secondaryRayHitResult = TraceRayAgainstBVH<false>(c_shadowRay, rayIndex, 1e-5f);
 #endif
@@ -1361,7 +1417,7 @@ Vector3 Renderer::PathTrace(const Ray& ray, const uint32_t rayIndex, uint32_t de
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::TraverseBVH(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
+void Renderer::TraverseBVH(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
 	bool hasHit = false;
 	DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
@@ -1369,47 +1425,48 @@ void Renderer::TraverseBVH(const Ray& ray, const uint32_t rayIndex, const float 
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
 	const InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
 
-	bool hasHitLeft = false;
 	if (node.m_leftIsLeaf)
 	{
 		const uint32_t triangleNodeIndex = node.m_leftChild;
 		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
-	}
-	else
-	{
-		if ((hasHitLeft = RayAABBIntersection(ray, node.m_leftAABB)))
-		{
-			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-		}
-	}
 
-	// Early exit on left branch
-	hasHitLeft = false;
-	if (out_hasHit || hasHitLeft) { return; }
+		// Get your resolution to something like 480p - Done
+		// Get a proper camera positon, overlooking the length of sponza from inside
+		// Further improvements with spreadsheet to record timings
+		// 1. T_acceptAnyHit
+		// 2. SAH (maybe?)
+		// 3. tmax adjust after each intersection test
+		// 4. Picking which aabb to visit first, isntead of always doing left then right
+		// 5. SSE BVH intel embree ?
+
+		//if (T_acceptAnyHit && out_hasHit) // figure out how to not go down the right path
+		//{
+		//	return;
+		//}
+	}
+	else if(RayAABBIntersection(ray, node.m_leftAABB))
+	{
+		DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+	}
 
 	if (node.m_rightIsLeaf)
 	{
 		const uint32_t triangleNodeIndex = node.m_rightChild;
 		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
 	}
-	else
+	else if(RayAABBIntersection(ray, node.m_rightAABB))
 	{
-		if (RayAABBIntersection(ray, node.m_rightAABB))
-		{
-			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-		}
+		DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 	}
-
-	// No need for early exits, as the function would exit either way
 }
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-HitResult Renderer::TraceRayAgainstBVH(const Ray& ray, const uint32_t rayIndex, const float tMin)
+HitResult Renderer::TraceRayAgainstBVH(Ray& ray, const uint32_t rayIndex, const float tMin)
 {
 	HitResult hitResult;
 	float tMax = INFINITY;
@@ -1419,8 +1476,10 @@ HitResult Renderer::TraceRayAgainstBVH(const Ray& ray, const uint32_t rayIndex, 
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit)
 {
+	ray.m_triangleIntersectionTests++;
+
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);
 #endif
@@ -1487,7 +1546,7 @@ void Renderer::HitTriangle(const Ray& ray, const uint32_t rayIndex, const float 
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-HitResult Renderer::TraceRay(const Ray& ray, const uint32_t rayIndex, const float tMin)
+HitResult Renderer::TraceRay(Ray& ray, const uint32_t rayIndex, const float tMin)
 {
 	HitResult hitResult;
 	float tMax = INFINITY;

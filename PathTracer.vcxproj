@@ -108,6 +108,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -126,6 +127,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

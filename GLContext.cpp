@@ -8,6 +8,7 @@
 #include "Vector3.h"
 
 #define NUMBER_OF_CHANNELS_PER_TEXEL 4u
+# define M_PI 3.14159265358979323846
 
 float g_deltaTime = 0.0f;
 float g_previousFrameTime = 0.0f;
@@ -135,7 +136,16 @@ void GLContext::ProcessCameraInput(Camera* camera)
 		viewSpaceTranslation = viewSpaceTranslation - (unitsPerFrame * up);
 	}
 
-	const Vector3 c_worldSpaceTranslation = /*camera.getWorldOrientation() **/ viewSpaceTranslation;
+	// Will be replaced by the worldOrientation eventually once I add proper rotations
+	const float valDegreesToRad = 90.0f * ((float)M_PI / 180.0f);
+	const float rotatedX = cosf(valDegreesToRad) * viewSpaceTranslation.X() + sinf(valDegreesToRad) * viewSpaceTranslation.Z();
+	const float rotatedZ = -sinf(valDegreesToRad) * viewSpaceTranslation.X() + cosf(valDegreesToRad) * viewSpaceTranslation.Z();
+
+	Vector3 c_worldSpaceTranslation;
+	c_worldSpaceTranslation.SetX(rotatedX);
+	c_worldSpaceTranslation.SetY(viewSpaceTranslation.Y());
+	c_worldSpaceTranslation.SetZ(rotatedZ);
+
 	const Vector3 c_worldSpacePosition = camera->GetCameraLocation() + c_worldSpaceTranslation;
 	camera->SetCameraLocation(c_worldSpacePosition);
 }
@@ -178,7 +188,7 @@ void GLContext::CreateGLFWWindow()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	m_glfwWindow = glfwCreateWindow(400u, 400u, "Path Tracer", nullptr, nullptr);
+	m_glfwWindow = glfwCreateWindow(640, 480, "Path Tracer", nullptr, nullptr);
 
 	glfwMakeContextCurrent(m_glfwWindow);
 }

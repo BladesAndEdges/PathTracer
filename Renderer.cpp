@@ -177,9 +177,7 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 	m_quadVs.push_back(Vector3(0.0f, 0.0f, quadSize));
 	m_quadColours.push_back(Vector3(0.0f, 1.0f, 0.0f));
 	
-	// Position if flipping the z axis
-	m_center.SetZ(m_center.Z() + 3.0f);
-	//m_center = Vector3(-0.00999999046f, 2.84188843f, -0.0159187317f); // For sponza
+	m_center = Vector3(2.88791323f, 7.37331104f, -0.183363333f); // For sponza
 
 
 	m_camera.SetCameraLocation(m_center);
@@ -498,8 +496,16 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 			const float tx = (column * m_viewportDesc.m_texelWidth) / m_viewportDesc.m_width;
 
 			Vector3 texelCenter = (1.0f - tx) * c_r0 + tx * c_r1;
-			texelCenter.SetX(texelCenter.X() + (m_viewportDesc.m_texelWidth / 2.0f));
+			const float xVal = texelCenter.X() + (m_viewportDesc.m_texelWidth / 2.0f);
+
+			const float valDegreesToRad = 90.0f * ((float)M_PI / 180.0f);
+			const float rotatedX = cosf(valDegreesToRad) * xVal + sinf(valDegreesToRad) * texelCenter.Z();
+			const float rotatedZ = -sinf(valDegreesToRad) * xVal + cosf(valDegreesToRad) * texelCenter.Z();
+
+			//texelCenter.SetX(texelCenter.X() + (m_viewportDesc.m_texelWidth / 2.0f));
+			texelCenter.SetX(rotatedX);
 			texelCenter.SetY(texelCenter.Y() - (m_viewportDesc.m_texelHeight / 2.0f));
+			texelCenter.SetZ(rotatedZ);
 			m_texelCenters.push_back(texelCenter);
 		}
 	}
@@ -1384,10 +1390,10 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 			
 			Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
 #ifdef TRACE_AGAINST_BVH
-			const HitResult c_secondaryRayHitResult = TraceRayAgainstBVH<false>(c_shadowRay, rayIndex, 1e-5f);
+			const HitResult c_secondaryRayHitResult = TraceRayAgainstBVH<true>(c_shadowRay, rayIndex, 1e-5f);
 #endif
 #ifndef TRACE_AGAINST_BVH
-			const HitResult c_secondaryRayHitResult = TraceRay<false>(c_shadowRay, rayIndex, 1e-5f);
+			const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 			
 			if (c_secondaryRayHitResult.m_t == INFINITY)
@@ -1424,20 +1430,10 @@ void Renderer::TraverseBVH(Ray& ray, const uint32_t rayIndex, const float tMin, 
 }
 
 // --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
-{
-	const InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
-
-	if (node.m_leftIsLeaf)
-	{
-		const uint32_t triangleNodeIndex = node.m_leftChild;
-		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
-
 		// Get your resolution to something like 480p - Done
-		// Get a proper camera positon, overlooking the length of sponza from inside
+		// Get a proper camera positon, overlooking the length of sponza from inside - Done
 		// Further improvements with spreadsheet to record timings
-		// 1. T_acceptAnyHit
+		// 1. T_acceptAnyHit - Done
 		// 2. SAH (maybe?)
 		// 3. tmax adjust after each intersection test
 		// 4. Picking which aabb to visit first, isntead of always doing left then right
@@ -1447,10 +1443,28 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 		//{
 		//	return;
 		//}
+template<bool T_acceptAnyHit>
+void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
+{
+	const InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
+
+	if (node.m_leftIsLeaf)
+	{
+		const uint32_t triangleNodeIndex = node.m_leftChild;
+		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
 	}
 	else if(RayAABBIntersection(ray, node.m_leftAABB))
 	{
 		DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+	}
+
+	// Early exit for secondary rays
+	if constexpr (T_acceptAnyHit)
+	{
+		if (out_hasHit)
+		{
+			return;
+		}
 	}
 
 	if (node.m_rightIsLeaf)

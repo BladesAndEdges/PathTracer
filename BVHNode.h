@@ -2,10 +2,12 @@
 
 #include <vector>
 
+#include "Vector3.h"
+
 struct AABB
 {
-	float min[3u];
-	float max[3u];
+	Vector3 m_min;
+	Vector3 m_max;
 };
 
 struct ConstructResult

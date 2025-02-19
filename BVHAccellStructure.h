@@ -10,14 +10,17 @@
 enum class BVHPartitionStrategy
 {
 	HalfWayPoint, 
-	HalfWayLongestAxis
+	HalfWayLongestAxis, 
+	HalfWayLongestAxisWithSAH
 };
 
 // --------------------------------------------------------------------------------
 struct Centroid
 {
-	float m_centroid[3u];
+	Vector3 m_centroid;
 	uint32_t m_triangleIndex;
+
+	float GetCentroidValueByAxis(const uint32_t axis) const;
 };
 
 // --------------------------------------------------------------------------------

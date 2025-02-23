@@ -45,16 +45,14 @@ bool RayAABBIntersection(Ray& ray, const AABB& aabb)
 
 	const float rayOrigin[3u] = { ray.Origin().X(), ray.Origin().Y(), ray.Origin().Z()};
 	const float rayDirection[3u] = {ray.Direction().X(), ray.Direction().Y(), ray.Direction().Z()};
-	const float aabbMin[3u] = { aabb.m_min.X(), aabb.m_min.Y(), aabb.m_min.Z() };
-	const float aabbMax[3u] = { aabb.m_max.X(), aabb.m_max.Y(), aabb.m_max.Z() };
 
 	for (uint32_t ax = 0u; ax < 3u; ax++)
 	{
 		const float invDir = 1.0f / rayDirection[ax];
 		
 		// Find tNear and tFar values for the slab for the axis
-		float tNear = (aabbMin[ax] - rayOrigin[ax]) * invDir;
-		float tFar = (aabbMax[ax] - rayOrigin[ax]) * invDir;
+		float tNear = (aabb.min[ax] - rayOrigin[ax]) * invDir;
+		float tFar = (aabb.max[ax] - rayOrigin[ax]) * invDir;
 
 		// Handle ray traveling in negative axis direction
 		if (tNear > tFar) { std::swap(tNear, tFar); }

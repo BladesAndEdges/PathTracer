@@ -7,6 +7,9 @@
 // --------------------------------------------------------------------------------
 BVHAccellStructure::BVHAccellStructure(const std::vector<Triangle>& triangles, const BVHPartitionStrategy& bvhPartitionStrategy) : m_triangles(triangles)
 {
+	// Debug triangles because cornell's numbers are annoying as hell to work with
+
+
 	std::vector<Centroid> centroids;
 	centroids.resize(triangles.size());
 
@@ -15,7 +18,9 @@ BVHAccellStructure::BVHAccellStructure(const std::vector<Triangle>& triangles, c
 		const AABB aabb = CalculateAABB(triangle);
 
 		centroids[triangle].m_triangleIndex = triangle;
-		centroids[triangle].m_centroid = 0.5f * aabb.m_min + 0.5f * aabb.m_max;
+		centroids[triangle].m_centroid[0u] = 0.5f * aabb.min[0u] + 0.5f * aabb.max[0u];
+		centroids[triangle].m_centroid[1u] = 0.5f * aabb.min[1u] + 0.5f * aabb.max[1u];
+		centroids[triangle].m_centroid[2u] = 0.5f * aabb.min[2u] + 0.5f * aabb.max[2u];
 	}
 
 	const ConstructResult cr = ConstructNode(centroids, 0u, (uint32_t)centroids.size() - 1u, bvhPartitionStrategy);
@@ -81,8 +86,12 @@ AABB BVHAccellStructure::CalculateAABB(uint32_t firstTriIndex)
 	}
 
 	AABB aabb;
-	aabb.m_min = Vector3(minX, minY, minZ);
-	aabb.m_max = Vector3(maxX, maxY, maxZ);
+	aabb.min[0u] = minX;
+	aabb.min[1u] = minY;
+	aabb.min[2u] = minZ;
+	aabb.max[0u] = maxX;
+	aabb.max[1u] = maxY;
+	aabb.max[2u] = maxZ;
 
 	return aabb;
 }
@@ -92,58 +101,35 @@ AABB BVHAccellStructure::CalculateAABB(uint32_t firstTriIndex)
 AABB MergeAABB(AABB leftAABB, AABB rightAABB)
 {
 	AABB aabb;
-	aabb.m_min = Vector3(std::fmin(leftAABB.m_min.X(), rightAABB.m_min.X()),
-		std::fmin(leftAABB.m_min.Y(), rightAABB.m_min.Y()),
-		std::fmin(leftAABB.m_min.Z(), rightAABB.m_min.Z()));
+	aabb.min[0u] = std::fmin(leftAABB.min[0u], rightAABB.min[0u]);
+	aabb.min[1u] = std::fmin(leftAABB.min[1u], rightAABB.min[1u]);
+	aabb.min[2u] = std::fmin(leftAABB.min[2u], rightAABB.min[2u]);
 
-	aabb.m_max = Vector3(std::fmax(leftAABB.m_max.X(), rightAABB.m_max.X()),
-		std::fmax(leftAABB.m_max.Y(), rightAABB.m_max.Y()),
-		std::fmax(leftAABB.m_max.Z(), rightAABB.m_max.Z()));
+	aabb.max[0u] = std::fmax(leftAABB.max[0u], rightAABB.max[0u]);
+	aabb.max[1u] = std::fmax(leftAABB.max[1u], rightAABB.max[1u]);
+	aabb.max[2u] = std::fmax(leftAABB.max[2u], rightAABB.max[2u]);
 
 	return aabb;
 }
 
 // --------------------------------------------------------------------------------
-uint32_t ChooseAxisForPartition(const Vector3& min, const Vector3& max)
+uint32_t ChooseAxisForPartition(const float minX, const float maxX, const float minY, const float maxY, const float minZ, const float maxZ)
 {
-	assert(max.X() > min.X());
+	const float xLength = maxX - minX;
+	const float yLength = maxY - minY;
+	const float zLength = maxZ - minZ;
 
-	const Vector3 length = max - min;
-
-	if ((length.Y() > length.X()) && (length.Y() > length.Z()))
+	if ((yLength > xLength) && (yLength > zLength))
 	{
 			return 1u;
 	}
 
-	if ((length.Z() > length.X()) && (length.Z() > length.Y()))
+	if ((zLength > xLength) && (zLength > yLength))
 	{
 			return 2u;
 	}
 
 	return 0u;
-}
-
-// --------------------------------------------------------------------------------
-float CalculateSplitPointNonSAH(const Vector3& min, const Vector3& max, const uint32_t axis)
-{
-	float splitPoint = FP_INFINITE;
-	switch (axis)
-	{
-	case 0:
-		splitPoint = max.X() + ((max.X() - min.X()) / 2.0f);
-		break;
-	case 1:
-		splitPoint = max.Y() + ((max.Y() - min.Y()) / 2.0f);
-		break;
-	case 2:
-		splitPoint = max.Y() + ((max.Z() - min.Z()) / 2.0f);
-		break;
-	default:
-		__debugbreak();
-		break;
-	}
-
-	return splitPoint;
 }
 
 // --------------------------------------------------------------------------------
@@ -190,22 +176,58 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 		}
 		case BVHPartitionStrategy::HalfWayLongestAxis:
 		{
-			Vector3 min = centroids[start].m_centroid;
-			Vector3 max = centroids[start].m_centroid;
+			// TODO: Maybe make a Min/Max for Vector3 to make this easier
+			float centroidMin[3u] = { centroids[start].m_centroid[0u], centroids[start].m_centroid[1u] , centroids[start].m_centroid[2u] };
+			float centroidMax[3u] = { centroids[start].m_centroid[0u], centroids[start].m_centroid[1u] , centroids[start].m_centroid[2u] };
 
 			// Calculate the bounding box for the centroids
-			for (uint32_t centroid = start + 1u; centroid < end + 1u; centroid++)
+			for (uint32_t centroidStart = start + 1u; centroidStart < end + 1u; centroidStart++)
 			{
-				min = Min(min, centroids[centroid].m_centroid);
-				max = Max(max, centroids[centroid].m_centroid);
+				if (centroidMin[0u] > centroids[centroidStart].m_centroid[0u])
+				{
+					centroidMin[0u] = centroids[centroidStart].m_centroid[0u];
+				}
+
+				if (centroidMax[0u] < centroids[centroidStart].m_centroid[0u])
+				{
+					centroidMax[0u] = centroids[centroidStart].m_centroid[0u];
+				}
+
+				if (centroidMin[1u] > centroids[centroidStart].m_centroid[1u])
+				{
+					centroidMin[1u] = centroids[centroidStart].m_centroid[1u];
+				}
+
+				if (centroidMax[1u] < centroids[centroidStart].m_centroid[1u])
+				{
+					centroidMax[1u] = centroids[centroidStart].m_centroid[1u];
+				}
+
+				if (centroidMin[2u] > centroids[centroidStart].m_centroid[2u])
+				{
+					centroidMin[2u] = centroids[centroidStart].m_centroid[2u];
+				}
+
+				if (centroidMax[2u] < centroids[centroidStart].m_centroid[2u])
+				{
+					centroidMax[2u] = centroids[centroidStart].m_centroid[2u];
+				}
 			}
 
-			const uint32_t axis = ChooseAxisForPartition(min, max);
-			const float splitPoint = CalculateSplitPointNonSAH(min, max, axis);
+			// Calculate the longest axis
+			const uint32_t axis = ChooseAxisForPartition(centroidMin[0u], centroidMax[0u], centroidMin[1u], centroidMax[1u], centroidMin[2u], centroidMax[2u]);
 
-			auto iterator = std::partition(centroids.begin() + start, centroids.begin() + end + 1, [&](Centroid& centroid) { return centroid.GetCentroidValueByAxis(axis) < splitPoint; });
+			const float splitPoint = centroidMin[axis] + ((centroidMax[axis] - centroidMin[axis]) / 2.0f);
+
+			auto iterator = std::partition(centroids.begin() + start, centroids.begin() + end + 1, [&](Centroid& centroid) { return centroid.m_centroid[axis] < splitPoint; });
 
 			const uint32_t indexOfRightNode = (uint32_t)std::distance(centroids.begin(), iterator);
+
+			// The issue is by the time we have two nodes, due to the values, 
+			// we calculate a min/max that is the same point. So finding a splitPoint returns the min/max value
+			// Now in the partition section, the issue becomes that both nodes end up at the right node
+			// So for that iteration we get leftStart, leftEnd, rightStart and rightEnd all equal to 0 on the below lines
+			// This ends up continuing infinitely after that, I believe (have not checked it as it is late) ...
 
 			if ((end - start) == 1u)
 			{
@@ -268,27 +290,4 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 	}
 
 	return cs;
-}
-
-// --------------------------------------------------------------------------------
-float Centroid::GetCentroidValueByAxis(const uint32_t axis) const
-{
-	float value = FP_INFINITE;
-	switch (axis)
-	{
-	case 0u:
-		value = m_centroid.X();
-		break;
-	case 1u:
-		value = m_centroid.Y();
-		break;
-	case 2u:
-		value = m_centroid.Z();
-		break;
-	default:
-		__debugbreak();
-		break;
-	}
-
-	return value;
 }

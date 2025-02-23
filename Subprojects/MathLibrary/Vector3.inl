@@ -159,19 +159,3 @@ inline Vector3 Vector3::RandomVector3OnHemisphere(const Vector3& surfaceNormal)
         return -randomUnitVec;
     }
 }
-
-// --------------------------------------------------------------------------------
-inline Vector3 Min(const Vector3& lh, const Vector3& rh)
-{
-    return Vector3(std::fmin(lh.X(), rh.X()), 
-                   std::fmin(lh.Y(), rh.Y()), 
-                   std::fmin(lh.Z(), rh.Z()));
-}
-
-// --------------------------------------------------------------------------------
-inline Vector3 Max(const Vector3& lh, const Vector3& rh)
-{
-    return Vector3(std::fmax(lh.X(), rh.X()),
-                   std::fmax(lh.Y(), rh.Y()),
-                   std::fmax(lh.Z(), rh.Z()));
-}

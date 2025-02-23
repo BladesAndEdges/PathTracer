@@ -18,8 +18,6 @@ public:
 	static inline Vector3 RandomVector3(float min, float max);
 	static inline Vector3 RandomUnitVector3(float min, float max);
 	static inline Vector3 RandomVector3OnHemisphere(const Vector3& surfaceNormal);
-	static inline Vector3 Min(const Vector3& lh, const Vector3& rh);
-	static inline Vector3 Max(const Vector3& lh, const Vector3& rh);
 
 private:
 

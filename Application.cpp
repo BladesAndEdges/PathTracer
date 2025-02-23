@@ -11,9 +11,7 @@
 Application::Application()
 {
 	m_parser = new ModelParser();
-	//m_parser->ParseFile(R"(Scenes\CornellBox\MyModifiedCornellBox.obj)", 1.0f);
-	//m_parser->ParseFile(R"(Scenes\CornellBox\CornellBox-Empty-CO.obj)", 1.0f);
-	m_parser->ParseFile(R"(Scenes\Sponza\sponza.obj)", 1.0f);
+	m_parser->ParseFile(R"(Scenes\CornellBox\CornellBox-Empty-CO.obj)", 1.0f);
 
 	m_context = new GLContext();
 	m_renderer = new Renderer(m_parser->GetPositionsX(), m_parser->GetPositionsY(), m_parser->GetPositionsZ(), 
@@ -47,8 +45,7 @@ void Application::Run()
 
 		m_context->ProcessCameraInput(m_renderer->GetCamera());
 
-		hasResized = m_context->HasFramebufferChanged();
-		if (hasResized)
+		if ((hasResized = m_context->HasFramebufferChanged()))
 		{
 			m_context->ResizeFramebuffer();
 		}

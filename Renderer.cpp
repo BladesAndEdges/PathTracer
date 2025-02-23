@@ -232,7 +232,7 @@ Camera* Renderer::GetCamera()
 }
 
 // --------------------------------------------------------------------------------
-void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResized)
+void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResized, PerformanceCounter& pc)
 {
 	if (hasResized || m_isFirstFrame)
 	{
@@ -255,6 +255,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 		Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
 
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------
+	pc.BeginTiming();
 	uint8_t* bytes = framebuffer->GetDataPtr();
 	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
 	{
@@ -303,6 +304,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				green = std::fmin(1.0f, radiance.Y());
 				blue = std::fmin(1.0f, radiance.Z());
 			}
+			pc.EndTiming();
 
 			if (xKeyState > 0u)
 			{

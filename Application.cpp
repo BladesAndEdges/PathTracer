@@ -37,11 +37,7 @@ void Application::Run()
 	// Rendering and all that 
 	while (!m_context->ShouldClose())
 	{
-		counter.BeginTiming();
 		m_context->Listen();
-
-		const double c_averageTime = CalculateAverageFrameTime(counter.GetMilliseconds(), frameNumber, m_frameTimes);
-		m_context->UpdatePerformanceStatistics(c_averageTime);
 
 		m_context->ProcessCameraInput(m_renderer->GetCamera());
 
@@ -51,13 +47,15 @@ void Application::Run()
 			m_context->ResizeFramebuffer();
 		}
 
-		m_renderer->UpdateFramebufferContents(m_context->GetFramebuffer(), hasResized);
+		m_renderer->UpdateFramebufferContents(m_context->GetFramebuffer(), hasResized, counter);
 		m_context->UpdateFramebuffer();
 
 		m_context->Draw();
 
 		m_context->SwapBuffers();
-		counter.EndTiming();
+
+		const double c_averageTime = CalculateAverageFrameTime(counter.GetMilliseconds(), frameNumber, m_frameTimes);
+		m_context->UpdatePerformanceStatistics(c_averageTime);
 
 		frameNumber++;
 	}
@@ -78,6 +76,6 @@ double CalculateAverageFrameTime(const double frameTimeInMilisecods, uint32_t fr
 		sum += buffer[frame];
 	}
 
-	const double averageTime = sum / currentFrameCount;
+	const double averageTime = sum / (double)currentFrameCount;
 	return averageTime;
 }

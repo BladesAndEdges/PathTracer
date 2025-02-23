@@ -12,6 +12,7 @@
 
 class BVHAccellStructure;
 class Framebuffer;
+class PerformanceCounter;
 
 class Renderer
 {
@@ -24,7 +25,7 @@ public:
 	Renderer& operator=(const Renderer&) = delete;
 
 	Camera* GetCamera();
-	void UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResized);
+	void UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResized, PerformanceCounter& pc);
 
 private:
 

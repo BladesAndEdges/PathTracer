@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 class Vector3
 {	
 public:
@@ -7,13 +9,15 @@ public:
 	Vector3();
 	Vector3(float x, float y, float z);
 
-	float X() const;
-	float Y() const;
-	float Z() const;
+	inline float X() const;
+	inline float Y() const;
+	inline float Z() const;
 
-	void SetX(float x);
-	void SetY(float y);
-	void SetZ(float z);
+	inline float GetValueByAxisIndex(uint32_t axis) const;
+
+	inline void SetX(float x);
+	inline void SetY(float y);
+	inline void SetZ(float z);
 
 	static inline Vector3 RandomVector3(float min, float max);
 	static inline Vector3 RandomUnitVector3(float min, float max);

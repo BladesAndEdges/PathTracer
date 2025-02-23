@@ -10,13 +10,13 @@ Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin),
 }
 
 // --------------------------------------------------------------------------------
-Vector3 Ray::Origin() const
+inline Vector3 Ray::Origin() const
 {
 	return m_rayOrigin;
 }
 
 // --------------------------------------------------------------------------------
-Vector3 Ray::Direction() const
+inline Vector3 Ray::Direction() const
 {
 	return m_normalizedRayDir;
 }
@@ -43,6 +43,28 @@ bool RayAABBIntersection(Ray& ray, const AABB& aabb)
 	float t0 = 0.0f;
 	float t1 = INFINITY;
 
+	for (uint32_t axis = 0u; axis < 3u; axis++)
+	{
+		const float invDirection = 1.0f / ray.Direction().GetValueByAxisIndex(axis);
+
+		float tNear = (aabb.min[axis] - ray.Origin().GetValueByAxisIndex(axis)) * invDirection;
+		float tFar = (aabb.max[axis] - ray.Origin().GetValueByAxisIndex(axis)) * invDirection;
+
+		// Handle ray traveling in negative axis direction
+		if (tNear > tFar) { std::swap(tNear, tFar); }
+
+		// Pad the results in order to avoid NaNs
+		tFar *= 1 + 2 * gamma(3);
+
+		//Update t0 and t1, based on the tigher bounds after planes clip the ray
+		t0 = (tNear > t0) ? tNear : t0;
+		t1 = (tFar < t1) ? tFar : t1;
+
+		// If no overlap detected
+		if (t0 > t1) { return false; }
+	}
+
+	return true;
 	const float rayOrigin[3u] = { ray.Origin().X(), ray.Origin().Y(), ray.Origin().Z()};
 	const float rayDirection[3u] = {ray.Direction().X(), ray.Direction().Y(), ray.Direction().Z()};
 

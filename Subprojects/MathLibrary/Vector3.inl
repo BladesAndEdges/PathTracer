@@ -1,5 +1,6 @@
 #include "Vector3.h"
 
+#include <assert.h>
 #include <cmath>
 
 // --------------------------------------------------------------------------------
@@ -28,6 +29,12 @@ inline float Vector3::Y() const
 inline float Vector3::Z() const
 {
     return m_z;
+}
+
+// --------------------------------------------------------------------------------
+inline float Vector3::GetValueByAxisIndex(uint32_t axis) const
+{
+    return (&m_x)[axis];
 }
 
 // --------------------------------------------------------------------------------

@@ -10,8 +10,8 @@ class Ray
 public:
 	Ray(const Vector3& origin, const Vector3& direction);
 
-	Vector3 Origin() const;
-	Vector3 Direction() const;
+	inline Vector3 Origin() const;
+	inline Vector3 Direction() const;
 	Vector3 CalculateIntersectionPoint(const float t) const;
 
 	uint32_t m_aabbIntersectionTests;

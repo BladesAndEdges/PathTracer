@@ -45,7 +45,8 @@ void Application::Run()
 
 		m_context->ProcessCameraInput(m_renderer->GetCamera());
 
-		if ((hasResized = m_context->HasFramebufferChanged()))
+		hasResized = m_context->HasFramebufferChanged();
+		if (hasResized)
 		{
 			m_context->ResizeFramebuffer();
 		}

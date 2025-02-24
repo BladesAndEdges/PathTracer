@@ -36,8 +36,10 @@ const float gamma(int n) {
 
 // --------------------------------------------------------------------------------
 // Function implementation follows the PBRT version https://pbr-book.org/4ed/Shapes/Basic_Shape_Interface
-bool RayAABBIntersection(Ray& ray, const AABB& aabb)
+bool RayAABBIntersection(Ray& ray, const Vector3& min, const Vector3& max)
 {
+	// -------------- testing with vec3
+#if 1
 	ray.m_aabbIntersectionTests++;
 
 	float t0 = 0.0f;
@@ -47,8 +49,8 @@ bool RayAABBIntersection(Ray& ray, const AABB& aabb)
 	{
 		const float invDirection = 1.0f / ray.Direction().GetValueByAxisIndex(axis);
 
-		float tNear = (aabb.min[axis] - ray.Origin().GetValueByAxisIndex(axis)) * invDirection;
-		float tFar = (aabb.max[axis] - ray.Origin().GetValueByAxisIndex(axis)) * invDirection;
+		float tNear = (min.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * invDirection;
+		float tFar = (max.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * invDirection;
 
 		// Handle ray traveling in negative axis direction
 		if (tNear > tFar) { std::swap(tNear, tFar); }

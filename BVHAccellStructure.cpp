@@ -41,57 +41,60 @@ const InnerNode& BVHAccellStructure::GetInnerNode(uint32_t index) const
 }
 
 // --------------------------------------------------------------------------------
-AABB BVHAccellStructure::CalculateAABB(uint32_t firstTriIndex)
+AABB BVHAccellStructure::CalculateAABB(uint32_t triangle)
 {
-	float minX = m_triangles[firstTriIndex].m_faceVertices[0u].m_position[0u];
-	float minY = m_triangles[firstTriIndex].m_faceVertices[0u].m_position[1u];
-	float minZ = m_triangles[firstTriIndex].m_faceVertices[0u].m_position[2u];
-
-	float maxX = m_triangles[firstTriIndex].m_faceVertices[0u].m_position[0u];
-	float maxY = m_triangles[firstTriIndex].m_faceVertices[0u].m_position[1u];
-	float maxZ = m_triangles[firstTriIndex].m_faceVertices[0u].m_position[2u];
-
-
+	Vector3 min(m_triangles[triangle].m_faceVertices[0u].m_position[0u],
+		m_triangles[triangle].m_faceVertices[0u].m_position[1u],
+		m_triangles[triangle].m_faceVertices[0u].m_position[2u]);
+	
+	Vector3 max(m_triangles[triangle].m_faceVertices[0u].m_position[0u],
+		m_triangles[triangle].m_faceVertices[0u].m_position[1u],
+		m_triangles[triangle].m_faceVertices[0u].m_position[2u]);
+	
 	for (uint32_t vertex = 1u; vertex < 3u; vertex++)
 	{
-		if (minX > m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[0u])
+		const Vector3 currentVertex(m_triangles[triangle].m_faceVertices[vertex].m_position[0u],
+			m_triangles[triangle].m_faceVertices[vertex].m_position[1u],
+			m_triangles[triangle].m_faceVertices[vertex].m_position[2u]);
+	
+		if (min.X() > currentVertex.X())
 		{
-			minX = m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[0u];
+			min.SetX(currentVertex.X());
 		}
-
-		if (minY > m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[1u])
+	
+		if (min.Y() > currentVertex.Y())
 		{
-			minY = m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[1u];
+			min.SetY(currentVertex.Y());
 		}
-
-		if (minZ > m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[2u])
+	
+		if (min.Z() > currentVertex.Z())
 		{
-			minZ = m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[2u];
+			min.SetZ(currentVertex.Z());
 		}
-
-		if (maxX < m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[0u])
+	
+		if (max.X() < currentVertex.X())
 		{
-			maxX = m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[0u];
+			max.SetX(currentVertex.X());
 		}
-
-		if (maxY < m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[1u])
+	
+		if (max.Y() < currentVertex.Y())
 		{
-			maxY = m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[1u];
+			max.SetY(currentVertex.Y());
 		}
-
-		if (maxZ < m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[2u])
+	
+		if (max.Z() < currentVertex.Z())
 		{
-			maxZ = m_triangles[firstTriIndex].m_faceVertices[vertex].m_position[2u];
+			max.SetZ(currentVertex.Z());
 		}
 	}
-
+	
 	AABB aabb;
-	aabb.min[0u] = minX;
-	aabb.min[1u] = minY;
-	aabb.min[2u] = minZ;
-	aabb.max[0u] = maxX;
-	aabb.max[1u] = maxY;
-	aabb.max[2u] = maxZ;
+	aabb.min[0u] = min.X();
+	aabb.min[1u] = min.Y();
+	aabb.min[2u] = min.Z();
+	aabb.max[0u] = max.X();
+	aabb.max[1u] = max.Y();
+	aabb.max[2u] = max.Z();
 
 	return aabb;
 }

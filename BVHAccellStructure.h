@@ -34,7 +34,7 @@ private:
 
 	ConstructResult ConstructNode(std::vector<Centroid>& centroids, const uint32_t start, 
 		const uint32_t end, const BVHPartitionStrategy& bvhPartitionStrategy);
-	AABB CalculateAABB(uint32_t firstTriIndex);
+	AABB CalculateAABB(uint32_t triangle);
 
 	std::vector<TriangleNode> m_triangleNodes;
 	std::vector<InnerNode> m_innerNodes;

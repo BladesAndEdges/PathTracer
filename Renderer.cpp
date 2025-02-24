@@ -1450,17 +1450,12 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 {
 	const InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
 
-	const Vector3 leftMin(node.m_leftAABB.min[0u], node.m_leftAABB.min[1u], node.m_leftAABB.min[2u]);
-	const Vector3 rightMin(node.m_rightAABB.min[0u], node.m_rightAABB.min[1u], node.m_rightAABB.min[2u]);
-	const Vector3 leftMax(node.m_leftAABB.max[0u], node.m_leftAABB.max[1u], node.m_leftAABB.max[2u]);
-	const Vector3 rightMax(node.m_rightAABB.max[0u], node.m_rightAABB.max[1u], node.m_rightAABB.max[2u]);
-
 	if (node.m_leftIsLeaf)
 	{
 		const uint32_t triangleNodeIndex = node.m_leftChild;
 		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
 	}
-	else if(RayAABBIntersection(ray, leftMin, leftMax))
+	else if(RayAABBIntersection(ray, node.m_leftAABB.m_min, node.m_leftAABB.m_max))
 	{
 		DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 	}
@@ -1479,7 +1474,7 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 		const uint32_t triangleNodeIndex = node.m_rightChild;
 		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
 	}
-	else if(RayAABBIntersection(ray, rightMin, rightMax))
+	else if(RayAABBIntersection(ray, node.m_rightAABB.m_min, node.m_rightAABB.m_max))
 	{
 		DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 	}

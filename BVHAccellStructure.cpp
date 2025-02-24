@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Vector3.h"
+
 // --------------------------------------------------------------------------------
 BVHAccellStructure::BVHAccellStructure(const std::vector<Triangle>& triangles, const BVHPartitionStrategy& bvhPartitionStrategy) : m_triangles(triangles)
 {
@@ -18,9 +20,9 @@ BVHAccellStructure::BVHAccellStructure(const std::vector<Triangle>& triangles, c
 		const AABB aabb = CalculateAABB(triangle);
 
 		centroids[triangle].m_triangleIndex = triangle;
-		centroids[triangle].m_centroid[0u] = 0.5f * aabb.min[0u] + 0.5f * aabb.max[0u];
-		centroids[triangle].m_centroid[1u] = 0.5f * aabb.min[1u] + 0.5f * aabb.max[1u];
-		centroids[triangle].m_centroid[2u] = 0.5f * aabb.min[2u] + 0.5f * aabb.max[2u];
+		centroids[triangle].m_centroid[0u] = 0.5f * aabb.m_min.X() + 0.5f * aabb.m_max.X();
+		centroids[triangle].m_centroid[1u] = 0.5f * aabb.m_min.Y() + 0.5f * aabb.m_max.Y();
+		centroids[triangle].m_centroid[2u] = 0.5f * aabb.m_min.Z() + 0.5f * aabb.m_max.Z();
 	}
 
 	const ConstructResult cr = ConstructNode(centroids, 0u, (uint32_t)centroids.size() - 1u, bvhPartitionStrategy);
@@ -43,58 +45,25 @@ const InnerNode& BVHAccellStructure::GetInnerNode(uint32_t index) const
 // --------------------------------------------------------------------------------
 AABB BVHAccellStructure::CalculateAABB(uint32_t triangle)
 {
-	Vector3 min(m_triangles[triangle].m_faceVertices[0u].m_position[0u],
-		m_triangles[triangle].m_faceVertices[0u].m_position[1u],
-		m_triangles[triangle].m_faceVertices[0u].m_position[2u]);
-	
-	Vector3 max(m_triangles[triangle].m_faceVertices[0u].m_position[0u],
-		m_triangles[triangle].m_faceVertices[0u].m_position[1u],
-		m_triangles[triangle].m_faceVertices[0u].m_position[2u]);
-	
+	struct AABB aabb;
+
+	aabb.m_min.SetX(m_triangles[triangle].m_faceVertices[0u].m_position[0u]);
+	aabb.m_min.SetY(m_triangles[triangle].m_faceVertices[0u].m_position[1u]);
+	aabb.m_min.SetZ(m_triangles[triangle].m_faceVertices[0u].m_position[2u]);
+
+	aabb.m_max.SetX(m_triangles[triangle].m_faceVertices[0u].m_position[0u]);
+	aabb.m_max.SetY(m_triangles[triangle].m_faceVertices[0u].m_position[1u]);
+	aabb.m_max.SetZ(m_triangles[triangle].m_faceVertices[0u].m_position[2u]);
+
 	for (uint32_t vertex = 1u; vertex < 3u; vertex++)
 	{
 		const Vector3 currentVertex(m_triangles[triangle].m_faceVertices[vertex].m_position[0u],
 			m_triangles[triangle].m_faceVertices[vertex].m_position[1u],
 			m_triangles[triangle].m_faceVertices[vertex].m_position[2u]);
-	
-		if (min.X() > currentVertex.X())
-		{
-			min.SetX(currentVertex.X());
-		}
-	
-		if (min.Y() > currentVertex.Y())
-		{
-			min.SetY(currentVertex.Y());
-		}
-	
-		if (min.Z() > currentVertex.Z())
-		{
-			min.SetZ(currentVertex.Z());
-		}
-	
-		if (max.X() < currentVertex.X())
-		{
-			max.SetX(currentVertex.X());
-		}
-	
-		if (max.Y() < currentVertex.Y())
-		{
-			max.SetY(currentVertex.Y());
-		}
-	
-		if (max.Z() < currentVertex.Z())
-		{
-			max.SetZ(currentVertex.Z());
-		}
+
+		aabb.m_min = Min(aabb.m_min, currentVertex);
+		aabb.m_max = Max(aabb.m_max, currentVertex);
 	}
-	
-	AABB aabb;
-	aabb.min[0u] = min.X();
-	aabb.min[1u] = min.Y();
-	aabb.min[2u] = min.Z();
-	aabb.max[0u] = max.X();
-	aabb.max[1u] = max.Y();
-	aabb.max[2u] = max.Z();
 
 	return aabb;
 }
@@ -104,13 +73,9 @@ AABB BVHAccellStructure::CalculateAABB(uint32_t triangle)
 AABB MergeAABB(AABB leftAABB, AABB rightAABB)
 {
 	AABB aabb;
-	aabb.min[0u] = std::fmin(leftAABB.min[0u], rightAABB.min[0u]);
-	aabb.min[1u] = std::fmin(leftAABB.min[1u], rightAABB.min[1u]);
-	aabb.min[2u] = std::fmin(leftAABB.min[2u], rightAABB.min[2u]);
 
-	aabb.max[0u] = std::fmax(leftAABB.max[0u], rightAABB.max[0u]);
-	aabb.max[1u] = std::fmax(leftAABB.max[1u], rightAABB.max[1u]);
-	aabb.max[2u] = std::fmax(leftAABB.max[2u], rightAABB.max[2u]);
+	aabb.m_min = Min(leftAABB.m_min, rightAABB.m_min);
+	aabb.m_max = Max(leftAABB.m_max, rightAABB.m_max);
 
 	return aabb;
 }

@@ -16,7 +16,7 @@ enum class BVHPartitionStrategy
 // --------------------------------------------------------------------------------
 struct Centroid
 {
-	float m_centroid[3u];
+	Vector3 m_centroid;
 	uint32_t m_triangleIndex;
 };
 

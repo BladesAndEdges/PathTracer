@@ -23,4 +23,4 @@ private:
 	Vector3 m_normalizedRayDir;
 };
 
-bool RayAABBIntersection(Ray& ray, const Vector3& min, const Vector3& max);
+bool RayAABBIntersection(Ray& ray, const struct AABB& aabb);

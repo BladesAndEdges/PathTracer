@@ -10,7 +10,8 @@
 enum class BVHPartitionStrategy
 {
 	HalfWayPoint, 
-	HalfWayLongestAxis
+	HalfWayLongestAxis, 
+	HalfWayLongestAxisWithSAH
 };
 
 // --------------------------------------------------------------------------------

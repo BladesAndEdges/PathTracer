@@ -1,5 +1,3 @@
-#include "Vector3.h"
-
 #include <assert.h>
 #include <cmath>
 

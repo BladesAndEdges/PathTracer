@@ -2,13 +2,8 @@
 
 #include <vector>
 
+#include "AABB.h"
 #include "Vector3.h"
-
-struct AABB
-{
-	Vector3 m_min;
-	Vector3 m_max;
-};
 
 struct ConstructResult
 {

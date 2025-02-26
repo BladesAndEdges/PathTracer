@@ -222,7 +222,7 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 	}
 #endif
 
-	m_bvhAccellStructure = new BVHAccellStructure(m_faces, BVHPartitionStrategy::HalfWayLongestAxis);
+	m_bvhAccellStructure = new BVHAccellStructure(m_faces, BVHPartitionStrategy::HalfWayLongestAxisWithSAH);
 }
 
 // --------------------------------------------------------------------------------

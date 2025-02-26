@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "Vector3.h"
-
 // --------------------------------------------------------------------------------
 BVHAccellStructure::BVHAccellStructure(const std::vector<Triangle>& triangles, const BVHPartitionStrategy& bvhPartitionStrategy) : m_triangles(triangles)
 {
@@ -61,18 +59,6 @@ AABB BVHAccellStructure::CalculateAABB(uint32_t triangle)
 		aabb.m_min = Min(aabb.m_min, currentVertex);
 		aabb.m_max = Max(aabb.m_max, currentVertex);
 	}
-
-	return aabb;
-}
-
-
-// --------------------------------------------------------------------------------
-AABB MergeAABB(AABB leftAABB, AABB rightAABB)
-{
-	AABB aabb;
-
-	aabb.m_min = Min(leftAABB.m_min, rightAABB.m_min);
-	aabb.m_max = Max(leftAABB.m_max, rightAABB.m_max);
 
 	return aabb;
 }
@@ -153,9 +139,9 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 			// Calculate the longest axis
 			const uint32_t axis = ChooseAxisForPartition(centroidsMin, centroidsMax);
 
-			const float splitPoint = centroidsMin.GetValueByAxisIndex(axis) + ((centroidsMax.GetValueByAxisIndex(axis) - centroidsMin.GetValueByAxisIndex(axis)) / 2.0f);
+			const float splitValue = centroidsMin.GetValueByAxisIndex(axis) + ((centroidsMax.GetValueByAxisIndex(axis) - centroidsMin.GetValueByAxisIndex(axis)) / 2.0f);
 
-			auto iterator = std::partition(centroids.begin() + start, centroids.begin() + end + 1, [&](Centroid& centroid) { return centroid.m_centroid.GetValueByAxisIndex(axis) < splitPoint; });
+			auto iterator = std::partition(centroids.begin() + start, centroids.begin() + end + 1, [&](Centroid& centroid) { return centroid.m_centroid.GetValueByAxisIndex(axis) < splitValue; });
 
 			const uint32_t indexOfRightNode = (uint32_t)std::distance(centroids.begin(), iterator);
 
@@ -189,6 +175,135 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 
 			break;
 		}
+		case BVHPartitionStrategy::HalfWayLongestAxisWithSAH:
+		{
+			// TODO: Maybe make a Min/Max for Vector3 to make this easier
+			Vector3 centroidsMin(centroids[start].m_centroid);
+			Vector3 centroidsMax(centroids[start].m_centroid);
+
+			// Calculate the bounding box for the centroids
+			for (uint32_t centroidStart = start + 1u; centroidStart < end + 1u; centroidStart++)
+			{
+				centroidsMin = Min(centroidsMin, centroids[centroidStart].m_centroid);
+				centroidsMax = Max(centroidsMax, centroids[centroidStart].m_centroid);
+			}
+
+			// Note: These aabbs are around the actual triangles, not their centroids
+
+			struct AABB aabbs[6u];
+
+			// Maybe do this in the aabb constructor, making sure aabbs are always said to infinity
+			for (uint32_t i = 0; i < 6u; i++)
+			{
+				aabbs[i].m_min.SetX(INFINITY);
+				aabbs[i].m_min.SetY(INFINITY);
+				aabbs[i].m_min.SetZ(INFINITY);
+
+				aabbs[i].m_max.SetX(-INFINITY);
+				aabbs[i].m_max.SetX(-INFINITY);
+				aabbs[i].m_max.SetX(-INFINITY);
+			}
+
+			uint32_t triangleCounts[6u] = {};
+
+			// For every triangle
+			for (uint32_t centroid = start; centroid < end + 1u; centroid++)
+			{
+				struct AABB currentTriangleAABB = CalculateAABB(centroids[centroid].m_triangleIndex);
+
+				for (uint32_t axis = 0u; axis < 3u; axis++)
+				{
+					const float splitValue = centroidsMin.GetValueByAxisIndex(axis) +
+						((centroidsMax.GetValueByAxisIndex(axis) - centroidsMin.GetValueByAxisIndex(axis)) / 2.0f);
+
+					// Maybe find a way to remove some of the duplicated code later
+					const uint32_t index = (centroids[centroid].m_centroid.GetValueByAxisIndex(axis) < splitValue) ? 2u * axis : 2u * axis + 1u;
+					
+					aabbs[index].MergeAABB(currentTriangleAABB);
+					triangleCounts[index]++;
+				}
+			}
+
+			// Pick axis to split via SAH
+			float minimumCost = INFINITY;
+			uint32_t axis = UINT32_MAX;
+
+			for (uint32_t i = 0u; i < 3u; i++)
+			{
+				const uint32_t lIndex = 2u * i;
+				const uint32_t rIndex = 2u * i + 1u;
+
+				struct AABB V;
+				V.MergeAABB(aabbs[lIndex]);
+				V.MergeAABB(aabbs[rIndex]);
+
+				const float saV = V.GetSurfaceArea();
+
+				float vl = 0.0f;
+				float vlSah = 0.0f;
+				if (triangleCounts[lIndex] > 0u)
+				{
+					vl = aabbs[lIndex].GetSurfaceArea();
+					vlSah = vl / saV;
+				}
+
+				float vr = 0.0f;
+				float vrSah = 0.0f;
+				if (triangleCounts[rIndex] > 0u)
+				{
+					vr = aabbs[rIndex].GetSurfaceArea();
+					vrSah = vr / saV;
+				}
+
+				const float cost = vlSah * (float)triangleCounts[lIndex] + 
+					vrSah * (float)triangleCounts[rIndex];
+
+				if (cost < minimumCost)
+				{
+					minimumCost = cost;
+					axis = i;
+				}
+			}
+
+			// Partitioning
+			const float splitValue = centroidsMin.GetValueByAxisIndex(axis) +
+				((centroidsMax.GetValueByAxisIndex(axis) - centroidsMin.GetValueByAxisIndex(axis)) / 2.0f);
+
+			auto iterator = std::partition(centroids.begin() + start, centroids.begin() + end + 1, [&](Centroid& centroid) { return centroid.m_centroid.GetValueByAxisIndex(axis) < splitValue; });
+
+			const uint32_t indexOfRightNode = (uint32_t)std::distance(centroids.begin(), iterator);
+
+			if ((end - start) == 1u)
+			{
+				leftStart = start;
+				leftEnd = start;
+				rightStart = end;
+				rightEnd = end;
+			}
+			else
+			{
+				leftStart = start;
+				leftEnd = (indexOfRightNode == 0u) ? indexOfRightNode : indexOfRightNode - 1u;
+				rightStart = indexOfRightNode;
+				rightEnd = end;
+
+				// Recalculate if all nodes end up on a single child
+				// Use halfway split on the nodes
+				if ((leftEnd == end) || (rightStart == start))
+				{
+					const uint32_t centroidsInNode = (end - start) + 1u;
+					const uint32_t numInLeftSubtree = centroidsInNode / 2u;
+
+					leftStart = start;
+					leftEnd = (start + numInLeftSubtree) - 1u;
+					rightStart = leftEnd + 1u;
+					rightEnd = end;
+				}
+			}
+
+
+			break;
+		}
 		default:
 		{
 			const uint32_t centroidsInNode = (end - start) + 1u;
@@ -216,7 +331,8 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 
 		cs.isLeaf = false;
 		cs.m_index = innerNodeIndex;
-		cs.m_aabb = MergeAABB(left.m_aabb, right.m_aabb);
+		cs.m_aabb.MergeAABB(left.m_aabb);
+		cs.m_aabb.MergeAABB(right.m_aabb);
 	}
 
 	return cs;

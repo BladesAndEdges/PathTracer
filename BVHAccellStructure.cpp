@@ -189,22 +189,17 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 			}
 
 			// Note: These aabbs are around the actual triangles, not their centroids
+			constexpr uint32_t splitCount = 34u;
+			constexpr uint32_t splitDivisor = splitCount + 1u;
 
-			struct AABB aabbs[6u];
-
-			// Maybe do this in the aabb constructor, making sure aabbs are always said to infinity
-			for (uint32_t i = 0; i < 6u; i++)
+			float splitValues[3u * splitCount];
+			for (uint32_t value = 0u; value < 3u * splitCount; value++)
 			{
-				aabbs[i].m_min.SetX(INFINITY);
-				aabbs[i].m_min.SetY(INFINITY);
-				aabbs[i].m_min.SetZ(INFINITY);
-
-				aabbs[i].m_max.SetX(-INFINITY);
-				aabbs[i].m_max.SetX(-INFINITY);
-				aabbs[i].m_max.SetX(-INFINITY);
+				splitValues[value] = INFINITY;
 			}
 
-			uint32_t triangleCounts[6u] = {};
+			struct AABB aabbs[3u * splitCount * 2u];
+			uint32_t triangleCounts[3u * splitCount * 2u] = {};
 
 			// For every triangle
 			for (uint32_t centroid = start; centroid < end + 1u; centroid++)
@@ -213,63 +208,80 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 
 				for (uint32_t axis = 0u; axis < 3u; axis++)
 				{
-					const float splitValue = centroidsMin.GetValueByAxisIndex(axis) +
-						((centroidsMax.GetValueByAxisIndex(axis) - centroidsMin.GetValueByAxisIndex(axis)) / 2.0f);
+					// I think you can compute the 3 axes lengths outside, and cache them, instead of needlessly recomputing here
+					// this is here just for my sanity atm
+					const float axisLength = centroidsMax.GetValueByAxisIndex(axis) - centroidsMin.GetValueByAxisIndex(axis);
+					const float splitIncrement = axisLength / (float)splitDivisor;
 
-					// Maybe find a way to remove some of the duplicated code later
-					const uint32_t index = (centroids[centroid].m_centroid.GetValueByAxisIndex(axis) < splitValue) ? 2u * axis : 2u * axis + 1u;
-					
-					aabbs[index].MergeAABB(currentTriangleAABB);
-					triangleCounts[index]++;
+					for (uint32_t split = 0u; split < splitCount; split++)
+					{
+						const uint32_t splitValueIndex = (axis * splitCount) + split;
+						splitValues[splitValueIndex] = centroidsMin.GetValueByAxisIndex(axis) + (((float)split * splitIncrement) + splitIncrement);
+
+						const uint32_t index = (centroids[centroid].m_centroid.GetValueByAxisIndex(axis) < splitValues[splitValueIndex]) ? 
+							(axis * splitCount * 2u) + (split * 2u) :
+							(axis * splitCount * 2u) + (split * 2u) + 1u;
+
+						aabbs[index].MergeAABB(currentTriangleAABB);
+						triangleCounts[index]++;
+					}
 				}
 			}
 
 			// Pick axis to split via SAH
-			float minimumCost = INFINITY;
-			uint32_t axis = UINT32_MAX;
+			float bestCost = INFINITY;
+			uint32_t bestAxis = UINT32_MAX;
+			float bestSplitValue = INFINITY;
 
-			for (uint32_t i = 0u; i < 3u; i++)
+			for (uint32_t axis = 0u; axis < 3u; axis++)
 			{
-				const uint32_t lIndex = 2u * i;
-				const uint32_t rIndex = 2u * i + 1u;
-
-				struct AABB V;
-				V.MergeAABB(aabbs[lIndex]);
-				V.MergeAABB(aabbs[rIndex]);
-
-				const float saV = V.GetSurfaceArea();
-
-				float vl = 0.0f;
-				float vlSah = 0.0f;
-				if (triangleCounts[lIndex] > 0u)
+				for (uint32_t split = 0u; split < splitCount; split++)
 				{
-					vl = aabbs[lIndex].GetSurfaceArea();
-					vlSah = vl / saV;
-				}
+					const uint32_t lIndex = (axis * splitCount * 2u) + (split * 2u);
+					const uint32_t rIndex = (axis * splitCount * 2u) + (split * 2u) + 1u;
 
-				float vr = 0.0f;
-				float vrSah = 0.0f;
-				if (triangleCounts[rIndex] > 0u)
-				{
-					vr = aabbs[rIndex].GetSurfaceArea();
-					vrSah = vr / saV;
-				}
+					struct AABB V;
+					V.MergeAABB(aabbs[lIndex]);
+					V.MergeAABB(aabbs[rIndex]);
 
-				const float cost = vlSah * (float)triangleCounts[lIndex] + 
-					vrSah * (float)triangleCounts[rIndex];
+					const float saV = V.GetSurfaceArea();
 
-				if (cost < minimumCost)
-				{
-					minimumCost = cost;
-					axis = i;
+					float vl = 0.0f;
+					float vlSah = 0.0f;
+					if (triangleCounts[lIndex] > 0u)
+					{
+						vl = aabbs[lIndex].GetSurfaceArea();
+						vlSah = vl / saV;
+					}
+
+					float vr = 0.0f;
+					float vrSah = 0.0f;
+					if (triangleCounts[rIndex] > 0u)
+					{
+						vr = aabbs[rIndex].GetSurfaceArea();
+						vrSah = vr / saV;
+					}
+
+					const float cost = vlSah * (float)triangleCounts[lIndex] +
+						vrSah * (float)triangleCounts[rIndex];
+
+					if (cost < bestCost)
+					{
+						bestCost = cost;
+						bestAxis = axis;
+
+						const uint32_t splitValueIndex = (axis * splitCount) + split;
+						bestSplitValue = splitValues[splitValueIndex];
+
+						// TO DO:
+						// Figure out when a splitValue will ever be set to INFINITY - Split values will never be INFINITY at this stage, they
+						// would instead be set to whatever value the increment computed in the loop generating aabbs and splitvalues - this is guarranteed
+					}
 				}
 			}
 
 			// Partitioning
-			const float splitValue = centroidsMin.GetValueByAxisIndex(axis) +
-				((centroidsMax.GetValueByAxisIndex(axis) - centroidsMin.GetValueByAxisIndex(axis)) / 2.0f);
-
-			auto iterator = std::partition(centroids.begin() + start, centroids.begin() + end + 1, [&](Centroid& centroid) { return centroid.m_centroid.GetValueByAxisIndex(axis) < splitValue; });
+			auto iterator = std::partition(centroids.begin() + start, centroids.begin() + end + 1, [&](Centroid& centroid) { return centroid.m_centroid.GetValueByAxisIndex(bestAxis) < bestSplitValue; });
 
 			const uint32_t indexOfRightNode = (uint32_t)std::distance(centroids.begin(), iterator);
 

@@ -21,8 +21,3 @@ struct InnerNode
 	bool m_leftIsLeaf;
 	bool m_rightIsLeaf;
 };
-
-struct TriangleNode
-{
-	uint32_t m_index;
-};

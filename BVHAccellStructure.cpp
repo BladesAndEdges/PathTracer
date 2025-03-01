@@ -24,13 +24,6 @@ BVHAccellStructure::BVHAccellStructure(const std::vector<Triangle>& triangles, c
 }
 
 // --------------------------------------------------------------------------------
-const TriangleNode& BVHAccellStructure::GetTriangleNode(uint32_t index) const
-{
-	assert(index < m_triangleNodes.size());
-	return m_triangleNodes[index];
-}
-
-// --------------------------------------------------------------------------------
 const InnerNode& BVHAccellStructure::GetInnerNode(uint32_t index) const
 {
 	assert(index < m_innerNodes.size());
@@ -92,14 +85,9 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 
 	if (end == start)
 	{
-		TriangleNode node;
-		node.m_index = centroids[start].m_triangleIndex;
-
 		cs.isLeaf = true;
 		cs.m_index = centroids[start].m_triangleIndex;
 		cs.m_aabb = CalculateAABB(centroids[start].m_triangleIndex);
-
-		m_triangleNodes.push_back(node);
 	}
 	else
 	{ 

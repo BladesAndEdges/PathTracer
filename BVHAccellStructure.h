@@ -28,7 +28,6 @@ public:
 
 	BVHAccellStructure(const std::vector<Triangle>& triangles, const BVHPartitionStrategy& bvhPartitionStrategy);
 
-	const TriangleNode& GetTriangleNode(uint32_t index) const;
 	const InnerNode& GetInnerNode(uint32_t index) const;
 
 private:
@@ -37,7 +36,6 @@ private:
 		const uint32_t end, const BVHPartitionStrategy& bvhPartitionStrategy);
 	AABB CalculateAABB(uint32_t triangle);
 
-	std::vector<TriangleNode> m_triangleNodes;
 	std::vector<InnerNode> m_innerNodes;
 	std::vector<Triangle> m_triangles;
 };

@@ -7,18 +7,7 @@ Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin),
 {
 	// In case not normalized
 	m_normalizedRayDir = Normalize(direction);
-}
-
-// --------------------------------------------------------------------------------
-inline Vector3 Ray::Origin() const
-{
-	return m_rayOrigin;
-}
-
-// --------------------------------------------------------------------------------
-inline Vector3 Ray::Direction() const
-{
-	return m_normalizedRayDir;
+	m_inverseDirection = Vector3(1.0f / m_normalizedRayDir.X(), 1.0f / m_normalizedRayDir.Y(), 1.0f / m_normalizedRayDir.Z());
 }
 
 // --------------------------------------------------------------------------------
@@ -46,10 +35,8 @@ bool RayAABBIntersection(Ray& ray, const struct AABB& aabb)
 
 	for (uint32_t axis = 0u; axis < 3u; axis++)
 	{
-		const float invDirection = 1.0f / ray.Direction().GetValueByAxisIndex(axis);
-
-		float tNear = (aabb.m_min.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * invDirection;
-		float tFar = (aabb.m_max.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * invDirection;
+		float tNear = (aabb.m_min.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * ray.InverseDirection().GetValueByAxisIndex(axis);
+		float tFar = (aabb.m_max.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * ray.InverseDirection().GetValueByAxisIndex(axis);
 
 		// Handle ray traveling in negative axis direction
 		if (tNear > tFar) { std::swap(tNear, tFar); }

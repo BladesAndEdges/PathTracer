@@ -12,6 +12,7 @@ public:
 
 	inline Vector3 Origin() const;
 	inline Vector3 Direction() const;
+	inline Vector3 InverseDirection() const;
 	Vector3 CalculateIntersectionPoint(const float t) const;
 
 	uint32_t m_aabbIntersectionTests;
@@ -21,6 +22,9 @@ private:
 
 	Vector3 m_rayOrigin;
 	Vector3 m_normalizedRayDir;
+	Vector3 m_inverseDirection;
 };
 
 bool RayAABBIntersection(Ray& ray, const struct AABB& aabb);
+
+#include "Ray.inl"

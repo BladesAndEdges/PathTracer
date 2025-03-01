@@ -1437,37 +1437,79 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 {
 	const InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
 
-	// Look to visit closest node first
-	// Ray aabb intersection outputs a bool and a distnace too
-	// Visit one with smallest distance first
+	if (!(node.m_leftChild >> 31u) && !(node.m_rightChild >> 31u))
+	{
+		float leftTNear = INFINITY;
+		float rightTNear = INFINITY;
 
-	if (node.m_leftChild >> 31u)
-	{
-		const uint32_t triangleIndex = node.m_leftChild & ~(1u << 31u);
-		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
-	}
-	else if(RayAABBIntersection(ray, node.m_leftAABB))
-	{
-		DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-	}
+		const bool hitLeft = RayAABBIntersection(ray, node.m_leftAABB, &leftTNear);
+		const bool hitRight = RayAABBIntersection(ray, node.m_rightAABB, &rightTNear);
 
-	// Early exit for secondary rays
-	if constexpr (T_acceptAnyHit)
-	{
-		if (out_hasHit)
+		if (!hitLeft && !hitRight) { return; }
+
+		if (leftTNear < rightTNear)
 		{
-			return;
+			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+
+			// Early exit for secondary rays
+			if constexpr (T_acceptAnyHit)
+			{
+				if (out_hasHit)
+				{
+					return;
+				}
+			}
+
+			if (!hitRight) { return; }
+			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		}
+		else
+		{
+			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+
+			// Early exit for secondary rays
+			if constexpr (T_acceptAnyHit)
+			{
+				if (out_hasHit)
+				{
+					return;
+				}
+			}
+
+			if (!hitLeft) { return; }
+			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 	}
+	else
+	{
+		if (node.m_leftChild >> 31u)
+		{
+			const uint32_t triangleIndex = node.m_leftChild & ~(1u << 31u);
+			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
+		}
+		else if (RayAABBIntersection(ray, node.m_leftAABB, nullptr))
+		{
+			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		}
 
-	if (node.m_rightChild >> 31u)
-	{
-		const uint32_t triangleIndex = node.m_rightChild & ~(1u << 31u);
-		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
-	}
-	else if(RayAABBIntersection(ray, node.m_rightAABB))
-	{
-		DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		// Early exit for secondary rays
+		if constexpr (T_acceptAnyHit)
+		{
+			if (out_hasHit)
+			{
+				return;
+			}
+		}
+
+		if (node.m_rightChild >> 31u)
+		{
+			const uint32_t triangleIndex = node.m_rightChild & ~(1u << 31u);
+			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
+		}
+		else if (RayAABBIntersection(ray, node.m_rightAABB, nullptr))
+		{
+			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		}
 	}
 }
 

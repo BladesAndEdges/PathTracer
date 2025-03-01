@@ -26,7 +26,7 @@ const float gamma(int n) {
 
 // --------------------------------------------------------------------------------
 // Function implementation follows the PBRT version https://pbr-book.org/4ed/Shapes/Basic_Shape_Interface
-bool RayAABBIntersection(Ray& ray, const struct AABB& aabb)
+bool RayAABBIntersection(Ray& ray, const AABB& aabb, float* out_hitNear)
 {
 	ray.m_aabbIntersectionTests++;
 

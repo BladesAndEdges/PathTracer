@@ -1432,28 +1432,19 @@ void Renderer::TraverseBVH(Ray& ray, const uint32_t rayIndex, const float tMin, 
 }
 
 // --------------------------------------------------------------------------------
-		// Get your resolution to something like 480p - Done
-		// Get a proper camera positon, overlooking the length of sponza from inside - Done
-		// Further improvements with spreadsheet to record timings
-		// 1. T_acceptAnyHit - Done
-		// 2. SAH (maybe?)
-		// 3. tmax adjust after each intersection test
-		// 4. Picking which aabb to visit first, isntead of always doing left then right
-		// 5. SSE BVH intel embree ?
-
-		//if (T_acceptAnyHit && out_hasHit) // figure out how to not go down the right path
-		//{
-		//	return;
-		//}
 template<bool T_acceptAnyHit>
 void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
 	const InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
 
-	if (node.m_leftIsLeaf)
+	// Look to visit closest node first
+	// Ray aabb intersection outputs a bool and a distnace too
+	// Visit one with smallest distance first
+
+	if (node.m_leftChild >> 31u)
 	{
-		const uint32_t triangleNodeIndex = node.m_leftChild;
-		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
+		const uint32_t triangleIndex = node.m_leftChild & ~(1u << 31u);
+		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 	}
 	else if(RayAABBIntersection(ray, node.m_leftAABB))
 	{
@@ -1469,10 +1460,10 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 		}
 	}
 
-	if (node.m_rightIsLeaf)
+	if (node.m_rightChild >> 31u)
 	{
-		const uint32_t triangleNodeIndex = node.m_rightChild;
-		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleNodeIndex, out_hitResult, out_hasHit);
+		const uint32_t triangleIndex = node.m_rightChild & ~(1u << 31u);
+		HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 	}
 	else if(RayAABBIntersection(ray, node.m_rightAABB))
 	{

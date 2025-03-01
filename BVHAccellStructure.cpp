@@ -85,8 +85,7 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 
 	if (end == start)
 	{
-		cs.isLeaf = true;
-		cs.m_index = centroids[start].m_triangleIndex;
+		cs.m_index = centroids[start].m_triangleIndex | (1u << 31u);
 		cs.m_aabb = CalculateAABB(centroids[start].m_triangleIndex);
 	}
 	else
@@ -323,13 +322,10 @@ ConstructResult BVHAccellStructure::ConstructNode(std::vector<Centroid>& centroi
 
 		m_innerNodes[innerNodeIndex].m_leftChild = left.m_index;
 		m_innerNodes[innerNodeIndex].m_leftAABB = left.m_aabb;
-		m_innerNodes[innerNodeIndex].m_leftIsLeaf = left.isLeaf;
 
 		m_innerNodes[innerNodeIndex].m_rightChild = right.m_index;
 		m_innerNodes[innerNodeIndex].m_rightAABB = right.m_aabb;
-		m_innerNodes[innerNodeIndex].m_rightIsLeaf = right.isLeaf;
 
-		cs.isLeaf = false;
 		cs.m_index = innerNodeIndex;
 		cs.m_aabb.MergeAABB(left.m_aabb);
 		cs.m_aabb.MergeAABB(right.m_aabb);

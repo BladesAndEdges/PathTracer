@@ -26,12 +26,12 @@ const float gamma(int n) {
 
 // --------------------------------------------------------------------------------
 // Function implementation follows the PBRT version https://pbr-book.org/4ed/Shapes/Basic_Shape_Interface
-bool RayAABBIntersection(Ray& ray, const AABB& aabb, float* out_hitNear)
+bool RayAABBIntersection(Ray& ray, const AABB& aabb, const float tMax, float* out_hitNear)
 {
 	ray.m_aabbIntersectionTests++;
 
 	float t0 = 0.0f;
-	float t1 = INFINITY;
+	float t1 = tMax;
 
 	for (uint32_t axis = 0u; axis < 3u; axis++)
 	{
@@ -51,8 +51,8 @@ bool RayAABBIntersection(Ray& ray, const AABB& aabb, float* out_hitNear)
 		// If no overlap detected
 		if (t0 > t1) { return false; }
 	}
+
+	if (out_hitNear) { *out_hitNear = t0; }
 	
 	return true;
 }
-
-

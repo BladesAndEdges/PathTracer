@@ -1441,16 +1441,16 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 	{
 		float leftTNear = INFINITY;
 		float rightTNear = INFINITY;
-
-		const bool hitLeft = RayAABBIntersection(ray, node.m_leftAABB, &leftTNear);
-		const bool hitRight = RayAABBIntersection(ray, node.m_rightAABB, &rightTNear);
-
+	
+		const bool hitLeft = RayAABBIntersection(ray, node.m_leftAABB, tMax, &leftTNear);
+		const bool hitRight = RayAABBIntersection(ray, node.m_rightAABB, tMax, &rightTNear);
+	
 		if (!hitLeft && !hitRight) { return; }
-
+	
 		if (leftTNear < rightTNear)
 		{
 			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-
+	
 			// Early exit for secondary rays
 			if constexpr (T_acceptAnyHit)
 			{
@@ -1459,14 +1459,14 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 					return;
 				}
 			}
-
+	
 			if (!hitRight) { return; }
 			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 		else
 		{
 			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-
+	
 			// Early exit for secondary rays
 			if constexpr (T_acceptAnyHit)
 			{
@@ -1475,7 +1475,7 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 					return;
 				}
 			}
-
+	
 			if (!hitLeft) { return; }
 			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
@@ -1487,7 +1487,7 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 			const uint32_t triangleIndex = node.m_leftChild & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
-		else if (RayAABBIntersection(ray, node.m_leftAABB, nullptr))
+		else if (RayAABBIntersection(ray, node.m_leftAABB, tMax, nullptr))
 		{
 			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
@@ -1506,7 +1506,7 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 			const uint32_t triangleIndex = node.m_rightChild & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
-		else if (RayAABBIntersection(ray, node.m_rightAABB, nullptr))
+		else if (RayAABBIntersection(ray, node.m_rightAABB, tMax, nullptr))
 		{
 			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}

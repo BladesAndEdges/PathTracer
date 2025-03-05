@@ -25,6 +25,6 @@ private:
 	Vector3 m_inverseDirection;
 };
 
-bool RayAABBIntersection(Ray& ray, const struct AABB& aabb, float* out_hitNear);
+bool RayAABBIntersection(Ray& ray, const struct AABB& aabb,const float tMax, float* out_hitNear);
 
 #include "Ray.inl"

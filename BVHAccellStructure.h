@@ -17,8 +17,16 @@ enum class BVHPartitionStrategy
 // --------------------------------------------------------------------------------
 struct Centroid
 {
-	Vector3 m_centroid;
+	Vector3 m_position;
 	uint32_t m_triangleIndex;
+};
+
+// Triangle's centroid and the aabb
+// --------------------------------------------------------------------------------
+struct BVHPartitionData
+{
+	Centroid m_centroid;
+	AABB m_aabb;
 };
 
 // --------------------------------------------------------------------------------
@@ -32,7 +40,7 @@ public:
 
 private:
 
-	ConstructResult ConstructNode(std::vector<Centroid>& centroids, const uint32_t start, 
+	ConstructResult ConstructNode(std::vector<BVHPartitionData>& bvhPartitionData, const uint32_t start, 
 		const uint32_t end, const BVHPartitionStrategy& bvhPartitionStrategy);
 	AABB CalculateAABB(uint32_t triangle);
 

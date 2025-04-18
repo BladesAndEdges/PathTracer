@@ -5,7 +5,8 @@
 #include <xmmintrin.h>
 #include <immintrin.h>
 
-#include "BVHAccellStructure.h"
+#include "BVH2AccellStructure.h"
+#include "BVH4AccellStructure.h"
 #include "Framebuffer.h"
 #include "PerformanceCounter.h"
 #include "Vector3.h"
@@ -222,7 +223,9 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 	}
 #endif
 
-	m_bvhAccellStructure = new BVHAccellStructure(m_faces, BVHPartitionStrategy::HalfWayLongestAxisWithSAH);
+	m_bvhAccellStructure = new BVH2AccellStructure(m_faces, BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
+	//BVH4AccellStructure* bvhAccellStructure = new BVH4AccellStructure(m_bvhAccellStructure);
+	//assert(bvhAccellStructure != nullptr);
 }
 
 // --------------------------------------------------------------------------------
@@ -276,7 +279,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 				Vector3 radiance(0.0f, 0.0f, 0.0f);
 				const uint32_t numSamples = 1u;
-				const uint32_t depth = 2u;
+				const uint32_t depth = 1u;
 
 				for (uint32_t sample = 0u; sample < numSamples; sample++)
 				{
@@ -1226,13 +1229,13 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 
 	for (uint32_t triangle = 0u; triangle < m_faces.size(); triangle++)
 	{
-		const Vector3 edge1 = Vector3(m_faces[triangle].m_faceVertices[1u].m_position[0u] - m_faces[triangle].m_faceVertices[0u].m_position[0u],
-									  m_faces[triangle].m_faceVertices[1u].m_position[1u] - m_faces[triangle].m_faceVertices[0u].m_position[1u],
-									  m_faces[triangle].m_faceVertices[1u].m_position[2u] - m_faces[triangle].m_faceVertices[0u].m_position[2u]);
+		const Vector3 edge1 = Vector3(m_faces[triangle].m_vertices[1u].m_position[0u] - m_faces[triangle].m_vertices[0u].m_position[0u],
+									  m_faces[triangle].m_vertices[1u].m_position[1u] - m_faces[triangle].m_vertices[0u].m_position[1u],
+									  m_faces[triangle].m_vertices[1u].m_position[2u] - m_faces[triangle].m_vertices[0u].m_position[2u]);
 
-		const Vector3 edge2 = Vector3(m_faces[triangle].m_faceVertices[2u].m_position[0u] - m_faces[triangle].m_faceVertices[0u].m_position[0u],
-									  m_faces[triangle].m_faceVertices[2u].m_position[1u] - m_faces[triangle].m_faceVertices[0u].m_position[1u],
-									  m_faces[triangle].m_faceVertices[2u].m_position[2u] - m_faces[triangle].m_faceVertices[0u].m_position[2u]);
+		const Vector3 edge2 = Vector3(m_faces[triangle].m_vertices[2u].m_position[0u] - m_faces[triangle].m_vertices[0u].m_position[0u],
+									  m_faces[triangle].m_vertices[2u].m_position[1u] - m_faces[triangle].m_vertices[0u].m_position[1u],
+									  m_faces[triangle].m_vertices[2u].m_position[2u] - m_faces[triangle].m_vertices[0u].m_position[2u]);
 
 		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 		const Vector3 pVec = Cross(ray.Direction(), edge2);
@@ -1244,9 +1247,9 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		{
 			const float invDet = 1.0f / det;
 
-			const Vector3 tVec = ray.Origin() - Vector3(m_faces[triangle].m_faceVertices[0u].m_position[0u], 
-														m_faces[triangle].m_faceVertices[0u].m_position[1u], 
-														m_faces[triangle].m_faceVertices[0u].m_position[2u]);
+			const Vector3 tVec = ray.Origin() - Vector3(m_faces[triangle].m_vertices[0u].m_position[0u], 
+														m_faces[triangle].m_vertices[0u].m_position[1u], 
+														m_faces[triangle].m_vertices[0u].m_position[2u]);
 
 			const float u = Dot(tVec, pVec) * invDet;
 
@@ -1435,9 +1438,11 @@ void Renderer::TraverseBVH(Ray& ray, const uint32_t rayIndex, const float tMin, 
 template<bool T_acceptAnyHit>
 void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
-	const InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
+	const BVH2InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
+	const bool leftIsLeaf = node.m_leftChild >> 31u;
+	const bool rightIsLeaf = node.m_rightChild >> 31u;
 
-	if (!(node.m_leftChild >> 31u) && !(node.m_rightChild >> 31u))
+	if (!leftIsLeaf && !rightIsLeaf)
 	{
 		float leftTNear = INFINITY;
 		float rightTNear = INFINITY;
@@ -1482,7 +1487,7 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 	}
 	else
 	{
-		if (node.m_leftChild >> 31u)
+		if (leftIsLeaf)
 		{
 			const uint32_t triangleIndex = node.m_leftChild & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
@@ -1501,7 +1506,7 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 			}
 		}
 
-		if (node.m_rightChild >> 31u)
+		if (rightIsLeaf)
 		{
 			const uint32_t triangleIndex = node.m_rightChild & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
@@ -1527,6 +1532,8 @@ HitResult Renderer::TraceRayAgainstBVH(Ray& ray, const uint32_t rayIndex, const 
 template<bool T_acceptAnyHit>
 void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit)
 {
+	//assert(triangleIndex < m_faces.size());
+
 	ray.m_triangleIntersectionTests++;
 
 #ifdef _DEBUG
@@ -1536,13 +1543,13 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	(void)(rayIndex);
 #endif
 
-	const Vector3 edge1 = Vector3(m_faces[triangleIndex].m_faceVertices[1u].m_position[0u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[0u],
-		m_faces[triangleIndex].m_faceVertices[1u].m_position[1u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[1u],
-		m_faces[triangleIndex].m_faceVertices[1u].m_position[2u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[2u]);
+	const Vector3 edge1 = Vector3(m_faces[triangleIndex].m_vertices[1u].m_position[0u] - m_faces[triangleIndex].m_vertices[0u].m_position[0u],
+		m_faces[triangleIndex].m_vertices[1u].m_position[1u] - m_faces[triangleIndex].m_vertices[0u].m_position[1u],
+		m_faces[triangleIndex].m_vertices[1u].m_position[2u] - m_faces[triangleIndex].m_vertices[0u].m_position[2u]);
 
-	const Vector3 edge2 = Vector3(m_faces[triangleIndex].m_faceVertices[2u].m_position[0u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[0u],
-		m_faces[triangleIndex].m_faceVertices[2u].m_position[1u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[1u],
-		m_faces[triangleIndex].m_faceVertices[2u].m_position[2u] - m_faces[triangleIndex].m_faceVertices[0u].m_position[2u]);
+	const Vector3 edge2 = Vector3(m_faces[triangleIndex].m_vertices[2u].m_position[0u] - m_faces[triangleIndex].m_vertices[0u].m_position[0u],
+		m_faces[triangleIndex].m_vertices[2u].m_position[1u] - m_faces[triangleIndex].m_vertices[0u].m_position[1u],
+		m_faces[triangleIndex].m_vertices[2u].m_position[2u] - m_faces[triangleIndex].m_vertices[0u].m_position[2u]);
 
 	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 	const Vector3 pVec = Cross(ray.Direction(), edge2);
@@ -1554,9 +1561,9 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	{
 		const float invDet = 1.0f / det;
 
-		const Vector3 tVec = ray.Origin() - Vector3(m_faces[triangleIndex].m_faceVertices[0u].m_position[0u],
-			m_faces[triangleIndex].m_faceVertices[0u].m_position[1u],
-			m_faces[triangleIndex].m_faceVertices[0u].m_position[2u]);
+		const Vector3 tVec = ray.Origin() - Vector3(m_faces[triangleIndex].m_vertices[0u].m_position[0u],
+			m_faces[triangleIndex].m_vertices[0u].m_position[1u],
+			m_faces[triangleIndex].m_vertices[0u].m_position[2u]);
 
 		const float u = Dot(tVec, pVec) * invDet;
 

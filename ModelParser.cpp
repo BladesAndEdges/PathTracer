@@ -495,9 +495,9 @@ void ModelParser::TriangulateWithFaces(const std::vector<Vertex>& vertices, std:
 	{
 		Triangle face;
 
-		face.m_faceVertices[0] = vertices[0];
-		face.m_faceVertices[1] = vertices[triangle + 1];
-		face.m_faceVertices[2] = vertices[triangle + 2];
+		face.m_vertices[0] = vertices[0];
+		face.m_vertices[1] = vertices[triangle + 1];
+		face.m_vertices[2] = vertices[triangle + 2];
 
 		faces.push_back(face);
 	}

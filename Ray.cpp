@@ -1,6 +1,6 @@
 #include "Ray.h"
 
-#include "BVHAccellStructure.h"
+#include "BVH2AccellStructure.h"
 
 // --------------------------------------------------------------------------------
 Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin), m_aabbIntersectionTests(0u), m_triangleIntersectionTests(0u)
@@ -42,14 +42,14 @@ bool RayAABBIntersection(Ray& ray, const AABB& aabb, const float tMax, float* ou
 		if (tNear > tFar) { std::swap(tNear, tFar); }
 
 		// Pad the results in order to avoid NaNs
-		tFar *= 1 + 2 * gamma(3);
+		//tFar *= 1 + 2 * gamma(3);
 
 		//Update t0 and t1, based on the tigher bounds after planes clip the ray
-		t0 = (tNear > t0) ? tNear : t0;
-		t1 = (tFar < t1) ? tFar : t1;
+		t0 = (tNear <= t0) ? t0 : tNear;
+		t1 = (tFar >= t1) ? t1 : tFar;
 
 		// If no overlap detected
-		if (t0 > t1) { return false; }
+		if (!(t0 <= t1)) { return false; }
 	}
 
 	if (out_hitNear) { *out_hitNear = t0; }

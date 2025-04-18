@@ -57,7 +57,16 @@
     <ClCompile Include="Triangle4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BVHAccellStructure.cpp">
+    <ClCompile Include="BVH2AccellStructure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BVH4AccellStructure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BVHNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Triangle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -107,10 +116,13 @@
     <ClInclude Include="Triangle4.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BVHAccellStructure.h">
+    <ClInclude Include="BVH2AccellStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BVHNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BVH4AccellStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

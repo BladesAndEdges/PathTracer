@@ -11,8 +11,10 @@ struct ConstructResult
 	AABB m_aabb;
 };
 
-struct alignas(64) InnerNode
+struct alignas(64) BVH2InnerNode
 {
+	BVH2InnerNode();
+
 	uint32_t m_leftChild;
 	uint32_t m_rightChild;
 	AABB m_leftAABB;

@@ -140,7 +140,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
-    <ClCompile Include="BVHAccellStructure.cpp" />
+    <ClCompile Include="BVH2AccellStructure.cpp" />
+    <ClCompile Include="BVHNode.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
     <ClCompile Include="GLContext.cpp" />
@@ -148,17 +149,20 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ModelParser.cpp" />
     <ClCompile Include="PerformanceCounter.cpp" />
+    <ClCompile Include="BVH4AccellStructure.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Triangle.cpp" />
     <ClCompile Include="Triangle4.cpp" />
     <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
-    <ClInclude Include="BVHAccellStructure.h" />
+    <ClInclude Include="BVH2AccellStructure.h" />
     <ClInclude Include="BVHNode.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="BVH4AccellStructure.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="GLContext.h" />

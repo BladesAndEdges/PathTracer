@@ -10,7 +10,7 @@
 #include "Triangle4.h"
 #include "ViewportDesc.h"
 
-class BVHAccellStructure;
+class BVH2AccellStructure;
 class Framebuffer;
 class PerformanceCounter;
 
@@ -82,7 +82,7 @@ private:
 	std::vector<float> m_positionsY;
 	std::vector<float> m_positionsZ;
 
-	BVHAccellStructure* m_bvhAccellStructure;
+	BVH2AccellStructure* m_bvhAccellStructure;
 
 	template<bool T_acceptAnyHit>
 	void TraverseBVH(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);

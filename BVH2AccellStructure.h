@@ -7,7 +7,7 @@
 
 // --------------------------------------------------------------------------------
 // This idea is taken from pbrt, 4th edition
-enum class BVHPartitionStrategy
+enum class BVH2PartitionStrategy
 {
 	HalfWayPoint, 
 	HalfWayLongestAxis, 
@@ -23,28 +23,29 @@ struct Centroid
 
 // Triangle's centroid and the aabb
 // --------------------------------------------------------------------------------
-struct BVHPartitionData
+struct BVHTriangleData
 {
 	Centroid m_centroid;
 	AABB m_aabb;
 };
 
 // --------------------------------------------------------------------------------
-class BVHAccellStructure
+class BVH2AccellStructure
 {
 public:
 
-	BVHAccellStructure(const std::vector<Triangle>& triangles, const BVHPartitionStrategy& bvhPartitionStrategy);
+	BVH2AccellStructure(const std::vector<Triangle>& triangles, const BVH2PartitionStrategy& bvhPartitionStrategy);
 
-	const InnerNode& GetInnerNode(uint32_t index) const;
+	const BVH2InnerNode GetInnerNode(uint32_t index) const;
 
 private:
 
-	ConstructResult ConstructNode(std::vector<BVHPartitionData>& bvhPartitionData, const uint32_t start, 
-		const uint32_t end, const BVHPartitionStrategy& bvhPartitionStrategy);
+	ConstructResult ConstructNode(std::vector<BVHTriangleData>& bvhPartitionData, const uint32_t start,
+		const uint32_t end, const BVH2PartitionStrategy& bvhPartitionStrategy);
+	ConstructResult ConstructNode(BVHTriangleData* bvhData, const uint32_t count, const BVH2PartitionStrategy& bvhPartitionStrategy);
 	AABB CalculateAABB(uint32_t triangle);
 
-	std::vector<InnerNode> m_innerNodes;
+	std::vector<BVH2InnerNode> m_innerNodes;
 	std::vector<Triangle> m_triangles;
 };
 

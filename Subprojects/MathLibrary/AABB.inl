@@ -1,7 +1,16 @@
+#include "AABB.h"
 // --------------------------------------------------------------------------------
-inline AABB::AABB() : m_min(INFINITY, INFINITY, INFINITY), m_max(-INFINITY, -INFINITY, -INFINITY)
+inline AABB::AABB() : m_min(INFINITY, INFINITY, INFINITY),
+m_max(-INFINITY, -INFINITY, -INFINITY)
 {
 
+}
+
+// --------------------------------------------------------------------------------
+inline AABB::AABB(const Vector3& min, const Vector3& max)
+{
+	m_min = min;
+	m_max = max;
 }
 
 // --------------------------------------------------------------------------------

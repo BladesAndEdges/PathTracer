@@ -10,10 +10,15 @@
 // --------------------------------------------------------------------------------
 BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles, const BVH2PartitionStrategy& bvhPartitionStrategy) : m_triangles(triangles)
 {
+	assert(triangles.size() != 0);
+
+	// To make it easier to test for now
+	const uint32_t dataCount = (uint32_t)triangles.size();
+
 	std::vector<BVHTriangleData> bvhTriangleData;
-	bvhTriangleData.resize(triangles.size());
+	bvhTriangleData.resize(dataCount);
 	
-	for (uint32_t triangle = 0u; triangle < triangles.size(); triangle++)
+	for (uint32_t triangle = 0u; triangle < dataCount; triangle++)
 	{
 		bvhTriangleData[triangle].m_aabb = CalculateTriangleAABB(triangles[triangle]);
 		
@@ -21,7 +26,7 @@ BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles,
 		bvhTriangleData[triangle].m_centroid.m_position = 0.5f * (bvhTriangleData[triangle].m_aabb.m_min + bvhTriangleData[triangle].m_aabb.m_max);
 	}
 	
-	const ConstructResult cr = ConstructNode(bvhTriangleData.data(), (uint32_t)bvhTriangleData.size(), bvhPartitionStrategy);
+	const ConstructResult cr = ConstructNode(bvhTriangleData.data(), dataCount, bvhPartitionStrategy);
 }
 
 // --------------------------------------------------------------------------------

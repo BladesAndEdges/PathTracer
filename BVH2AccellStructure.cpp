@@ -36,6 +36,12 @@ const BVH2InnerNode BVH2AccellStructure::GetInnerNode(uint32_t index) const
 }
 
 // --------------------------------------------------------------------------------
+uint32_t BVH2AccellStructure::GetNodeCount() const
+{
+	return (uint32_t)m_innerNodes.size();
+}
+
+// --------------------------------------------------------------------------------
 uint32_t ChooseAxisForPartition(const Vector3& min, const Vector3& max)
 {
 	const Vector3 length = max - min;

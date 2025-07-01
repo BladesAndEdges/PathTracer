@@ -38,6 +38,8 @@ public:
 
 	const BVH2InnerNode GetInnerNode(uint32_t index) const;
 
+	uint32_t GetNodeCount() const;
+
 private:
 
 	ConstructResult ConstructNode(std::vector<BVHTriangleData>& bvhPartitionData, const uint32_t start,

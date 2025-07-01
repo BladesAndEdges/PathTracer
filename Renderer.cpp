@@ -12,7 +12,9 @@
 #include "Vector3.h"
 
 # define M_PI 3.14159265358979323846
-#define TRACE_AGAINST_BVH
+//#define TRACE_AGAINST_BVH2
+#define TRACE_AGAINST_BVH4
+//#define TRACE_AGAINST_NON_BVH
 //#define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
@@ -70,9 +72,7 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 	}
 #endif
 
-	m_bvhAccellStructure = new BVH2AccellStructure(m_faces, BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
-	//BVH4AccellStructure* bvhAccellStructure = new BVH4AccellStructure(m_bvhAccellStructure);
-	//assert(bvhAccellStructure != nullptr);
+	m_bvh2AccellStructure = new BVH2AccellStructure(m_triangles, BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
 }
 
 // --------------------------------------------------------------------------------
@@ -161,15 +161,20 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				// Ray values reset here, so no need to do a reset on the vector
 				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 
-#ifdef TRACE_AGAINST_BVH
-				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#ifdef TRACE_AGAINST_BVH2
+				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
 				aabbIntersectionsCount[rayIndex] = (c_primaryRay.m_aabbIntersectionTests);
 				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
 #endif
-#ifndef TRACE_AGAINST_BVH
+#ifdef TRACE_AGAINST_BVH4
+				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+				aabbIntersectionsCount[rayIndex] = (c_primaryRay.m_aabbIntersectionTests);
+				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
 				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
-#endif // !TRACE_AGAINST_BVH
+#endif // !TRACE_AGAINST_NON_BVH
 
 				if ((row == framebuffer->GetHeight() - 1u) && (column == framebuffer->GetWidth() - 1u))
 				{
@@ -210,10 +215,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			{
 				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
-#ifdef TRACE_AGAINST_BVH
-				const HitResult primaryHr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#ifdef TRACE_AGAINST_BVH2
+				const HitResult primaryHr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif
-#ifndef TRACE_AGAINST_BVH
+#ifdef TRACE_AGAINST_BVH4
+				const HitResult primaryHr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
 				const HitResult primaryHr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
@@ -223,10 +231,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				{
 					Ray c_shadowRay(primaryHr.m_intersectionPoint, m_lightDirection);
 					
-#ifdef TRACE_AGAINST_BVH
-					const HitResult shadowHr = TraceRayAgainstBVH<false>(c_shadowRay, rayIndex, 1e-5f);
+#ifdef TRACE_AGAINST_BVH2
+					const HitResult shadowHr = TraceAgainstBVH2<false>(c_shadowRay, rayIndex, 1e-5f);
 #endif
-#ifndef TRACE_AGAINST_BVH
+#ifdef TRACE_AGAINST_BVH4
+					const HitResult shadowHr = TraceAgainstBVH4<false>(c_shadowRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
 					const HitResult shadowHr = TraceRay<false>(c_shadowRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
@@ -246,10 +257,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			{
 				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
-#ifdef TRACE_AGAINST_BVH
-				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#ifdef TRACE_AGAINST_BVH2
+				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif
-#ifndef TRACE_AGAINST_BVH
+#ifdef TRACE_AGAINST_BVH4
+				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
@@ -264,10 +278,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			{
 				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
-#ifdef TRACE_AGAINST_BVH
-				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#ifdef TRACE_AGAINST_BVH2
+				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif
-#ifndef TRACE_AGAINST_BVH
+#ifdef TRACE_AGAINST_BVH4
+				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
@@ -282,10 +299,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			{
 				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
-#ifdef TRACE_AGAINST_BVH
-				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#ifdef TRACE_AGAINST_BVH2
+				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif
-#ifndef TRACE_AGAINST_BVH
+#ifdef TRACE_AGAINST_BVH4
+				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
@@ -298,10 +318,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			{
 				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 
-#ifdef TRACE_AGAINST_BVH
-				const HitResult hr = TraceRayAgainstBVH<false>(c_primaryRay, rayIndex, 1e-5f);
+#ifdef TRACE_AGAINST_BVH2
+				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif
-#ifndef TRACE_AGAINST_BVH
+#ifdef TRACE_AGAINST_BVH4
+				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
@@ -364,8 +387,6 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 
 	m_isFirstFrame = false;
 }
-
-
 
 //#define RUNNING_SCALAR_TRI4
 //#define RUNNING_SSE
@@ -911,10 +932,13 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 
 	Vector3 radiance(0.0f, 0.0f, 0.0f);
 
-#ifdef TRACE_AGAINST_BVH
-	const HitResult c_primaryHitResult = TraceRayAgainstBVH<false>(ray, rayIndex, 1e-5f);
+#ifdef TRACE_AGAINST_BVH2
+	const HitResult c_primaryHitResult = TraceAgainstBVH2<false>(ray, rayIndex, 1e-5f);
 #endif
-#ifndef TRACE_AGAINST_BVH
+#ifdef TRACE_AGAINST_BVH4
+	const HitResult c_primaryHitResult = TraceAgainstBVH4<false>(ray, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
 	const HitResult c_primaryHitResult = TraceRay<false>(ray, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
@@ -949,10 +973,13 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 			const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
 			
 			Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
-#ifdef TRACE_AGAINST_BVH
-			const HitResult c_secondaryRayHitResult = TraceRayAgainstBVH<true>(c_shadowRay, rayIndex, 1e-5f);
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult c_secondaryRayHitResult = TraceAgainstBVH2<true>(c_shadowRay, rayIndex, 1e-5f);
 #endif
-#ifndef TRACE_AGAINST_BVH
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult c_secondaryRayHitResult = TraceAgainstBVH4<true>(c_shadowRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
 			const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 			

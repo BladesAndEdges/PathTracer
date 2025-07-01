@@ -37,19 +37,22 @@ bool RayAABBIntersection(Ray& ray, const AABB& aabb, const float tMax, float* ou
 	{
 		float tNear = (aabb.m_min.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * ray.InverseDirection().GetValueByAxisIndex(axis);
 		float tFar = (aabb.m_max.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * ray.InverseDirection().GetValueByAxisIndex(axis);
-
+		
 		// Handle ray traveling in negative axis direction
 		if (tNear > tFar) { std::swap(tNear, tFar); }
-
+		
 		// Pad the results in order to avoid NaNs
 		//tFar *= 1 + 2 * gamma(3);
-
+		
 		//Update t0 and t1, based on the tigher bounds after planes clip the ray
 		t0 = (tNear <= t0) ? t0 : tNear;
 		t1 = (tFar >= t1) ? t1 : tFar;
-
+		
 		// If no overlap detected
-		if (!(t0 <= t1)) { return false; }
+		if (!(t0 <= t1)) 
+		{ 
+			return false; 
+		}
 	}
 
 	if (out_hitNear) { *out_hitNear = t0; }

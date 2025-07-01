@@ -11,12 +11,12 @@
 #include "ViewportDesc.h"
 
 class BVH2AccellStructure;
+class BVH4AccellStructure;
 class Framebuffer;
 class PerformanceCounter;
 
 class Renderer
 {
-
 public:
 
 	Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ,
@@ -40,7 +40,6 @@ private:
 	template<bool T_acceptAnyHit>
 	HitResult TraceRay(Ray& ray, const uint32_t rayIndex, const float tMin);
 
-
 	Camera m_camera;
 	Vector3 m_lightDirection;
 	ViewportDesc m_viewportDesc;
@@ -59,8 +58,8 @@ private:
 	std::vector<float> m_positionsY;
 	std::vector<float> m_positionsZ;
 
-	BVH2AccellStructure* m_bvhAccellStructure;
 	BVH2AccellStructure* m_bvh2AccellStructure;
+	BVH4AccellStructure* m_bvh4AccellStructure;
 
 	template<bool T_acceptAnyHit>
 	void TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
@@ -73,5 +72,15 @@ private:
 
 	template<bool T_acceptAnyHit>
 	void HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
+
+	// BVH4 code
+	template<bool T_acceptAnyHit>
+	void TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
+
+	template<bool T_acceptAnyHit>
+	void BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
+
+	template<bool T_acceptAnyHit>
+	HitResult TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const float tMin);
 };
 

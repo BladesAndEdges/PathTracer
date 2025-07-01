@@ -983,7 +983,56 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::TraverseBVH(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
+void Renderer::TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
+{
+	bool hasHit = false;
+	BVH4DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
+}
+
+// --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
+void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
+{
+	const BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
+
+	for (uint32_t child = 0u; child < 4u; child++)
+	{
+		const bool isTriangle = node.m_child[child] >> 31u;
+
+		if (isTriangle)
+		{
+			const uint32_t triangleIndex = node.m_child[child] & ~(1u << 31u);
+			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
+		}
+		else
+		{
+			if (RayAABBIntersection(ray, node.m_bbox[child], tMax, nullptr))
+			{
+				BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[child], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			}
+		}
+
+		// Early exit for secondary rays
+		if constexpr (T_acceptAnyHit)
+		{
+			if (out_hasHit)
+			{
+				return;
+			}
+		}
+	}
+}
+
+template<bool T_acceptAnyHit>
+HitResult Renderer::TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const float tMin)
+{
+	HitResult hitResult;
+	float tMax = INFINITY;
+	TraverseBVH4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
+	return hitResult;
+}
+
+// --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
 void Renderer::TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {

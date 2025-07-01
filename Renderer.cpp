@@ -17,15 +17,14 @@
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ,
-	const std::vector<Triangle4>& triangle4s, const std::vector<Triangle>& faces, const Vector3& center)	
+	const std::vector<Triangle4>& triangle4s, const std::vector<Triangle>& triangles, const Vector3& center)	
 																										: m_positionsX(positionsX), 
 																										  m_positionsY(positionsY),
 																										  m_positionsZ(positionsZ),
 																										  m_triangle4s(triangle4s),
-																										  m_faces(faces),
+																										  m_triangles(triangles),
 																										  m_center(center)
-{
-	
+{	
 	m_center = Vector3(2.88791323f, 7.37331104f, -0.183363333f); // For sponza
 
 
@@ -783,15 +782,15 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 #endif
 #ifdef RUNNING_SCALAR_WITH_FACES
 
-	for (uint32_t triangle = 0u; triangle < m_faces.size(); triangle++)
+	for (uint32_t triangle = 0u; triangle < m_triangles.size(); triangle++)
 	{
-		const Vector3 edge1 = Vector3(m_faces[triangle].m_vertices[1u].m_position[0u] - m_faces[triangle].m_vertices[0u].m_position[0u],
-									  m_faces[triangle].m_vertices[1u].m_position[1u] - m_faces[triangle].m_vertices[0u].m_position[1u],
-									  m_faces[triangle].m_vertices[1u].m_position[2u] - m_faces[triangle].m_vertices[0u].m_position[2u]);
+		const Vector3 edge1 = Vector3(m_triangles[triangle].m_vertices[1u].m_position[0u] - m_triangles[triangle].m_vertices[0u].m_position[0u],
+									  m_triangles[triangle].m_vertices[1u].m_position[1u] - m_triangles[triangle].m_vertices[0u].m_position[1u],
+									  m_triangles[triangle].m_vertices[1u].m_position[2u] - m_triangles[triangle].m_vertices[0u].m_position[2u]);
 
-		const Vector3 edge2 = Vector3(m_faces[triangle].m_vertices[2u].m_position[0u] - m_faces[triangle].m_vertices[0u].m_position[0u],
-									  m_faces[triangle].m_vertices[2u].m_position[1u] - m_faces[triangle].m_vertices[0u].m_position[1u],
-									  m_faces[triangle].m_vertices[2u].m_position[2u] - m_faces[triangle].m_vertices[0u].m_position[2u]);
+		const Vector3 edge2 = Vector3(m_triangles[triangle].m_vertices[2u].m_position[0u] - m_triangles[triangle].m_vertices[0u].m_position[0u],
+									  m_triangles[triangle].m_vertices[2u].m_position[1u] - m_triangles[triangle].m_vertices[0u].m_position[1u],
+									  m_triangles[triangle].m_vertices[2u].m_position[2u] - m_triangles[triangle].m_vertices[0u].m_position[2u]);
 
 		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 		const Vector3 pVec = Cross(ray.Direction(), edge2);
@@ -803,9 +802,9 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		{
 			const float invDet = 1.0f / det;
 
-			const Vector3 tVec = ray.Origin() - Vector3(m_faces[triangle].m_vertices[0u].m_position[0u], 
-														m_faces[triangle].m_vertices[0u].m_position[1u], 
-														m_faces[triangle].m_vertices[0u].m_position[2u]);
+			const Vector3 tVec = ray.Origin() - Vector3(m_triangles[triangle].m_vertices[0u].m_position[0u], 
+														m_triangles[triangle].m_vertices[0u].m_position[1u], 
+														m_triangles[triangle].m_vertices[0u].m_position[2u]);
 
 			const float u = Dot(tVec, pVec) * invDet;
 
@@ -1099,13 +1098,13 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	(void)(rayIndex);
 #endif
 
-	const Vector3 edge1 = Vector3(m_faces[triangleIndex].m_vertices[1u].m_position[0u] - m_faces[triangleIndex].m_vertices[0u].m_position[0u],
-		m_faces[triangleIndex].m_vertices[1u].m_position[1u] - m_faces[triangleIndex].m_vertices[0u].m_position[1u],
-		m_faces[triangleIndex].m_vertices[1u].m_position[2u] - m_faces[triangleIndex].m_vertices[0u].m_position[2u]);
+	const Vector3 edge1 = Vector3(m_triangles[triangleIndex].m_vertices[1u].m_position[0u] - m_triangles[triangleIndex].m_vertices[0u].m_position[0u],
+		m_triangles[triangleIndex].m_vertices[1u].m_position[1u] - m_triangles[triangleIndex].m_vertices[0u].m_position[1u],
+		m_triangles[triangleIndex].m_vertices[1u].m_position[2u] - m_triangles[triangleIndex].m_vertices[0u].m_position[2u]);
 
-	const Vector3 edge2 = Vector3(m_faces[triangleIndex].m_vertices[2u].m_position[0u] - m_faces[triangleIndex].m_vertices[0u].m_position[0u],
-		m_faces[triangleIndex].m_vertices[2u].m_position[1u] - m_faces[triangleIndex].m_vertices[0u].m_position[1u],
-		m_faces[triangleIndex].m_vertices[2u].m_position[2u] - m_faces[triangleIndex].m_vertices[0u].m_position[2u]);
+	const Vector3 edge2 = Vector3(m_triangles[triangleIndex].m_vertices[2u].m_position[0u] - m_triangles[triangleIndex].m_vertices[0u].m_position[0u],
+		m_triangles[triangleIndex].m_vertices[2u].m_position[1u] - m_triangles[triangleIndex].m_vertices[0u].m_position[1u],
+		m_triangles[triangleIndex].m_vertices[2u].m_position[2u] - m_triangles[triangleIndex].m_vertices[0u].m_position[2u]);
 
 	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 	const Vector3 pVec = Cross(ray.Direction(), edge2);
@@ -1117,9 +1116,9 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	{
 		const float invDet = 1.0f / det;
 
-		const Vector3 tVec = ray.Origin() - Vector3(m_faces[triangleIndex].m_vertices[0u].m_position[0u],
-			m_faces[triangleIndex].m_vertices[0u].m_position[1u],
-			m_faces[triangleIndex].m_vertices[0u].m_position[2u]);
+		const Vector3 tVec = ray.Origin() - Vector3(m_triangles[triangleIndex].m_vertices[0u].m_position[0u],
+			m_triangles[triangleIndex].m_vertices[0u].m_position[1u],
+			m_triangles[triangleIndex].m_vertices[0u].m_position[2u]);
 
 		const float u = Dot(tVec, pVec) * invDet;
 

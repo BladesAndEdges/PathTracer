@@ -20,7 +20,7 @@ class Renderer
 public:
 
 	Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ,
-		const std::vector<Triangle4>& triangle4s, const std::vector<Triangle>& faces, const Vector3& center);
+		const std::vector<Triangle4>& triangle4s, const std::vector<Triangle>& triangles, const Vector3& center);
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 
@@ -48,8 +48,7 @@ private:
 	std::vector<Vector3> m_texelCenters;
 	bool m_isFirstFrame;
 
-
-	std::vector<Triangle> m_faces;
+	std::vector<Triangle> m_triangles;
 	Vector3 m_center;
 
 	// SSE for triangles

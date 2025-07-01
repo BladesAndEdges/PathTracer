@@ -60,15 +60,16 @@ private:
 	std::vector<float> m_positionsZ;
 
 	BVH2AccellStructure* m_bvhAccellStructure;
+	BVH2AccellStructure* m_bvh2AccellStructure;
 
 	template<bool T_acceptAnyHit>
-	void TraverseBVH(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
+	void TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
 
 	template<bool T_acceptAnyHit>
-	void DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
+	void BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
-	HitResult TraceRayAgainstBVH(Ray& ray, const uint32_t rayIndex, const float tMin);
+	HitResult TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const float tMin);
 
 	template<bool T_acceptAnyHit>
 	void HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);

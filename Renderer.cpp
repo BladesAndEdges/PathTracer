@@ -984,16 +984,18 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
 void Renderer::TraverseBVH(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
+template<bool T_acceptAnyHit>
+void Renderer::TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
 	bool hasHit = false;
-	DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
+	BVH2DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
 }
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
-	const BVH2InnerNode& node = m_bvhAccellStructure->GetInnerNode(innerNodeStartIndex);
+	const BVH2InnerNode& node = m_bvh2AccellStructure->GetInnerNode(innerNodeStartIndex);
 	const bool leftIsLeaf = node.m_leftChild >> 31u;
 	const bool rightIsLeaf = node.m_rightChild >> 31u;
 
@@ -1009,7 +1011,7 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 	
 		if (leftTNear < rightTNear)
 		{
-			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH2DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 	
 			// Early exit for secondary rays
 			if constexpr (T_acceptAnyHit)
@@ -1021,11 +1023,11 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 			}
 	
 			if (!hitRight) { return; }
-			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH2DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 		else
 		{
-			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH2DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 	
 			// Early exit for secondary rays
 			if constexpr (T_acceptAnyHit)
@@ -1037,7 +1039,7 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 			}
 	
 			if (!hitLeft) { return; }
-			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH2DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 	}
 	else
@@ -1049,7 +1051,7 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 		}
 		else if (RayAABBIntersection(ray, node.m_leftAABB, tMax, nullptr))
 		{
-			DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH2DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 
 		// Early exit for secondary rays
@@ -1068,18 +1070,18 @@ void Renderer::DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const 
 		}
 		else if (RayAABBIntersection(ray, node.m_rightAABB, tMax, nullptr))
 		{
-			DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH2DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 	}
 }
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-HitResult Renderer::TraceRayAgainstBVH(Ray& ray, const uint32_t rayIndex, const float tMin)
+HitResult Renderer::TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const float tMin)
 {
 	HitResult hitResult;
 	float tMax = INFINITY;
-	TraverseBVH<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
+	TraverseBVH2<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
 	return hitResult;
 }
 

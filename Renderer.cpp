@@ -73,6 +73,7 @@ Renderer::Renderer(const std::vector<float>& positionsX, const std::vector<float
 #endif
 
 	m_bvh2AccellStructure = new BVH2AccellStructure(m_triangles, BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
+	m_bvh4AccellStructure = new BVH4AccellStructure(m_bvh2AccellStructure);
 }
 
 // --------------------------------------------------------------------------------

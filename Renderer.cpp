@@ -1038,27 +1038,67 @@ void Renderer::TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin,
 template<bool T_acceptAnyHit>
 void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
-	const BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
 	ray.m_nodeVisits++;
 
+	BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
+
+	uint32_t validValues = 0u;
+	float tNears[4u] = { INFINITY, INFINITY, INFINITY, INFINITY };
 	for (uint32_t child = 0u; child < 4u; child++)
 	{
-		const bool isTriangle = node.m_child[child] >> 31u;
+		const bool hit = RayAABBIntersection(ray, node.m_bbox[child], tMax, &tNears[child]);
 
-		if (isTriangle)
+		if (hit)
+		{
+			validValues++;
+		}
+	}
+
+	// If none have hit, exit
+	if (!validValues)
+	{
+		return;
+	}
+
+	// Sort children based on tNears, decided to use bubblesort
+	uint32_t n = 4u;
+	bool swapped;
+
+	for (uint32_t i = 0u; i < n - 1; i++) {
+		swapped = false;
+		for (uint32_t j = 0u; j < n - i - 1u; j++) {
+			if (tNears[j] > tNears[j + 1]) {
+				std::swap(tNears[j], tNears[j + 1u]);
+
+				const uint32_t tempUint = node.m_child[j];
+				node.m_child[j] = node.m_child[j + 1u];
+				node.m_child[j + 1u] = tempUint;
+
+				const AABB tempAABB = node.m_bbox[j];
+				node.m_bbox[j] = node.m_bbox[j + 1u];
+				node.m_bbox[j + 1u] = tempAABB;
+
+				swapped = true;
+			}
+		}
+
+		if (!swapped)
+			break;
+	}
+
+	//Traversal
+	for (uint32_t child = 0u; child < validValues; child++)
+	{
+		if (node.m_child[child] >> 31u)
 		{
 			const uint32_t triangleIndex = node.m_child[child] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
-		else
+		else if (RayAABBIntersection(ray, node.m_bbox[child], tMax, nullptr))
 		{
-			if (RayAABBIntersection(ray, node.m_bbox[child], tMax, nullptr))
-			{
-				BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[child], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-			}
+			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[child], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 
-		// Early exit for secondary rays
 		if constexpr (T_acceptAnyHit)
 		{
 			if (out_hasHit)

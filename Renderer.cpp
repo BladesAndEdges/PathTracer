@@ -1131,82 +1131,56 @@ template<bool T_acceptAnyHit>
 void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
 	ray.m_nodeVisits++;
-	const BVH2InnerNode& node = m_bvh2AccellStructure->GetInnerNode(innerNodeStartIndex);
-	const bool leftIsLeaf = node.m_leftChild >> 31u;
-	const bool rightIsLeaf = node.m_rightChild >> 31u;
 
-	if (!leftIsLeaf && !rightIsLeaf)
+	const BVH2InnerNode& node = m_bvh2AccellStructure->GetInnerNode(innerNodeStartIndex);
+
+	float tNears[2u] = { INFINITY, INFINITY };
+	float hit[2u] = { false, false };
+	hit[0u] = RayAABBIntersection(ray, node.m_leftAABB, tMax, &tNears[0u]);
+	hit[1u] = RayAABBIntersection(ray, node.m_rightAABB, tMax, &tNears[1u]);
+
+	if (!hit[0u] && !hit[1u])
 	{
-		float leftTNear = INFINITY;
-		float rightTNear = INFINITY;
-	
-		const bool hitLeft = RayAABBIntersection(ray, node.m_leftAABB, tMax, &leftTNear);
-		const bool hitRight = RayAABBIntersection(ray, node.m_rightAABB, tMax, &rightTNear);
-	
-		if (!hitLeft && !hitRight) { return; }
-	
-		if (leftTNear < rightTNear)
-		{
-			BVH2DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-	
-			// Early exit for secondary rays
-			if constexpr (T_acceptAnyHit)
-			{
-				if (out_hasHit)
-				{
-					return;
-				}
-			}
-	
-			if (!hitRight) { return; }
-			BVH2DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-		}
-		else
-		{
-			BVH2DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-	
-			// Early exit for secondary rays
-			if constexpr (T_acceptAnyHit)
-			{
-				if (out_hasHit)
-				{
-					return;
-				}
-			}
-	
-			if (!hitLeft) { return; }
-			BVH2DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-		}
+		return;
 	}
-	else
+
+	// Reorder if needed
+	uint32_t visitOrder[2u] = { node.m_leftChild, node.m_rightChild };
+	AABB aabbs[2u] = { node.m_leftAABB, node.m_rightAABB };
+	if (tNears[0u] > tNears[1u])
 	{
-		if (leftIsLeaf)
+		std::swap(visitOrder[0u], visitOrder[1u]);
+		std::swap(hit[0u], hit[1u]);
+
+		const AABB tempAABB = aabbs[0u];
+		aabbs[0u] = aabbs[1u];
+		aabbs[1u] = tempAABB;
+	}
+
+	// Traversal
+	for (uint32_t child = 0u; child < 2u; child++)
+	{
+		if (!hit[child])
 		{
-			const uint32_t triangleIndex = node.m_leftChild & ~(1u << 31u);
+			continue;
+		}
+
+		if (visitOrder[child] >> 31u)
+		{
+			const uint32_t triangleIndex = visitOrder[child] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
-		else if (RayAABBIntersection(ray, node.m_leftAABB, tMax, nullptr))
+		else if (RayAABBIntersection(ray, aabbs[child], tMax, nullptr))
 		{
-			BVH2DFSTraversal<T_acceptAnyHit>(node.m_leftChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH2DFSTraversal<T_acceptAnyHit>(visitOrder[child], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 
-		// Early exit for secondary rays
 		if constexpr (T_acceptAnyHit)
 		{
 			if (out_hasHit)
 			{
 				return;
 			}
-		}
-
-		if (rightIsLeaf)
-		{
-			const uint32_t triangleIndex = node.m_rightChild & ~(1u << 31u);
-			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
-		}
-		else if (RayAABBIntersection(ray, node.m_rightAABB, tMax, nullptr))
-		{
-			BVH2DFSTraversal<T_acceptAnyHit>(node.m_rightChild, ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 	}
 }
@@ -1225,8 +1199,6 @@ HitResult Renderer::TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const fl
 template<bool T_acceptAnyHit>
 void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit)
 {
-	//assert(triangleIndex < m_faces.size());
-
 	ray.m_triangleIntersectionTests++;
 
 #ifdef _DEBUG

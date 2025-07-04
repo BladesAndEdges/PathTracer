@@ -3,7 +3,7 @@
 #include "BVH2AccellStructure.h"
 
 // --------------------------------------------------------------------------------
-Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin), m_aabbIntersectionTests(0u), m_triangleIntersectionTests(0u)
+Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin), m_aabbIntersectionTests(0u), m_triangleIntersectionTests(0u), m_nodeVisits(0u)
 {
 	// In case not normalized
 	m_normalizedRayDir = Normalize(direction);

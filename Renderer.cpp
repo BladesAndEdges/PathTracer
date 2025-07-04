@@ -92,8 +92,10 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 	std::vector<uint32_t> aabbIntersectionsCount;
 	std::vector<uint32_t> triangleIntersectionsCount;
+	std::vector<uint32_t> nodeVisits;
 	aabbIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
 	triangleIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
+	nodeVisits.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
 
 	const SHORT cKeyState = GetAsyncKeyState(0x43);
 	const SHORT vKeyState = GetAsyncKeyState(0x56);
@@ -166,11 +168,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
 				aabbIntersectionsCount[rayIndex] = (c_primaryRay.m_aabbIntersectionTests);
 				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
+				nodeVisits[rayIndex] = c_primaryRay.m_nodeVisits;
 #endif
 #ifdef TRACE_AGAINST_BVH4
 				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
 				aabbIntersectionsCount[rayIndex] = (c_primaryRay.m_aabbIntersectionTests);
 				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
+				nodeVisits[rayIndex] = c_primaryRay.m_nodeVisits;
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
 				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
@@ -205,6 +209,19 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 					char msgBuffer2[128u];
 					sprintf_s(msgBuffer2, "Average Triangle visits: %u \n", averageTriangleVisits);
 					OutputDebugStringA(msgBuffer2);
+
+					// Average node visits
+					uint32_t averageNodeVisits = 0u;
+					for (uint32_t i = 0u; i < nodeVisits.size(); i++)
+					{
+						averageNodeVisits += nodeVisits[i];
+					}
+
+					averageNodeVisits = averageNodeVisits / (uint32_t)nodeVisits.size();
+
+					char msgBuffer3[128u];
+					sprintf_s(msgBuffer3, "Average Node visits: %u \n", averageNodeVisits);
+					OutputDebugStringA(msgBuffer3);
 				}
 
 				red = 0.0f;
@@ -1022,6 +1039,7 @@ template<bool T_acceptAnyHit>
 void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
 	const BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
+	ray.m_nodeVisits++;
 
 	for (uint32_t child = 0u; child < 4u; child++)
 	{
@@ -1072,6 +1090,7 @@ void Renderer::TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin,
 template<bool T_acceptAnyHit>
 void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
+	ray.m_nodeVisits++;
 	const BVH2InnerNode& node = m_bvh2AccellStructure->GetInnerNode(innerNodeStartIndex);
 	const bool leftIsLeaf = node.m_leftChild >> 31u;
 	const bool rightIsLeaf = node.m_rightChild >> 31u;

@@ -17,6 +17,7 @@ public:
 
 	uint32_t m_aabbIntersectionTests;
 	uint32_t m_triangleIntersectionTests;
+	uint32_t m_nodeVisits;
 
 private:
 

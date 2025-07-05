@@ -1040,63 +1040,53 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 {
 	ray.m_nodeVisits++;
 
-	BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
+	const BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
 
-	uint32_t validValues = 0u;
-	float tNears[4u] = { INFINITY, INFINITY, INFINITY, INFINITY };
+	uint32_t hitCount = 0u;
+	uint64_t nearPlaneAndChildIndex[4u] = { UINT64_MAX, UINT64_MAX, UINT64_MAX, UINT64_MAX };
 	for (uint32_t child = 0u; child < 4u; child++)
 	{
-		const bool hit = RayAABBIntersection(ray, node.m_bbox[child], tMax, &tNears[child]);
-
-		if (hit)
+		float tNear = INFINITY;
+		if (RayAABBIntersection(ray, node.m_bbox[child], tMax, &tNear))
 		{
-			validValues++;
+			nearPlaneAndChildIndex[hitCount] = (((uint64_t)(*(uint32_t*)(&tNear))) << 32ull) | (uint64_t)child;
+			hitCount++;
 		}
 	}
 
-	// If none have hit, exit
-	if (!validValues)
+	// Early out if no hit
+	if (!hitCount)
 	{
 		return;
 	}
 
-	// Sort children based on tNears, decided to use bubblesort
-	uint32_t n = 4u;
-	bool swapped;
+	// Sort in ascending order
+	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[1u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]); }
+	if (nearPlaneAndChildIndex[2u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]); }
+	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[2u]); }
+	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[3u]); }
+	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[2u]); }
 
-	for (uint32_t i = 0u; i < n - 1; i++) {
-		swapped = false;
-		for (uint32_t j = 0u; j < n - i - 1u; j++) {
-			if (tNears[j] > tNears[j + 1]) {
-				std::swap(tNears[j], tNears[j + 1u]);
-
-				const uint32_t tempUint = node.m_child[j];
-				node.m_child[j] = node.m_child[j + 1u];
-				node.m_child[j + 1u] = tempUint;
-
-				const AABB tempAABB = node.m_bbox[j];
-				node.m_bbox[j] = node.m_bbox[j + 1u];
-				node.m_bbox[j + 1u] = tempAABB;
-
-				swapped = true;
-			}
-		}
-
-		if (!swapped)
-			break;
+#ifdef _DEBUG
+	for (uint32_t visitNode = 0u; visitNode < 3u; visitNode++)
+	{
+		assert(nearPlaneAndChildIndex[visitNode] <= nearPlaneAndChildIndex[visitNode + 1u]);
 	}
+#endif
 
 	//Traversal
-	for (uint32_t child = 0u; child < validValues; child++)
+	for (uint32_t child = 0u; child < hitCount; child++)
 	{
-		if (node.m_child[child] >> 31u)
+		const uint32_t visitIndex = (uint32_t)(nearPlaneAndChildIndex[child]);
+
+		if (node.m_child[visitIndex] >> 31u)
 		{
-			const uint32_t triangleIndex = node.m_child[child] & ~(1u << 31u);
+			const uint32_t triangleIndex = node.m_child[visitIndex] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
-		else if (RayAABBIntersection(ray, node.m_bbox[child], tMax, nullptr))
+		else if (RayAABBIntersection(ray, node.m_bbox[visitIndex], tMax, nullptr))
 		{
-			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[child], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[visitIndex], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 
 		if constexpr (T_acceptAnyHit)

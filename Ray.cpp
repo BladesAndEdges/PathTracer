@@ -8,6 +8,7 @@ Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin),
 	// In case not normalized
 	m_normalizedRayDir = Normalize(direction);
 	m_inverseDirection = Vector3(1.0f / m_normalizedRayDir.X(), 1.0f / m_normalizedRayDir.Y(), 1.0f / m_normalizedRayDir.Z());
+	m_negativeOriginTimesInverseDir = -m_rayOrigin * m_inverseDirection;
 }
 
 // --------------------------------------------------------------------------------
@@ -26,36 +27,28 @@ const float gamma(int n) {
 
 // --------------------------------------------------------------------------------
 // Function implementation follows the PBRT version https://pbr-book.org/4ed/Shapes/Basic_Shape_Interface
-bool RayAABBIntersection(Ray& ray, const AABB& aabb, const float tMax, float* out_hitNear)
+// The branchless implementation used was obtained from understanding https://tavianator.com/2015/ray_box_nan.html#footnote-smits
+// As per the comemnts in the previous link, some issues were mentioned when dealing with infinitely thin AABBs, but have chosen to ignore this
+bool RayAABBIntersection(Ray& ray, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, const float tMax, float* out_hitNear)
 {
 	ray.m_aabbIntersectionTests++;
 
-	float t0 = 0.0f;
-	float t1 = tMax;
+	// MADD test   ( a   *    b)                       +    c
+	float tNearX = (minX * ray.InverseDirection().X()) + ray.NegativeOriginTimesInvDir().X();
+	float tFarX = (maxX * ray.InverseDirection().X()) + ray.NegativeOriginTimesInvDir().X();
+	
+	// y axis
+	float tNearY = (minY * ray.InverseDirection().Y()) + ray.NegativeOriginTimesInvDir().Y();
+	float tFarY = (maxY * ray.InverseDirection().Y()) + ray.NegativeOriginTimesInvDir().Y();
+	
+	// z axis
+	float tNearZ = (minZ * ray.InverseDirection().Z()) + ray.NegativeOriginTimesInvDir().Z();
+	float tFarZ = (maxZ * ray.InverseDirection().Z()) + ray.NegativeOriginTimesInvDir().Z();
 
-	for (uint32_t axis = 0u; axis < 3u; axis++)
-	{
-		float tNear = (aabb.m_min.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * ray.InverseDirection().GetValueByAxisIndex(axis);
-		float tFar = (aabb.m_max.GetValueByAxisIndex(axis) - ray.Origin().GetValueByAxisIndex(axis)) * ray.InverseDirection().GetValueByAxisIndex(axis);
-		
-		// Handle ray traveling in negative axis direction
-		if (tNear > tFar) { std::swap(tNear, tFar); }
-		
-		// Pad the results in order to avoid NaNs
-		//tFar *= 1 + 2 * gamma(3);
-		
-		//Update t0 and t1, based on the tigher bounds after planes clip the ray
-		t0 = (tNear <= t0) ? t0 : tNear;
-		t1 = (tFar >= t1) ? t1 : tFar;
-		
-		// If no overlap detected
-		if (!(t0 <= t1)) 
-		{ 
-			return false; 
-		}
-	}
-
+	const float t0 = std::max(std::max(std::max(std::min(tNearX, tFarX), std::min(tNearY, tFarY)), std::min(tNearZ, tFarZ)), 0.0f);
+	const float t1 = std::min(std::min(std::min(std::max(tNearX, tFarX), std::max(tNearY, tFarY)), std::max(tNearZ, tFarZ)), tMax);
+	
 	if (out_hitNear) { *out_hitNear = t0; }
 	
-	return true;
+	return t1 >= t0;
 }

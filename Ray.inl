@@ -15,3 +15,9 @@ inline Vector3 Ray::InverseDirection() const
 {
 	return m_inverseDirection;
 }
+
+// --------------------------------------------------------------------------------
+inline Vector3 Ray::NegativeOriginTimesInvDir() const
+{
+	return m_negativeOriginTimesInverseDir;
+}

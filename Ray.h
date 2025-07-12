@@ -13,6 +13,7 @@ public:
 	inline Vector3 Origin() const;
 	inline Vector3 Direction() const;
 	inline Vector3 InverseDirection() const;
+	inline Vector3 NegativeOriginTimesInvDir() const;
 	Vector3 CalculateIntersectionPoint(const float t) const;
 
 	uint32_t m_aabbIntersectionTests;
@@ -24,8 +25,9 @@ private:
 	Vector3 m_rayOrigin;
 	Vector3 m_normalizedRayDir;
 	Vector3 m_inverseDirection;
+	Vector3 m_negativeOriginTimesInverseDir;
 };
 
-bool RayAABBIntersection(Ray& ray, const struct AABB& aabb,const float tMax, float* out_hitNear);
+bool RayAABBIntersection(Ray& ray, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, const float tMax, float* out_hitNear);
 
 #include "Ray.inl"

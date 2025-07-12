@@ -61,15 +61,28 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2Node(const BVH2AccellStructur
 	for (uint32_t childIndex = 0; childIndex < addedChildren; childIndex++)
 	{
 		m_innerNodes[bvh4InnerNodeIndex].m_child[childIndex] = BuildBVH4NodeFromBVH2Node(bvh2AccellStructure, children[childIndex]);
-		m_innerNodes[bvh4InnerNodeIndex].m_bbox[childIndex] = boxes[childIndex];
+
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinX[childIndex] = boxes[childIndex].m_min.X();
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinY[childIndex] = boxes[childIndex].m_min.Y();
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinZ[childIndex] = boxes[childIndex].m_min.Z();
+
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxX[childIndex] = boxes[childIndex].m_max.X();
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxY[childIndex] = boxes[childIndex].m_max.Y();
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxZ[childIndex] = boxes[childIndex].m_max.Z();
 	}
 
 	// Create dummies
 	for (uint32_t childIndex = addedChildren; childIndex < 4u; childIndex++)
 	{
 		m_innerNodes[bvh4InnerNodeIndex].m_child[childIndex] = 0x7fffffffu;
-		m_innerNodes[bvh4InnerNodeIndex].m_bbox[childIndex] = AABB(Vector3(std::nanf(""), std::nanf(""), std::nanf("")), 
-																	Vector3(std::nanf(""), std::nanf(""), std::nanf("")));
+
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinX[childIndex] = std::nanf("");
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinY[childIndex] = std::nanf("");
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinZ[childIndex] = std::nanf("");
+																
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxX[childIndex] = std::nanf("");
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxY[childIndex] = std::nanf("");
+		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxZ[childIndex] = std::nanf("");
 	}
 
 	return bvh4InnerNodeIndex;

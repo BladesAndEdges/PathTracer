@@ -1047,7 +1047,7 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 	for (uint32_t child = 0u; child < 4u; child++)
 	{
 		float tNear = INFINITY;
-		if (RayAABBIntersection(ray, node.m_bbox[child], tMax, &tNear))
+		if (RayAABBIntersection(ray, node.m_aabbMinX[child], node.m_aabbMinY[child], node.m_aabbMinZ[child], node.m_aabbMaxX[child], node.m_aabbMaxY[child], node.m_aabbMaxZ[child], tMax, &tNear))
 		{
 			nearPlaneAndChildIndex[hitCount] = (((uint64_t)(*(uint32_t*)(&tNear))) << 32ull) | (uint64_t)child;
 			hitCount++;
@@ -1084,7 +1084,7 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 			const uint32_t triangleIndex = node.m_child[visitIndex] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
-		else if (RayAABBIntersection(ray, node.m_bbox[visitIndex], tMax, nullptr))
+		else if (RayAABBIntersection(ray, node.m_aabbMinX[visitIndex], node.m_aabbMinY[visitIndex], node.m_aabbMinZ[visitIndex], node.m_aabbMaxX[visitIndex], node.m_aabbMaxY[visitIndex], node.m_aabbMaxZ[visitIndex], tMax, nullptr))
 		{
 			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[visitIndex], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
@@ -1099,6 +1099,7 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 	}
 }
 
+// --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
 HitResult Renderer::TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const float tMin)
 {
@@ -1126,8 +1127,10 @@ void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 
 	float tNears[2u] = { INFINITY, INFINITY };
 	float hit[2u] = { false, false };
-	hit[0u] = RayAABBIntersection(ray, node.m_leftAABB, tMax, &tNears[0u]);
-	hit[1u] = RayAABBIntersection(ray, node.m_rightAABB, tMax, &tNears[1u]);
+	hit[0u] = RayAABBIntersection(ray, node.m_leftAABB.m_min[0u]. node.m_leftAABB.m_min[1u], node.m_leftAABB.m_min[2u],
+		node.m_leftAABB.m_max[0u], node.m_leftAABB.m_max[1u], node.m_leftAABB.m_max[2u], tMax, &tNears[0u]);
+	hit[1u] = RayAABBIntersection(ray, node.m_rightAABB.m_min[0u].node.m_rightAABB.m_min[1u], node.m_rightAABB.m_min[2u],
+		node.m_rightAABB.m_max[0u], node.m_rightAABB.m_max[1u], node.m_rightAABB.m_max[2u], tMax, &tNears[0u]);
 
 	if (!hit[0u] && !hit[1u])
 	{
@@ -1160,7 +1163,8 @@ void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 			const uint32_t triangleIndex = visitOrder[child] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
-		else if (RayAABBIntersection(ray, aabbs[child], tMax, nullptr))
+		else if (RayAABBIntersection(ray, aabbs[child].m_min[0u], aabbs[child].m_min[1u], aabbs[child].m_min[2u], 
+			aabbs[child].m_max[0u], aabbs[child].m_max[1u], aabbs[child].m_max[2u], tMax, nullptr))
 		{
 			BVH2DFSTraversal<T_acceptAnyHit>(visitOrder[child], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}

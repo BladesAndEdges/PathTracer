@@ -3,7 +3,7 @@
 #include "BVH2AccellStructure.h"
 
 // --------------------------------------------------------------------------------
-Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin), m_aabbIntersectionTests(0u), m_triangleIntersectionTests(0u), m_nodeVisits(0u)
+Ray::Ray(const Vector3& origin, const Vector3& direction) : m_rayOrigin(origin), m_primaryAABBIntersectionTests(0u), m_primaryTriangleIntersectionTests(0u), m_primaryNodeVisits(0u)
 {
 	// In case not normalized
 	m_normalizedRayDir = Normalize(direction);
@@ -29,9 +29,12 @@ const float gamma(int n) {
 // Function implementation follows the PBRT version https://pbr-book.org/4ed/Shapes/Basic_Shape_Interface
 // The branchless implementation used was obtained from understanding https://tavianator.com/2015/ray_box_nan.html#footnote-smits
 // As per the comemnts in the previous link, some issues were mentioned when dealing with infinitely thin AABBs, but have chosen to ignore this
-bool RayAABBIntersection(Ray& ray, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, const float tMax, float* out_hitNear)
+bool RayAABBIntersection(Ray& ray, bool isPrimary, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, const float tMax, float* out_hitNear)
 {
-	ray.m_aabbIntersectionTests++;
+	if (!isPrimary)
+	{
+		ray.m_primaryAABBIntersectionTests++;
+	}
 
 	// MADD test   ( a   *    b)                       +    c
 	float tNearX = (minX * ray.InverseDirection().X()) + ray.NegativeOriginTimesInvDir().X();

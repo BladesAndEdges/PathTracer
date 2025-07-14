@@ -90,12 +90,17 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 		RegenerateViewSpaceDirections(framebuffer);
 	}
 
-	std::vector<uint32_t> aabbIntersectionsCount;
-	std::vector<uint32_t> triangleIntersectionsCount;
-	std::vector<uint32_t> nodeVisits;
-	aabbIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
-	triangleIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
-	nodeVisits.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
+	std::vector<uint32_t> primaryRayAABBIntersectionsCount;
+	std::vector<uint32_t> primaryRayTriangleIntersectionsCount;
+	std::vector<uint32_t> primaryRayNodeVisits;
+
+	//std::vector<uint32_t> primaryRayAABBIntersectionsCount;
+	//std::vector<uint32_t> primaryRayTriangleIntersectionsCount;
+	//std::vector<uint32_t> primaryRayNodeVisits;
+
+	primaryRayAABBIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
+	primaryRayTriangleIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
+	primaryRayNodeVisits.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
 
 	const SHORT cKeyState = GetAsyncKeyState(0x43);
 	const SHORT vKeyState = GetAsyncKeyState(0x56);
@@ -162,35 +167,35 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			if (xKeyState > 0u)
 			{
 				// Ray values reset here, so no need to do a reset on the vector
-				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray pimaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 
 #ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
-				aabbIntersectionsCount[rayIndex] = (c_primaryRay.m_aabbIntersectionTests);
-				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
-				nodeVisits[rayIndex] = c_primaryRay.m_nodeVisits;
+				const HitResult hr = TraceAgainstBVH2<false>(pimaryRay, rayIndex, 1e-5f);
+				primaryRayAABBIntersectionsCount[rayIndex] = (pimaryRay.m_primaryAABBIntersectionTests);
+				primaryRayTriangleIntersectionsCount[rayIndex] = (pimaryRay.m_primaryTriangleIntersectionTests);
+				primaryRayNodeVisits[rayIndex] = pimaryRay.m_primaryNodeVisits;
 #endif
 #ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
-				aabbIntersectionsCount[rayIndex] = (c_primaryRay.m_aabbIntersectionTests);
-				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
-				nodeVisits[rayIndex] = c_primaryRay.m_nodeVisits;
+				const HitResult hr = TraceAgainstBVH4<false>(pimaryRay, rayIndex, 1e-5f);
+				primaryRayAABBIntersectionsCount[rayIndex] = (pimaryRay.m_primaryAABBIntersectionTests);
+				primaryRayTriangleIntersectionsCount[rayIndex] = (pimaryRay.m_primaryTriangleIntersectionTests);
+				primaryRayNodeVisits[rayIndex] = pimaryRay.m_primaryNodeVisits;
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
-				triangleIntersectionsCount[rayIndex] = (c_primaryRay.m_triangleIntersectionTests);
+				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
+				primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
 #endif // !TRACE_AGAINST_NON_BVH
 
 				if ((row == framebuffer->GetHeight() - 1u) && (column == framebuffer->GetWidth() - 1u))
 				{
 					// Average aabb intersections for primary rays
 					uint32_t averageAABBVisits = 0u;
-					for (uint32_t i = 0u; i < aabbIntersectionsCount.size(); i++)
+					for (uint32_t i = 0u; i < primaryRayAABBIntersectionsCount.size(); i++)
 					{
-						averageAABBVisits += aabbIntersectionsCount[i];
+						averageAABBVisits += primaryRayAABBIntersectionsCount[i];
 					}
 
-					averageAABBVisits = averageAABBVisits / (uint32_t)aabbIntersectionsCount.size();
+					averageAABBVisits = averageAABBVisits / (uint32_t)primaryRayAABBIntersectionsCount.size();
 
 					char msgBuffer1[128u];
 					sprintf_s(msgBuffer1, "Average AABB visits: %u \n", averageAABBVisits);
@@ -199,12 +204,12 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 					// Average triangle intersections for primary rays
 					uint32_t averageTriangleVisits = 0u;
-					for (uint32_t i = 0u; i < triangleIntersectionsCount.size(); i++)
+					for (uint32_t i = 0u; i < primaryRayTriangleIntersectionsCount.size(); i++)
 					{
-						averageTriangleVisits += triangleIntersectionsCount[i];
+						averageTriangleVisits += primaryRayTriangleIntersectionsCount[i];
 					}
 
-					averageTriangleVisits = averageTriangleVisits / (uint32_t)triangleIntersectionsCount.size();
+					averageTriangleVisits = averageTriangleVisits / (uint32_t)primaryRayTriangleIntersectionsCount.size();
 
 					char msgBuffer2[128u];
 					sprintf_s(msgBuffer2, "Average Triangle visits: %u \n", averageTriangleVisits);
@@ -212,12 +217,12 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 					// Average node visits
 					uint32_t averageNodeVisits = 0u;
-					for (uint32_t i = 0u; i < nodeVisits.size(); i++)
+					for (uint32_t i = 0u; i < primaryRayNodeVisits.size(); i++)
 					{
-						averageNodeVisits += nodeVisits[i];
+						averageNodeVisits += primaryRayNodeVisits[i];
 					}
 
-					averageNodeVisits = averageNodeVisits / (uint32_t)nodeVisits.size();
+					averageNodeVisits = averageNodeVisits / (uint32_t)primaryRayNodeVisits.size();
 
 					char msgBuffer3[128u];
 					sprintf_s(msgBuffer3, "Average Node visits: %u \n", averageNodeVisits);
@@ -231,32 +236,32 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 			if (cKeyState > 0u)
 			{
-				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
 #ifdef TRACE_AGAINST_BVH2
-				const HitResult primaryHr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-				const HitResult primaryHr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult primaryHr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
 				//const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, primaryHr.m_normal), 0.0f), 1.0f);
 
-				if (primaryHr.m_t != INFINITY)
+				if (hr.m_t != INFINITY)
 				{
-					Ray c_shadowRay(primaryHr.m_intersectionPoint, m_lightDirection);
+					Ray shadowRay(hr.m_intersectionPoint, m_lightDirection);
 					
 #ifdef TRACE_AGAINST_BVH2
-					const HitResult shadowHr = TraceAgainstBVH2<false>(c_shadowRay, rayIndex, 1e-5f);
+					const HitResult shadowHr = TraceAgainstBVH2<true>(shadowRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-					const HitResult shadowHr = TraceAgainstBVH4<false>(c_shadowRay, rayIndex, 1e-5f);
+					const HitResult shadowHr = TraceAgainstBVH4<true>(shadowRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-					const HitResult shadowHr = TraceRay<false>(c_shadowRay, rayIndex, 1e-5f);
+					const HitResult shadowHr = TraceRay<true>(shadowRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
 					red = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
@@ -273,16 +278,16 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 			if (vKeyState > 0u)
 			{
-				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
 #ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
 				const float maxDepth = 10.0f;
@@ -294,16 +299,16 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 			if (bKeyState > 0u)
 			{
-				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
 #ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
 				const float maxDepth = 10.0f;
@@ -315,16 +320,16 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 			if (nKeyState > 0u)
 			{
-				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 				
 #ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
 				red = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.X() + 0.5f : 0.0f;
@@ -334,16 +339,16 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 			if (mKeyState > 0u)
 			{
-				Ray c_primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 
 #ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(c_primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
 #endif // !TRACE_AGAINST_BVH
 
 				red = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].X() : 0.0f;
@@ -1038,7 +1043,10 @@ void Renderer::TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin,
 template<bool T_acceptAnyHit>
 void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
-	ray.m_nodeVisits++;
+	if (!T_acceptAnyHit)
+	{
+		ray.m_primaryNodeVisits++;
+	}
 
 	const BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
 
@@ -1121,16 +1129,19 @@ void Renderer::TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin,
 template<bool T_acceptAnyHit>
 void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
-	ray.m_nodeVisits++;
+	if (!T_acceptAnyHit)
+	{
+		ray.m_primaryNodeVisits++;
+	}
 
 	const BVH2InnerNode& node = m_bvh2AccellStructure->GetInnerNode(innerNodeStartIndex);
 
 	float tNears[2u] = { INFINITY, INFINITY };
 	float hit[2u] = { false, false };
-	hit[0u] = RayAABBIntersection(ray, node.m_leftAABB.m_min[0u]. node.m_leftAABB.m_min[1u], node.m_leftAABB.m_min[2u],
-		node.m_leftAABB.m_max[0u], node.m_leftAABB.m_max[1u], node.m_leftAABB.m_max[2u], tMax, &tNears[0u]);
-	hit[1u] = RayAABBIntersection(ray, node.m_rightAABB.m_min[0u].node.m_rightAABB.m_min[1u], node.m_rightAABB.m_min[2u],
-		node.m_rightAABB.m_max[0u], node.m_rightAABB.m_max[1u], node.m_rightAABB.m_max[2u], tMax, &tNears[0u]);
+	hit[0u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_leftAABB.m_min.X(), node.m_leftAABB.m_min.Y(), node.m_leftAABB.m_min.Z(),
+		node.m_leftAABB.m_max.X(), node.m_leftAABB.m_max.Y(), node.m_leftAABB.m_max.Z(), tMax, &tNears[0u]);
+	hit[1u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_rightAABB.m_min.X(), node.m_rightAABB.m_min.Y(), node.m_rightAABB.m_min.Z(),
+		node.m_rightAABB.m_max.X(), node.m_rightAABB.m_max.Y(), node.m_rightAABB.m_max.Z(), tMax, &tNears[0u]);
 
 	if (!hit[0u] && !hit[1u])
 	{
@@ -1163,8 +1174,8 @@ void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 			const uint32_t triangleIndex = visitOrder[child] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
-		else if (RayAABBIntersection(ray, aabbs[child].m_min[0u], aabbs[child].m_min[1u], aabbs[child].m_min[2u], 
-			aabbs[child].m_max[0u], aabbs[child].m_max[1u], aabbs[child].m_max[2u], tMax, nullptr))
+		else if (RayAABBIntersection(ray, T_acceptAnyHit, aabbs[child].m_min.X(), aabbs[child].m_min.Y(), aabbs[child].m_min.Z(),
+			aabbs[child].m_max.X(), aabbs[child].m_max.Y(), aabbs[child].m_max.Z(), tMax, nullptr))
 		{
 			BVH2DFSTraversal<T_acceptAnyHit>(visitOrder[child], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
@@ -1193,7 +1204,10 @@ HitResult Renderer::TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const fl
 template<bool T_acceptAnyHit>
 void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit)
 {
-	ray.m_triangleIntersectionTests++;
+	if (!T_acceptAnyHit)
+	{
+		ray.m_primaryTriangleIntersectionTests++;
+	}
 
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);

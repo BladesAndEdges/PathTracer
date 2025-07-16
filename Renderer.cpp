@@ -1145,6 +1145,14 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 		{
 			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[hitIndices[child]], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
+
+		if constexpr (T_acceptAnyHit)
+		{
+			if (out_hasHit)
+			{
+				return;
+			}
+		}
 	}
 #endif
 

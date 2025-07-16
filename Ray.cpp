@@ -2,6 +2,7 @@
 
 #include <xmmintrin.h>
 #include <immintrin.h>
+
 #include "BVH2AccellStructure.h"
 
 // --------------------------------------------------------------------------------
@@ -50,8 +51,18 @@ bool RayAABBIntersection(Ray& ray, bool isPrimary, float minX, float minY, float
 	float tNearZ = (minZ * ray.InverseDirection().Z()) + ray.NegativeOriginTimesInvDir().Z();
 	float tFarZ = (maxZ * ray.InverseDirection().Z()) + ray.NegativeOriginTimesInvDir().Z();
 
-	const float t0 = std::max(std::max(std::max(std::min(tNearX, tFarX), std::min(tNearY, tFarY)), std::min(tNearZ, tFarZ)), 0.0f);
-	const float t1 = std::min(std::min(std::min(std::max(tNearX, tFarX), std::max(tNearY, tFarY)), std::max(tNearZ, tFarZ)), tMax);
+	// Entries and exits
+	const float enterX = std::min(tNearX, tFarX);
+	const float enterY = std::min(tNearY, tFarY);
+	const float enterZ = std::min(tNearZ, tFarZ);
+	
+	const float exitX = std::max(tNearX, tFarX);
+	const float exitY = std::max(tNearY, tFarY);
+	const float exitZ = std::max(tNearZ, tFarZ);
+	
+	// t0 and t1
+	const float t0 = std::max(std::max(enterX, enterY), std::max(enterZ, 0.0f));
+	const float t1 = std::min(std::min(exitX, exitY), std::min(exitZ, tMax));
 	
 	if (out_hitNear) { *out_hitNear = t0; }
 	

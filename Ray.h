@@ -29,5 +29,7 @@ private:
 };
 
 bool RayAABBIntersection(Ray& ray, bool isPrimary, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, const float tMax, float* out_hitNear);
+int SIMDRayAABBIntersection(Ray& ray, bool isPrimary, const float* minX, const float* minY, const float* minZ, 
+	const float* maxX, const float* maxY, const float* maxZ, const float tMax, float* out_hitNear);
 
 #include "Ray.inl"

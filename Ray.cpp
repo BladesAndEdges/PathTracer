@@ -55,3 +55,64 @@ bool RayAABBIntersection(Ray& ray, bool isPrimary, float minX, float minY, float
 	
 	return t1 >= t0;
 }
+
+// --------------------------------------------------------------------------------
+int SIMDRayAABBIntersection(Ray& ray, bool isPrimary, const float* minX, const float* minY, const float* minZ, 
+	const float* maxX, const float* maxY, const float* maxZ, const float tMax, float* out_hitNear)
+{
+	(void)out_hitNear;
+
+	if (isPrimary)
+	{
+		ray.m_primaryAABBIntersectionTests += 4u;
+	}
+
+	// 0 and tMAx
+	const __m128 zeroReg = _mm_set1_ps(0.0f);
+	const __m128 tMaxReg = _mm_set1_ps(tMax);
+	
+	// AABB paramaters
+	const __m128 minXs = _mm_loadu_ps(minX);
+	const __m128 minYs = _mm_loadu_ps(minY);
+	const __m128 minZs = _mm_loadu_ps(minZ);
+	const __m128 maxXs = _mm_loadu_ps(maxX);
+	const __m128 maxYs = _mm_loadu_ps(maxY);
+	const __m128 maxZs = _mm_loadu_ps(maxZ);
+	
+	//Ray data
+	const __m128 rayInverseX = _mm_set1_ps(ray.InverseDirection().X());
+	const __m128 rayInverseY = _mm_set1_ps(ray.InverseDirection().Y());
+	const __m128 rayInverseZ = _mm_set1_ps(ray.InverseDirection().Z());
+	
+	const __m128 rayNegativeOriginTimesInvDirX = _mm_set1_ps(ray.NegativeOriginTimesInvDir().X());
+	const __m128 rayNegativeOriginTimesInvDirY = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Y());
+	const __m128 rayNegativeOriginTimesInvDirZ = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Z());
+	
+	// TNears
+	const __m128 t0X = _mm_fmadd_ps(minXs, rayInverseX, rayNegativeOriginTimesInvDirX);
+	const __m128 t0Y = _mm_fmadd_ps(minYs, rayInverseY, rayNegativeOriginTimesInvDirY);
+	const __m128 t0Z = _mm_fmadd_ps(minZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
+	
+	// TFars
+	const __m128 t1X = _mm_fmadd_ps(maxXs, rayInverseX, rayNegativeOriginTimesInvDirX);
+	const __m128 t1Y = _mm_fmadd_ps(maxYs, rayInverseY, rayNegativeOriginTimesInvDirY);
+	const __m128 t1Z = _mm_fmadd_ps(maxZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
+	
+	// Entries and exits
+	const __m128 enterX = _mm_min_ps(t0X, t1X);
+	const __m128 enterY = _mm_min_ps(t0Y, t1Y);
+	const __m128 enterZ = _mm_min_ps(t0Z, t1Z);
+	
+	const __m128 exitX = _mm_max_ps(t0X, t1X);
+	const __m128 exitY = _mm_max_ps(t0Y, t1Y);
+	const __m128 exitZ = _mm_max_ps(t0Z, t1Z);
+	
+	// t0 and t1
+	const __m128 t0 = _mm_max_ps(_mm_max_ps(enterX, enterY), _mm_max_ps(zeroReg, enterZ));
+	const __m128 t1 = _mm_min_ps(_mm_min_ps(exitX, exitY), _mm_min_ps(tMaxReg, exitZ));
+	
+	// hasIntersected
+	const __m128 hasIntersected = _mm_cmpge_ps(t1, t0);
+	
+	return _mm_movemask_ps(hasIntersected);
+}

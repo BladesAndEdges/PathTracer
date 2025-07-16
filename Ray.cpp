@@ -1,5 +1,7 @@
 #include "Ray.h"
 
+#include <xmmintrin.h>
+#include <immintrin.h>
 #include "BVH2AccellStructure.h"
 
 // --------------------------------------------------------------------------------

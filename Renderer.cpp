@@ -1039,6 +1039,8 @@ void Renderer::TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin,
 	BVH4DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
 }
 
+//#define SORTED_BVH4
+
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
 void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
@@ -1048,26 +1050,30 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 		ray.m_primaryNodeVisits++;
 	}
 
+	// It asserts in Get inner node as when there is a nan, for the default aabb, 
+	// the comparison let's through a compare that passes
 	const BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
-
+	
+#ifdef SORTED_BVH4
 	uint32_t hitCount = 0u;
 	uint64_t nearPlaneAndChildIndex[4u] = { UINT64_MAX, UINT64_MAX, UINT64_MAX, UINT64_MAX };
 	for (uint32_t child = 0u; child < 4u; child++)
 	{
 		float tNear = INFINITY;
-		if (RayAABBIntersection(ray, node.m_aabbMinX[child], node.m_aabbMinY[child], node.m_aabbMinZ[child], node.m_aabbMaxX[child], node.m_aabbMaxY[child], node.m_aabbMaxZ[child], tMax, &tNear))
+		if (RayAABBIntersection(ray, T_acceptAnyHit, node.m_aabbMinX[child], node.m_aabbMinY[child], node.m_aabbMinZ[child], node.m_aabbMaxX[child], 
+			node.m_aabbMaxY[child], node.m_aabbMaxZ[child], tMax, &tNear))
 		{
 			nearPlaneAndChildIndex[hitCount] = (((uint64_t)(*(uint32_t*)(&tNear))) << 32ull) | (uint64_t)child;
 			hitCount++;
 		}
 	}
-
+	
 	// Early out if no hit
 	if (!hitCount)
 	{
 		return;
 	}
-
+	
 	// Sort in ascending order
 	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[1u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]); }
 	if (nearPlaneAndChildIndex[2u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]); }
@@ -1076,27 +1082,27 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[2u]); }
 
 #ifdef _DEBUG
-	for (uint32_t visitNode = 0u; visitNode < 3u; visitNode++)
-	{
-		assert(nearPlaneAndChildIndex[visitNode] <= nearPlaneAndChildIndex[visitNode + 1u]);
-	}
+	//for (uint32_t visitNode = 0u; visitNode < 3u; visitNode++)
+	//{
+	//	assert(nearPlaneAndChildIndex[visitNode] <= nearPlaneAndChildIndex[visitNode + 1u]);
+	//}
 #endif
 
 	//Traversal
 	for (uint32_t child = 0u; child < hitCount; child++)
 	{
 		const uint32_t visitIndex = (uint32_t)(nearPlaneAndChildIndex[child]);
-
+	
 		if (node.m_child[visitIndex] >> 31u)
 		{
 			const uint32_t triangleIndex = node.m_child[visitIndex] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
-		else if (RayAABBIntersection(ray, node.m_aabbMinX[visitIndex], node.m_aabbMinY[visitIndex], node.m_aabbMinZ[visitIndex], node.m_aabbMaxX[visitIndex], node.m_aabbMaxY[visitIndex], node.m_aabbMaxZ[visitIndex], tMax, nullptr))
+		else
 		{
 			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[visitIndex], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
-
+	
 		if constexpr (T_acceptAnyHit)
 		{
 			if (out_hasHit)
@@ -1105,6 +1111,43 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 			}
 		}
 	}
+#endif
+
+#ifndef SORTED_BVH4
+
+	const int hasIntersected = SIMDRayAABBIntersection(ray, T_acceptAnyHit, node.m_aabbMinX, node.m_aabbMinY, node.m_aabbMinZ,
+		node.m_aabbMaxX, node.m_aabbMaxY, node.m_aabbMaxZ, tMax, nullptr);
+
+	if (!hasIntersected)
+	{
+		return;
+	}
+
+	uint32_t hitCount = 0u;
+	uint32_t hitIndices[4u] = {UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
+	for (uint32_t hitIndex = 0u; hitIndex < 4u; hitIndex++)
+	{
+		if ((hasIntersected >> hitIndex) & 1u)
+		{
+			hitIndices[hitCount] = hitIndex;
+			hitCount++;
+		}
+	}
+
+	for (uint32_t child = 0u; child < hitCount; child++)
+	{
+		if (node.m_child[hitIndices[child]] >> 31u)
+		{
+			const uint32_t triangleIndex = node.m_child[hitIndices[child]] & ~(1u << 31u);
+			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
+		}
+		else
+		{
+			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[hitIndices[child]], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		}
+	}
+#endif
+
 }
 
 // --------------------------------------------------------------------------------

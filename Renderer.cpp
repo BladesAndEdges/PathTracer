@@ -1,8 +1,9 @@
 #include "Renderer.h"
 
+#define NOMINMAX
+
 #include <assert.h>
 #include <emmintrin.h>
-#include <xmmintrin.h>
 #include <immintrin.h>
 
 #include "BVH2AccellStructure.h"
@@ -1055,15 +1056,35 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 	const BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
 	
 #ifdef SORTED_BVH4
+
+#if _DEBUG
+	float theTNears[4u] = { INFINITY, INFINITY, INFINITY, INFINITY };
+	int32_t theTNearsAsInts[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+	int32_t theTNearsAfterMask[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+	int32_t theTNearsAfterShiftLeft[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+	int32_t theCombinedTNearAndChildIndex[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+#endif
+
 	uint32_t hitCount = 0u;
-	uint64_t nearPlaneAndChildIndex[4u] = { UINT64_MAX, UINT64_MAX, UINT64_MAX, UINT64_MAX };
+	int32_t nearPlaneAndChildIndex[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
 	for (uint32_t child = 0u; child < 4u; child++)
 	{
+		theTNearsAfterMask[child] = theTNearsAsInts[child] & 0x3FFFFFFE;
+		theTNearsAfterShiftLeft[child] = theTNearsAfterMask[child] << 1;
+		theCombinedTNearAndChildIndex[child] = theTNearsAfterShiftLeft[child] | child;
+
 		float tNear = INFINITY;
 		if (RayAABBIntersection(ray, T_acceptAnyHit, node.m_aabbMinX[child], node.m_aabbMinY[child], node.m_aabbMinZ[child], node.m_aabbMaxX[child], 
 			node.m_aabbMaxY[child], node.m_aabbMaxZ[child], tMax, &tNear))
 		{
-			nearPlaneAndChildIndex[hitCount] = (((uint64_t)(*(uint32_t*)(&tNear))) << 32ull) | (uint64_t)child;
+#if _DEBUG
+			theTNears[child] = tNear;
+			theTNearsAsInts[child] = *((int32_t*)&tNear);
+			theTNearsAfterMask[child] = theTNearsAsInts[child] & 0x3FFFFFFE;
+			theTNearsAfterShiftLeft[child] = theTNearsAfterMask[child] << 1;
+			theCombinedTNearAndChildIndex[child] = theTNearsAfterShiftLeft[child] | child;
+#endif
+			nearPlaneAndChildIndex[child] = ((*(int32_t*)&tNear & 0x3FFFFFFE) << 1) | child;
 			hitCount++;
 		}
 	}
@@ -1073,13 +1094,33 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 	{
 		return;
 	}
-	
+
 	// Sort in ascending order
+#if 1
+	const int32_t a = std::min(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]);
+	const int32_t b = std::max(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]);
+	const int32_t c = std::min(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]);
+	const int32_t d = std::max(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]);
+
+	int32_t visitOrder[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+	visitOrder[0u] = std::min(a, c);
+	visitOrder[2u] = std::max(a, c);
+	visitOrder[1u] = std::min(b, d);
+	visitOrder[3u] = std::max(b, d);
+
+	const int32_t e = std::min(visitOrder[1u], visitOrder[2u]);
+	const int32_t f = std::max(visitOrder[1u], visitOrder[2u]);
+
+	visitOrder[1u] = e;
+	visitOrder[2u] = f;
+
+#else
 	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[1u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]); }
 	if (nearPlaneAndChildIndex[2u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]); }
 	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[2u]); }
 	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[3u]); }
 	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[2u]); }
+#endif
 
 #ifdef _DEBUG
 	//for (uint32_t visitNode = 0u; visitNode < 3u; visitNode++)
@@ -1091,8 +1132,11 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 	//Traversal
 	for (uint32_t child = 0u; child < hitCount; child++)
 	{
-		const uint32_t visitIndex = (uint32_t)(nearPlaneAndChildIndex[child]);
-	
+#if 1
+		const uint32_t visitIndex = (uint32_t)(visitOrder[child] & 0x00000003);
+#else
+		const uint32_t visitIndex = (uint32_t)nearPlaneAndChildIndex[child] & 0x00000003;
+#endif
 		if (node.m_child[visitIndex] >> 31u)
 		{
 			const uint32_t triangleIndex = node.m_child[visitIndex] & ~(1u << 31u);
@@ -1115,35 +1159,111 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 
 #ifndef SORTED_BVH4
 
-	const int hasIntersected = SIMDRayAABBIntersection(ray, T_acceptAnyHit, node.m_aabbMinX, node.m_aabbMinY, node.m_aabbMinZ,
-		node.m_aabbMaxX, node.m_aabbMaxY, node.m_aabbMaxZ, tMax, nullptr);
-
-	if (!hasIntersected)
+	// 0 and tMAx
+	const __m128 zeroReg = _mm_set1_ps(0.0f);
+	const __m128 tMaxReg = _mm_set1_ps(tMax);
+	
+	// AABB paramaters
+	const __m128 minXs = _mm_loadu_ps(node.m_aabbMinX);
+	const __m128 minYs = _mm_loadu_ps(node.m_aabbMinY);
+	const __m128 minZs = _mm_loadu_ps(node.m_aabbMinZ);
+	const __m128 maxXs = _mm_loadu_ps(node.m_aabbMaxX);
+	const __m128 maxYs = _mm_loadu_ps(node.m_aabbMaxY);
+	const __m128 maxZs = _mm_loadu_ps(node.m_aabbMaxZ);
+	
+	//Ray data
+	const __m128 rayInverseX = _mm_set1_ps(ray.InverseDirection().X());
+	const __m128 rayInverseY = _mm_set1_ps(ray.InverseDirection().Y());
+	const __m128 rayInverseZ = _mm_set1_ps(ray.InverseDirection().Z());
+	
+	const __m128 rayNegativeOriginTimesInvDirX = _mm_set1_ps(ray.NegativeOriginTimesInvDir().X());
+	const __m128 rayNegativeOriginTimesInvDirY = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Y());
+	const __m128 rayNegativeOriginTimesInvDirZ = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Z());
+	
+	// TNears
+	const __m128 t0X = _mm_fmadd_ps(minXs, rayInverseX, rayNegativeOriginTimesInvDirX);
+	const __m128 t0Y = _mm_fmadd_ps(minYs, rayInverseY, rayNegativeOriginTimesInvDirY);
+	const __m128 t0Z = _mm_fmadd_ps(minZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
+	
+	// TFars
+	const __m128 t1X = _mm_fmadd_ps(maxXs, rayInverseX, rayNegativeOriginTimesInvDirX);
+	const __m128 t1Y = _mm_fmadd_ps(maxYs, rayInverseY, rayNegativeOriginTimesInvDirY);
+	const __m128 t1Z = _mm_fmadd_ps(maxZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
+	
+	// Entries and exits
+	const __m128 enterX = _mm_min_ps(t0X, t1X);
+	const __m128 enterY = _mm_min_ps(t0Y, t1Y);
+	const __m128 enterZ = _mm_min_ps(t0Z, t1Z);
+	
+	const __m128 exitX = _mm_max_ps(t0X, t1X);
+	const __m128 exitY = _mm_max_ps(t0Y, t1Y);
+	const __m128 exitZ = _mm_max_ps(t0Z, t1Z);
+	
+	// t0 and t1
+	const __m128 t0 = _mm_max_ps(_mm_max_ps(enterX, enterY), _mm_max_ps(zeroReg, enterZ));
+	const __m128 t1 = _mm_min_ps(_mm_min_ps(exitX, exitY), _mm_min_ps(tMaxReg, exitZ));
+	
+	// hasIntersected
+	const __m128 hasIntersected = _mm_cmpge_ps(t1, t0);
+	const int intersectionMask = _mm_movemask_ps(hasIntersected);
+	
+	if (!intersectionMask)
 	{
 		return;
 	}
+	
+	// Packing
+	const __m128i int32Max = _mm_set1_epi32(INT32_MAX);
+	const __m128i t0AsInts = _mm_castps_si128(_mm_or_ps(_mm_and_ps(hasIntersected, t0), _mm_andnot_ps(hasIntersected, _mm_castsi128_ps(int32Max))));
+	const __m128i postChopBits = _mm_and_si128(t0AsInts, _mm_set1_epi32(0x3FFFFFFE));
+	const __m128i shiftedLeft = _mm_slli_epi32(postChopBits, 1);
+	
+	const __m128i childIndicesInOrder = _mm_set_epi32(3, 2, 1, 0);
+	const __m128i combinedT0AndIndex = _mm_or_epi32(shiftedLeft, childIndicesInOrder);
 
-	uint32_t hitCount = 0u;
-	uint32_t hitIndices[4u] = {UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
-	for (uint32_t hitIndex = 0u; hitIndex < 4u; hitIndex++)
-	{
-		if ((hasIntersected >> hitIndex) & 1u)
-		{
-			hitIndices[hitCount] = hitIndex;
-			hitCount++;
-		}
-	}
+	// Sort
+	const __m128i shuffle0 = _mm_shuffle_epi32(combinedT0AndIndex, _MM_SHUFFLE(1, 0, 1, 0));
+	const __m128i min0 = _mm_min_epi32(combinedT0AndIndex, shuffle0);
+	const __m128i max0 = _mm_max_epi32(combinedT0AndIndex, shuffle0);
+	
+	const __m128i shuffle1 = _mm_shuffle_epi32(max0, _MM_SHUFFLE(2, 3, 1, 0));;
+	const __m128i min1 = _mm_min_epi32(min0, shuffle1);
+	const __m128i max1 = _mm_max_epi32(min0, shuffle1);
+	
+	const __m128i shuffle2 = _mm_shuffle_epi32(max1, _MM_SHUFFLE(2, 3, 1, 0));
+	const __m128i l3 = _mm_max_epi32(max1, shuffle2);
+	const __m128i l2 = _mm_min_epi32(max1, shuffle2);
+	
+	const __m128i shuffle3 = _mm_shuffle_epi32(min1, _MM_SHUFFLE(2, 3, 1, 0));
+	const __m128i l1 = _mm_max_epi32(min1, shuffle3);
+	const __m128i l0 = _mm_min_epi32(min1, shuffle3);
+	
+	// Figure this out
+	const __m128i unpack0 = _mm_unpackhi_epi32(l1, l3);
+	const __m128i unpack1 = _mm_unpackhi_epi32(l0, l2);
+	const __m128i result = _mm_unpackhi_epi32(unpack1, unpack0);
 
-	for (uint32_t child = 0u; child < hitCount; child++)
+	const int visitOrderIndices[4u] =
 	{
-		if (node.m_child[hitIndices[child]] >> 31u)
+		_mm_cvtsi128_si32(result),
+		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(1, 1, 1, 1))),
+		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(2, 2, 2, 2))),
+		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(3, 3, 3, 3)))
+	};
+
+	const uint32_t intersectionCount = __popcnt(*((uint32_t*)&intersectionMask));
+	for (uint32_t i = 0u; i < intersectionCount; i++)
+	{
+		const uint32_t visitIndex = (uint32_t)(visitOrderIndices[i] & 0x00000003);
+
+		if (node.m_child[visitIndex] >> 31u)
 		{
-			const uint32_t triangleIndex = node.m_child[hitIndices[child]] & ~(1u << 31u);
+			const uint32_t triangleIndex = node.m_child[visitIndex] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
 		else
 		{
-			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[hitIndices[child]], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[visitIndex], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
 		}
 
 		if constexpr (T_acceptAnyHit)
@@ -1155,7 +1275,6 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 		}
 	}
 #endif
-
 }
 
 // --------------------------------------------------------------------------------

@@ -71,11 +71,9 @@ bool RayAABBIntersection(Ray& ray, bool isPrimary, float minX, float minY, float
 
 // --------------------------------------------------------------------------------
 int SIMDRayAABBIntersection(Ray& ray, bool isPrimary, const float* minX, const float* minY, const float* minZ, 
-	const float* maxX, const float* maxY, const float* maxZ, const float tMax, float* out_hitNear)
+	const float* maxX, const float* maxY, const float* maxZ, const float tMax, __m128* out_hitNears)
 {
-	(void)out_hitNear;
-
-	if (isPrimary)
+	if (!isPrimary)
 	{
 		ray.m_primaryAABBIntersectionTests += 4u;
 	}
@@ -123,6 +121,11 @@ int SIMDRayAABBIntersection(Ray& ray, bool isPrimary, const float* minX, const f
 	// t0 and t1
 	const __m128 t0 = _mm_max_ps(_mm_max_ps(enterX, enterY), _mm_max_ps(zeroReg, enterZ));
 	const __m128 t1 = _mm_min_ps(_mm_min_ps(exitX, exitY), _mm_min_ps(tMaxReg, exitZ));
+
+	if (out_hitNears)
+	{
+		*out_hitNears = t0;
+	}
 	
 	// hasIntersected
 	const __m128 hasIntersected = _mm_cmpge_ps(t1, t0);

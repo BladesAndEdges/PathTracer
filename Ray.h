@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdint.h>
+#include <xmmintrin.h>
+
 #include "Vector3.h"
 
 struct AABB;
@@ -30,6 +32,6 @@ private:
 
 bool RayAABBIntersection(Ray& ray, bool isPrimary, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, const float tMax, float* out_hitNear);
 int SIMDRayAABBIntersection(Ray& ray, bool isPrimary, const float* minX, const float* minY, const float* minZ, 
-	const float* maxX, const float* maxY, const float* maxZ, const float tMax, float* out_hitNear);
+	const float* maxX, const float* maxY, const float* maxZ, const float tMax, __m128* out_hitNears);
 
 #include "Ray.inl"

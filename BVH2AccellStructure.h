@@ -37,6 +37,7 @@ public:
 	BVH2AccellStructure(const std::vector<Triangle>& triangles, const BVH2PartitionStrategy& bvhPartitionStrategy);
 
 	const BVH2InnerNode GetInnerNode(uint32_t index) const;
+	const Triangle GetTriangle(uint32_t index) const;
 
 	uint32_t GetNodeCount() const;
 

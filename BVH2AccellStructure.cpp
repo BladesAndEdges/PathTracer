@@ -37,6 +37,13 @@ const BVH2InnerNode BVH2AccellStructure::GetInnerNode(uint32_t index) const
 }
 
 // --------------------------------------------------------------------------------
+const Triangle BVH2AccellStructure::GetTriangle(uint32_t index) const
+{
+	assert(index < m_triangles.size());
+	return m_triangles[index];
+}
+
+// --------------------------------------------------------------------------------
 uint32_t BVH2AccellStructure::GetNodeCount() const
 {
 	return (uint32_t)m_innerNodes.size();

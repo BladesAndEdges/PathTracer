@@ -7,16 +7,16 @@ class Triangle4
 
 public:
 
-	std::vector<float> m_edge1X;
-	std::vector<float> m_edge1Y;
-	std::vector<float> m_edge1Z;
+	float m_edge1X[4u];
+	float m_edge1Y[4u];
+	float m_edge1Z[4u];
 
-	std::vector<float> m_edge2X;
-	std::vector<float> m_edge2Y;
-	std::vector<float> m_edge2Z;
+	float m_edge2X[4u];
+	float m_edge2Y[4u];
+	float m_edge2Z[4u];
 
-	std::vector<float> m_v0X;
-	std::vector<float> m_v0Y;
-	std::vector<float> m_v0Z;
+	float m_v0X[4u];
+	float m_v0Y[4u];
+	float m_v0Z[4u];
 };
 

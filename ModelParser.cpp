@@ -214,56 +214,56 @@ void ModelParser::CreateTriangle4s(std::vector<float>& triangulatedPosX, std::ve
 		const uint32_t tri3Offset = (triangle + 3u) * 3u;
 
 		//Triangle 0
-		tri4.m_v0X.push_back(triangulatedPosX[tri0Offset]);
-		tri4.m_v0Y.push_back(triangulatedPosY[tri0Offset]);
-		tri4.m_v0Z.push_back(triangulatedPosZ[tri0Offset]);
+		tri4.m_v0X[0u] = triangulatedPosX[tri0Offset];
+		tri4.m_v0Y[0u] = triangulatedPosY[tri0Offset];
+		tri4.m_v0Z[0u] = triangulatedPosZ[tri0Offset];
 
-		tri4.m_edge1X.push_back(triangulatedPosX[tri0Offset + 1u] - triangulatedPosX[tri0Offset]);
-		tri4.m_edge1Y.push_back(triangulatedPosY[tri0Offset + 1u] - triangulatedPosY[tri0Offset]);
-		tri4.m_edge1Z.push_back(triangulatedPosZ[tri0Offset + 1u] - triangulatedPosZ[tri0Offset]);
+		tri4.m_edge1X[0u] = triangulatedPosX[tri0Offset + 1u] - triangulatedPosX[tri0Offset];
+		tri4.m_edge1Y[0u] = triangulatedPosY[tri0Offset + 1u] - triangulatedPosY[tri0Offset];
+		tri4.m_edge1Z[0u] = triangulatedPosZ[tri0Offset + 1u] - triangulatedPosZ[tri0Offset];
 
-		tri4.m_edge2X.push_back(triangulatedPosX[tri0Offset + 2u] - triangulatedPosX[tri0Offset]);
-		tri4.m_edge2Y.push_back(triangulatedPosY[tri0Offset + 2u] - triangulatedPosY[tri0Offset]);
-		tri4.m_edge2Z.push_back(triangulatedPosZ[tri0Offset + 2u] - triangulatedPosZ[tri0Offset]);
+		tri4.m_edge2X[0u] = triangulatedPosX[tri0Offset + 2u] - triangulatedPosX[tri0Offset];
+		tri4.m_edge2Y[0u] = triangulatedPosY[tri0Offset + 2u] - triangulatedPosY[tri0Offset];
+		tri4.m_edge2Z[0u] = triangulatedPosZ[tri0Offset + 2u] - triangulatedPosZ[tri0Offset];
 
 		//Triangle 1
-		tri4.m_v0X.push_back(triangulatedPosX[tri1Offset]);
-		tri4.m_v0Y.push_back(triangulatedPosY[tri1Offset]);
-		tri4.m_v0Z.push_back(triangulatedPosZ[tri1Offset]);
+		tri4.m_v0X[1u] = triangulatedPosX[tri1Offset];
+		tri4.m_v0Y[1u] = triangulatedPosY[tri1Offset];
+		tri4.m_v0Z[1u] = triangulatedPosZ[tri1Offset];
 
-		tri4.m_edge1X.push_back(triangulatedPosX[tri1Offset + 1u] - triangulatedPosX[tri1Offset]);
-		tri4.m_edge1Y.push_back(triangulatedPosY[tri1Offset + 1u] - triangulatedPosY[tri1Offset]);
-		tri4.m_edge1Z.push_back(triangulatedPosZ[tri1Offset + 1u] - triangulatedPosZ[tri1Offset]);
+		tri4.m_edge1X[1u] = triangulatedPosX[tri1Offset + 1u] - triangulatedPosX[tri1Offset];
+		tri4.m_edge1Y[1u] = triangulatedPosY[tri1Offset + 1u] - triangulatedPosY[tri1Offset];
+		tri4.m_edge1Z[1u] = triangulatedPosZ[tri1Offset + 1u] - triangulatedPosZ[tri1Offset];
 
-		tri4.m_edge2X.push_back(triangulatedPosX[tri1Offset + 2u] - triangulatedPosX[tri1Offset]);
-		tri4.m_edge2Y.push_back(triangulatedPosY[tri1Offset + 2u] - triangulatedPosY[tri1Offset]);
-		tri4.m_edge2Z.push_back(triangulatedPosZ[tri1Offset + 2u] - triangulatedPosZ[tri1Offset]);
+		tri4.m_edge2X[1u] = triangulatedPosX[tri1Offset + 2u] - triangulatedPosX[tri1Offset];
+		tri4.m_edge2Y[1u] = triangulatedPosY[tri1Offset + 2u] - triangulatedPosY[tri1Offset];
+		tri4.m_edge2Z[1u] = triangulatedPosZ[tri1Offset + 2u] - triangulatedPosZ[tri1Offset];
 
 		//Triangle 2
-		tri4.m_v0X.push_back(triangulatedPosX[tri2Offset]);
-		tri4.m_v0Y.push_back(triangulatedPosY[tri2Offset]);
-		tri4.m_v0Z.push_back(triangulatedPosZ[tri2Offset]);
+		tri4.m_v0X[2u] = triangulatedPosX[tri2Offset];
+		tri4.m_v0Y[2u] = triangulatedPosY[tri2Offset];
+		tri4.m_v0Z[2u] = triangulatedPosZ[tri2Offset];
 
-		tri4.m_edge1X.push_back(triangulatedPosX[tri2Offset + 1u] - triangulatedPosX[tri2Offset]);
-		tri4.m_edge1Y.push_back(triangulatedPosY[tri2Offset + 1u] - triangulatedPosY[tri2Offset]);
-		tri4.m_edge1Z.push_back(triangulatedPosZ[tri2Offset + 1u] - triangulatedPosZ[tri2Offset]);
+		tri4.m_edge1X[2u] = triangulatedPosX[tri2Offset + 1u] - triangulatedPosX[tri2Offset];
+		tri4.m_edge1Y[2u] = triangulatedPosY[tri2Offset + 1u] - triangulatedPosY[tri2Offset];
+		tri4.m_edge1Z[2u] = triangulatedPosZ[tri2Offset + 1u] - triangulatedPosZ[tri2Offset];
 
-		tri4.m_edge2X.push_back(triangulatedPosX[tri2Offset + 2u] - triangulatedPosX[tri2Offset]);
-		tri4.m_edge2Y.push_back(triangulatedPosY[tri2Offset + 2u] - triangulatedPosY[tri2Offset]);
-		tri4.m_edge2Z.push_back(triangulatedPosZ[tri2Offset + 2u] - triangulatedPosZ[tri2Offset]);
+		tri4.m_edge2X[2u] = triangulatedPosX[tri2Offset + 2u] - triangulatedPosX[tri2Offset];
+		tri4.m_edge2Y[2u] = triangulatedPosY[tri2Offset + 2u] - triangulatedPosY[tri2Offset];
+		tri4.m_edge2Z[2u] = triangulatedPosZ[tri2Offset + 2u] - triangulatedPosZ[tri2Offset];
 
 		//Triangle 3
-		tri4.m_v0X.push_back(triangulatedPosX[tri3Offset]);
-		tri4.m_v0Y.push_back(triangulatedPosY[tri3Offset]);
-		tri4.m_v0Z.push_back(triangulatedPosZ[tri3Offset]);
+		tri4.m_v0X[3u] = triangulatedPosX[tri3Offset];
+		tri4.m_v0Y[3u] = triangulatedPosY[tri3Offset];
+		tri4.m_v0Z[3u] = triangulatedPosZ[tri3Offset];
 
-		tri4.m_edge1X.push_back(triangulatedPosX[tri3Offset + 1u] - triangulatedPosX[tri3Offset]);
-		tri4.m_edge1Y.push_back(triangulatedPosY[tri3Offset + 1u] - triangulatedPosY[tri3Offset]);
-		tri4.m_edge1Z.push_back(triangulatedPosZ[tri3Offset + 1u] - triangulatedPosZ[tri3Offset]);
+		tri4.m_edge1X[3u] = triangulatedPosX[tri3Offset + 1u] - triangulatedPosX[tri3Offset];
+		tri4.m_edge1Y[3u] = triangulatedPosY[tri3Offset + 1u] - triangulatedPosY[tri3Offset];
+		tri4.m_edge1Z[3u] = triangulatedPosZ[tri3Offset + 1u] - triangulatedPosZ[tri3Offset];
 
-		tri4.m_edge2X.push_back(triangulatedPosX[tri3Offset + 2u] - triangulatedPosX[tri3Offset]);
-		tri4.m_edge2Y.push_back(triangulatedPosY[tri3Offset + 2u] - triangulatedPosY[tri3Offset]);
-		tri4.m_edge2Z.push_back(triangulatedPosZ[tri3Offset + 2u] - triangulatedPosZ[tri3Offset]);
+		tri4.m_edge2X[3u] = triangulatedPosX[tri3Offset + 2u] - triangulatedPosX[tri3Offset];
+		tri4.m_edge2Y[3u] = triangulatedPosY[tri3Offset + 2u] - triangulatedPosY[tri3Offset];
+		tri4.m_edge2Z[3u] = triangulatedPosZ[tri3Offset + 2u] - triangulatedPosZ[tri3Offset];
 
 		m_triangle4s.push_back(tri4);
 	}

@@ -35,7 +35,7 @@ private:
 	template<bool T_acceptAnyHit>
 	void HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
 
-	Vector3 PathTrace(Ray& ray, const uint32_t rayIndex,uint32_t depth);
+	Vector3 PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth);
 
 	template<bool T_acceptAnyHit>
 	HitResult TraceRay(Ray& ray, const uint32_t rayIndex, const float tMin);
@@ -73,9 +73,16 @@ private:
 	template<bool T_acceptAnyHit>
 	void HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
 
+	template<bool T_acceptAnyHit>
+	void HitTriangleIsolatedCase(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const Vector3& edge1, const Vector3& edge2, const Vector3& vertex0, 
+		HitResult& out_hitResult, bool& out_hasHit);
+
 	// BVH4 code
 	template<bool T_acceptAnyHit>
 	void TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
+
+	template<bool T_acceptAnyHit>
+	void BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
 	void BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);

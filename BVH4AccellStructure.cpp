@@ -10,6 +10,15 @@ BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellSt
 	// Add getter for the size of the internal node vector, and check it is not empty
 	const uint32_t bvhRootIndex = BuildBVH4NodeFromBVH2NodeTri4(bvh2AccellStructure, 0);
 	const uint32_t bv = BuildBVH4NodeFromBVH2Node(bvh2AccellStructure, 0);
+
+	for (uint32_t i = 0u; i < m_innerNodesTri4.size(); i++)
+	{
+		for (uint32_t j = 0u; j < 4u; j++)
+		{
+			assert(m_innerNodesTri4[i].m_child[j] != 0u);
+		}
+	}
+
 	(void)bv;
 	(void)bvhRootIndex;
 }
@@ -112,73 +121,94 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 	uint32_t triangleMask = 0u;
 	RecursiveGetChildren(bvh2AccellStructure, bvh2SubtreeRootIndex, AABB(), 0u, children, boxes, addedChildren, triangleMask);
 
-	const uint32_t bvh4InnerNodeIndex = (uint32_t)m_innerNodesTri4.size();
+	const uint32_t bvh4Node = (uint32_t)m_innerNodesTri4.size();
 	m_innerNodesTri4.push_back(BVH4InnerNode());
+	uint32_t subNode = 0u;
 
+	// Handle the triangles
+	if (triangleMask)
+	{
+		Triangle4 triangles;
+		AABB trianglesAABB;
+		uint32_t subTriangle = 0u;
+		for (uint32_t child = 0u; child < addedChildren; child++)
+		{
+			const uint32_t postShiftValue = triangleMask >> (3u - child);
+			if (postShiftValue & 1u)
+			{
+				const uint32_t indexInBVH2 = children[child] & ~(1u << 31u);
+				const Triangle triangle = bvh2AccellStructure->GetTriangle(indexInBVH2);
+				triangles.validTriangles++;
+
+				triangles.m_v0X[subTriangle] = triangle.m_vertices[0u].m_position[0u];
+				triangles.m_v0Y[subTriangle] = triangle.m_vertices[0u].m_position[1u];
+				triangles.m_v0Z[subTriangle] = triangle.m_vertices[0u].m_position[2u];
+
+				triangles.m_edge1X[subTriangle] = triangle.m_vertices[1u].m_position[0u] - triangle.m_vertices[0u].m_position[0u];
+				triangles.m_edge1Y[subTriangle] = triangle.m_vertices[1u].m_position[1u] - triangle.m_vertices[0u].m_position[1u];
+				triangles.m_edge1Z[subTriangle] = triangle.m_vertices[1u].m_position[2u] - triangle.m_vertices[0u].m_position[2u];
+
+				triangles.m_edge2X[subTriangle] = triangle.m_vertices[2u].m_position[0u] - triangle.m_vertices[0u].m_position[0u];
+				triangles.m_edge2Y[subTriangle] = triangle.m_vertices[2u].m_position[1u] - triangle.m_vertices[0u].m_position[1u];
+				triangles.m_edge2Z[subTriangle] = triangle.m_vertices[2u].m_position[2u] - triangle.m_vertices[0u].m_position[2u];
+
+				trianglesAABB.MergeAABB(boxes[child]);
+
+				subTriangle++;
+			}
+		}
+
+		const uint32_t triangle4Index = (uint32_t)m_triangle4s.size();
+		m_triangle4s.push_back(triangles);
+
+		// Place the triangle4 as a node child
+		m_innerNodesTri4[bvh4Node].m_child[subNode] = triangle4Index | (1u << 31u);
+
+		m_innerNodesTri4[bvh4Node].m_aabbMinX[subNode] = trianglesAABB.m_min.X();
+		m_innerNodesTri4[bvh4Node].m_aabbMinY[subNode] = trianglesAABB.m_min.Y();
+		m_innerNodesTri4[bvh4Node].m_aabbMinZ[subNode] = trianglesAABB.m_min.Z();
+		m_innerNodesTri4[bvh4Node].m_aabbMaxX[subNode] = trianglesAABB.m_max.X();
+		m_innerNodesTri4[bvh4Node].m_aabbMaxY[subNode] = trianglesAABB.m_max.Y();
+		m_innerNodesTri4[bvh4Node].m_aabbMaxZ[subNode] = trianglesAABB.m_max.Z();
+
+		subNode++;
+	}
+
+	// Handle the regular nodes
 	for (uint32_t child = 0u; child < addedChildren; child++)
 	{
 		const uint32_t postShiftValue = triangleMask >> (3u - child);
-		if (postShiftValue & 1u)
+		if (!(postShiftValue & 1u))
 		{
-			Triangle4 triangle4;
+			m_innerNodesTri4[bvh4Node].m_child[subNode] = BuildBVH4NodeFromBVH2NodeTri4(bvh2AccellStructure, children[child]);
 			
-			const uint32_t triangleIndex = children[child] & ~(1u << 31u);
-			const Triangle triangle = bvh2AccellStructure->GetTriangle(triangleIndex);
+			m_innerNodesTri4[bvh4Node].m_aabbMinX[subNode] = boxes[child].m_min.X();
+			m_innerNodesTri4[bvh4Node].m_aabbMinY[subNode] = boxes[child].m_min.Y();
+			m_innerNodesTri4[bvh4Node].m_aabbMinZ[subNode] = boxes[child].m_min.Z();
 
-			triangle4.m_edge1X[0u] = triangle.m_vertices[1u].m_position[0u] - triangle.m_vertices[0u].m_position[0u];
-			triangle4.m_edge1Y[0u] = triangle.m_vertices[1u].m_position[1u] - triangle.m_vertices[0u].m_position[1u];
-			triangle4.m_edge1Z[0u] = triangle.m_vertices[1u].m_position[2u] - triangle.m_vertices[0u].m_position[2u];
+			m_innerNodesTri4[bvh4Node].m_aabbMaxX[subNode] = boxes[child].m_max.X();
+			m_innerNodesTri4[bvh4Node].m_aabbMaxY[subNode] = boxes[child].m_max.Y();
+			m_innerNodesTri4[bvh4Node].m_aabbMaxZ[subNode] = boxes[child].m_max.Z();
 
-			triangle4.m_edge2X[0u] = triangle.m_vertices[2u].m_position[0u] - triangle.m_vertices[0u].m_position[0u];
-			triangle4.m_edge2Y[0u] = triangle.m_vertices[2u].m_position[1u] - triangle.m_vertices[0u].m_position[1u];
-			triangle4.m_edge2Z[0u] = triangle.m_vertices[2u].m_position[2u] - triangle.m_vertices[0u].m_position[2u];
-
-			triangle4.m_v0X[0u] = triangle.m_vertices[0u].m_position[0u];
-			triangle4.m_v0Y[0u] = triangle.m_vertices[0u].m_position[1u];
-			triangle4.m_v0Z[0u] = triangle.m_vertices[0u].m_position[2u];
-
-			const uint32_t triangle4Index = (uint32_t)m_triangle4s.size();
-			m_triangle4s.push_back(triangle4);
-
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_child[child] = triangle4Index | (1u << 31u);
-
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMinX[child] = boxes[child].m_min.X();
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMinY[child] = boxes[child].m_min.Y();
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMinZ[child] = boxes[child].m_min.Z();
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMaxX[child] = boxes[child].m_max.X();
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMaxY[child] = boxes[child].m_max.Y();
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMaxZ[child] = boxes[child].m_max.Z();
-
-		}
-		else
-		{
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_child[child] = BuildBVH4NodeFromBVH2NodeTri4(bvh2AccellStructure, children[child]);
-			
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMinX[child] = boxes[child].m_min.X();
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMinY[child] = boxes[child].m_min.Y();
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMinZ[child] = boxes[child].m_min.Z();
-
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMaxX[child] = boxes[child].m_max.X();
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMaxY[child] = boxes[child].m_max.Y();
-			m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMaxZ[child] = boxes[child].m_max.Z();
+			subNode++;
 		}
 	}
 
 	//Populate the remaining space with dummy nodes
-	for (uint32_t child = addedChildren; child < 4u; child++)
+	for (; subNode < 4u; subNode++)
 	{
-		m_innerNodesTri4[bvh4InnerNodeIndex].m_child[child] = 0x7fffffffu;
+		m_innerNodesTri4[bvh4Node].m_child[subNode] = 0x7fffffffu;
 
-		m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMinX[child] = std::nanf("");
-		m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMinY[child] = std::nanf("");
-		m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMinZ[child] = std::nanf("");
+		m_innerNodesTri4[bvh4Node].m_aabbMinX[subNode] = std::nanf("");
+		m_innerNodesTri4[bvh4Node].m_aabbMinY[subNode] = std::nanf("");
+		m_innerNodesTri4[bvh4Node].m_aabbMinZ[subNode] = std::nanf("");
 
-		m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMaxX[child] = std::nanf("");
-		m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMaxY[child] = std::nanf("");
-		m_innerNodesTri4[bvh4InnerNodeIndex].m_aabbMaxZ[child] = std::nanf("");
+		m_innerNodesTri4[bvh4Node].m_aabbMaxX[subNode] = std::nanf("");
+		m_innerNodesTri4[bvh4Node].m_aabbMaxY[subNode] = std::nanf("");
+		m_innerNodesTri4[bvh4Node].m_aabbMaxZ[subNode] = std::nanf("");
 	}
 
-	return bvh4InnerNodeIndex;
+	return bvh4Node;
 }
 
 // --------------------------------------------------------------------------------

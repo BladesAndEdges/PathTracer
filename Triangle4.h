@@ -7,6 +7,7 @@ class Triangle4
 
 public:
 
+	uint32_t validTriangles = 0u;
 	float m_edge1X[4u];
 	float m_edge1Y[4u];
 	float m_edge1Z[4u];

@@ -1268,11 +1268,14 @@ void Renderer::BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray&
 			const uint32_t triangle4Index = node.m_child[visitIndex] & ~(1u << 31u);
 			const Triangle4 theTri4 = m_bvh4AccellStructure->GetTriangle4(triangle4Index);
 
-			const Vector3 edge1 = Vector3(theTri4.m_edge1X[0u], theTri4.m_edge1Y[0u], theTri4.m_edge1Z[0u]);
-			const Vector3 edge2 = Vector3(theTri4.m_edge2X[0u], theTri4.m_edge2Y[0u], theTri4.m_edge2Z[0u]);
-			const Vector3 vertex0 = Vector3(theTri4.m_v0X[0u], theTri4.m_v0Y[0u], theTri4.m_v0Z[0u]);
+			for (uint32_t triangle = 0u; triangle < theTri4.validTriangles; triangle++)
+			{
+				const Vector3 edge1 = Vector3(theTri4.m_edge1X[triangle], theTri4.m_edge1Y[triangle], theTri4.m_edge1Z[triangle]);
+				const Vector3 edge2 = Vector3(theTri4.m_edge2X[triangle], theTri4.m_edge2Y[triangle], theTri4.m_edge2Z[triangle]);
+				const Vector3 vertex0 = Vector3(theTri4.m_v0X[triangle], theTri4.m_v0Y[triangle], theTri4.m_v0Z[triangle]);
 
-			HitTriangleIsolatedCase<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, edge1, edge2, vertex0, out_hitResult, out_hasHit);
+				HitTriangleIsolatedCase<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, edge1, edge2, vertex0, out_hitResult, out_hasHit);
+			}
 		}
 		else
 		{

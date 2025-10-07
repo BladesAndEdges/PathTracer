@@ -457,17 +457,17 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 	for (uint32_t currentTri4 = 0u; currentTri4 < m_triangle4s.size(); currentTri4++)
 	{
 		// Load tri4 data
-		const __m128 edge1X = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge1X.data());
-		const __m128 edge1Y = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge1Y.data());
-		const __m128 edge1Z = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge1Z.data());
+		const __m128 edge1X = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge1X);
+		const __m128 edge1Y = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge1Y);
+		const __m128 edge1Z = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge1Z);
 
-		const __m128 edge2X = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge2X.data());
-		const __m128 edge2Y = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge2Y.data());
-		const __m128 edge2Z = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge2Z.data());
+		const __m128 edge2X = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge2X);
+		const __m128 edge2Y = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge2Y);
+		const __m128 edge2Z = _mm_loadu_ps(m_triangle4s[currentTri4].m_edge2Z);
 
-		const __m128 v0X = _mm_loadu_ps(m_triangle4s[currentTri4].m_v0X.data());
-		const __m128 v0Y = _mm_loadu_ps(m_triangle4s[currentTri4].m_v0Y.data());
-		const __m128 v0Z = _mm_loadu_ps(m_triangle4s[currentTri4].m_v0Z.data());
+		const __m128 v0X = _mm_loadu_ps(m_triangle4s[currentTri4].m_v0X);
+		const __m128 v0Y = _mm_loadu_ps(m_triangle4s[currentTri4].m_v0Y);
+		const __m128 v0Z = _mm_loadu_ps(m_triangle4s[currentTri4].m_v0Z);
 
 		// Calculate pvec
 		const __m128 pvecXLHS = _mm_mul_ps(rayDirectionY, edge2Z);

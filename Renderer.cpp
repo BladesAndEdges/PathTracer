@@ -168,19 +168,19 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			if (xKeyState > 0u)
 			{
 				// Ray values reset here, so no need to do a reset on the vector
-				Ray pimaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 
 #ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(pimaryRay, rayIndex, 1e-5f);
-				primaryRayAABBIntersectionsCount[rayIndex] = (pimaryRay.m_primaryAABBIntersectionTests);
-				primaryRayTriangleIntersectionsCount[rayIndex] = (pimaryRay.m_primaryTriangleIntersectionTests);
-				primaryRayNodeVisits[rayIndex] = pimaryRay.m_primaryNodeVisits;
+				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
+				primaryRayAABBIntersectionsCount[rayIndex] = (primaryRay.m_primaryAABBIntersectionTests);
+				primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
+				primaryRayNodeVisits[rayIndex] = primaryRay.m_primaryNodeVisits;
 #endif
 #ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(pimaryRay, rayIndex, 1e-5f);
-				primaryRayAABBIntersectionsCount[rayIndex] = (pimaryRay.m_primaryAABBIntersectionTests);
-				primaryRayTriangleIntersectionsCount[rayIndex] = (pimaryRay.m_primaryTriangleIntersectionTests);
-				primaryRayNodeVisits[rayIndex] = pimaryRay.m_primaryNodeVisits;
+				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
+				primaryRayAABBIntersectionsCount[rayIndex] = (primaryRay.m_primaryAABBIntersectionTests);
+				primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
+				primaryRayNodeVisits[rayIndex] = primaryRay.m_primaryNodeVisits;
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
 				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);

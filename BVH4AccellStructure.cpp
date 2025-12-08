@@ -138,7 +138,6 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 			{
 				const uint32_t indexInBVH2 = children[child] & ~(1u << 31u);
 				const Triangle triangle = bvh2AccellStructure->GetTriangle(indexInBVH2);
-				triangles.validTriangles++;
 
 				triangles.m_v0X[subTriangle] = triangle.m_vertices[0u].m_position[0u];
 				triangles.m_v0Y[subTriangle] = triangle.m_vertices[0u].m_position[1u];

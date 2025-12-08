@@ -157,6 +157,22 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 			}
 		}
 
+		// Add dummy triangles if neccessary
+		for (uint32_t triangle = subTriangle; triangle < 4u; triangle++)
+		{
+			triangles.m_v0X[triangle] = std::nanf("");
+			triangles.m_v0Y[triangle] = std::nanf("");
+			triangles.m_v0Z[triangle] = std::nanf("");
+
+			triangles.m_edge1X[triangle] = std::nanf("");
+			triangles.m_edge1Y[triangle] = std::nanf("");
+			triangles.m_edge1Z[triangle] = std::nanf("");
+
+			triangles.m_edge2X[triangle] = std::nanf("");
+			triangles.m_edge2Y[triangle] = std::nanf("");
+			triangles.m_edge2Z[triangle] = std::nanf("");
+		}
+
 		const uint32_t triangle4Index = (uint32_t)m_triangle4s.size();
 		m_triangle4s.push_back(triangles);
 

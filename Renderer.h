@@ -77,6 +77,9 @@ private:
 	void BVH4HitTriangle4Scalar(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const Vector3& edge1, const Vector3& edge2, const Vector3& vertex0, 
 		HitResult& out_hitResult, bool& out_hasHit);
 
+	template<bool T_acceptAnyHit>
+	void BVH4HitTriangle4SSE(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const Triangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit);
+
 	// BVH4 code
 	template<bool T_acceptAnyHit>
 	void TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);

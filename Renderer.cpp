@@ -1266,15 +1266,16 @@ void Renderer::BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray&
 		if (node.m_child[visitIndex] >> 31u)
 		{
 			const uint32_t triangle4Index = node.m_child[visitIndex] & ~(1u << 31u);
-			const Triangle4 theTri4 = m_bvh4AccellStructure->GetTriangle4(triangle4Index);
+			const Triangle4 triangle4 = m_bvh4AccellStructure->GetTriangle4(triangle4Index);
 
 			for (uint32_t triangle = 0u; triangle < theTri4.validTriangles; triangle++)
+			for (uint32_t triangle = 0u; triangle < 4u; triangle++)
 			{
-				const Vector3 edge1 = Vector3(theTri4.m_edge1X[triangle], theTri4.m_edge1Y[triangle], theTri4.m_edge1Z[triangle]);
-				const Vector3 edge2 = Vector3(theTri4.m_edge2X[triangle], theTri4.m_edge2Y[triangle], theTri4.m_edge2Z[triangle]);
-				const Vector3 vertex0 = Vector3(theTri4.m_v0X[triangle], theTri4.m_v0Y[triangle], theTri4.m_v0Z[triangle]);
+				const Vector3 edge1 = Vector3(triangle4.m_edge1X[triangle], triangle4.m_edge1Y[triangle], triangle4.m_edge1Z[triangle]);
+				const Vector3 edge2 = Vector3(triangle4.m_edge2X[triangle], triangle4.m_edge2Y[triangle], triangle4.m_edge2Z[triangle]);
+				const Vector3 vertex0 = Vector3(triangle4.m_v0X[triangle], triangle4.m_v0Y[triangle], triangle4.m_v0Z[triangle]);
 
-				HitTriangleIsolatedCase<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, edge1, edge2, vertex0, out_hitResult, out_hasHit);
+				BVH4HitTriangle4Scalar<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, edge1, edge2, vertex0, out_hitResult, out_hasHit);
 			}
 		}
 		else
@@ -1697,7 +1698,7 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::HitTriangleIsolatedCase(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const Vector3& edge1, const Vector3& edge2, const Vector3& vertex0, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::BVH4HitTriangle4Scalar(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const Vector3& edge1, const Vector3& edge2, const Vector3& vertex0, HitResult& out_hitResult, bool& out_hasHit)
 {
 	if (!T_acceptAnyHit)
 	{

@@ -1033,7 +1033,6 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 }
 
 // --------------------------------------------------------------------------------
-
 #define BVH4_TRAVERSAL_WITH_TRI4
 template<bool T_acceptAnyHit>
 void Renderer::TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
@@ -1280,6 +1279,7 @@ void Renderer::BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray&
 
 				BVH4HitTriangle4Scalar<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, edge1, edge2, vertex0, out_hitResult, out_hasHit);
 			}
+#endif // !BVH4SSE_TRAVERSAL_WITH_SSE_TRIANGLE_INTERSECTION
 		}
 		else
 		{

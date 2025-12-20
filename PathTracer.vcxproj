@@ -218,6 +218,7 @@
     <ClCompile Include="GLContext.cpp" />
     <ClCompile Include="HitResult.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelParser.cpp" />
     <ClCompile Include="PerformanceCounter.cpp" />
     <ClCompile Include="BVH4AccellStructure.cpp" />
@@ -225,7 +226,6 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Triangle.cpp" />
-    <ClCompile Include="Triangle4.cpp" />
     <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -234,6 +234,7 @@
     <ClInclude Include="BVHNode.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BVH4AccellStructure.h" />
+    <ClInclude Include="Model.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="GLContext.h" />

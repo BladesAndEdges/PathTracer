@@ -3,21 +3,19 @@
 #include <assert.h>
 
 #include "GLContext.h"
-#include "ModelParser.h"
 #include "PerformanceCounter.h"
 #include "Renderer.h"
+
+#include "Model.h"
 
 // --------------------------------------------------------------------------------
 Application::Application()
 {
-	m_parser = new ModelParser();
-	//m_parser->ParseFile(R"(Scenes\CornellBox\CornellBox-Empty-CO.obj)", 1.0f);
-	m_parser->ParseFile(R"(Scenes\Sponza\sponza.obj)", 1.0f);
-
+	m_model = new Model();
+	
 	m_context = new GLContext();
-	m_renderer = new Renderer(m_parser->GetPositionsX(), m_parser->GetPositionsY(), m_parser->GetPositionsZ(), 
-		m_parser->GetTriangle4Data(), m_parser->GetFaces(), m_parser->GetCenter()); // Model will hold the data eventually once I add it
-
+	m_renderer = new Renderer(m_model->GetCenter(), m_model->GetTriangles(), m_model->GetTriangle4s());
+	
 	ZeroMemory(m_frameTimes, FRAME_TIMINGS_BUFFER_SIZE * sizeof(double));
 }
 

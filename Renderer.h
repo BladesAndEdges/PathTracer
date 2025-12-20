@@ -19,8 +19,7 @@ class Renderer
 {
 public:
 
-	Renderer(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ,
-		const std::vector<Triangle4>& triangle4s, const std::vector<Triangle>& triangles, const Vector3& center);
+	Renderer(const Vector3& center, const std::vector<Triangle>& triangles, const std::vector<Triangle4>& triangle4s);
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 
@@ -52,11 +51,6 @@ private:
 
 	// SSE for triangles
 	std::vector<Triangle4> m_triangle4s;
-
-	// Scalar for triangles
-	std::vector<float> m_positionsX;
-	std::vector<float> m_positionsY;
-	std::vector<float> m_positionsZ;
 
 	BVH2AccellStructure* m_bvh2AccellStructure;
 	BVH4AccellStructure* m_bvh4AccellStructure;

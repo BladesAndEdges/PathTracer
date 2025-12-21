@@ -13,13 +13,14 @@
 class BVH2AccellStructure;
 class BVH4AccellStructure;
 class Framebuffer;
+class Model;
 class PerformanceCounter;
 
 class Renderer
 {
 public:
 
-	Renderer(const Vector3& center, const std::vector<Triangle>& triangles, const std::vector<Triangle4>& triangle4s);
+	Renderer();
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 
@@ -46,12 +47,7 @@ private:
 	std::vector<Vector3> m_texelCenters;
 	bool m_isFirstFrame;
 
-	std::vector<Triangle> m_triangles;
-	Vector3 m_center;
-
-	// SSE for triangles
-	std::vector<Triangle4> m_triangle4s;
-
+	Model* m_model;
 	BVH2AccellStructure* m_bvh2AccellStructure;
 	BVH4AccellStructure* m_bvh4AccellStructure;
 

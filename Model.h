@@ -4,8 +4,6 @@
 #include "Triangle4.h"
 #include "Vector3.h"
 
-class ModelParser;
-
 // --------------------------------------------------------------------------------
 class Model
 {
@@ -20,11 +18,7 @@ public:
 	const std::vector<Triangle>& GetTriangles() const;
 	const std::vector<Triangle4>& GetTriangle4s() const;
 
-	~Model();
-
 private:
-
-	ModelParser* m_modelParser;
 
 	Vector3 m_center;
 	std::vector<Triangle> m_triangles;

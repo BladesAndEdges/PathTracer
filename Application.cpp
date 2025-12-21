@@ -6,15 +6,11 @@
 #include "PerformanceCounter.h"
 #include "Renderer.h"
 
-#include "Model.h"
-
 // --------------------------------------------------------------------------------
 Application::Application()
 {
-	m_model = new Model();
-	
 	m_context = new GLContext();
-	m_renderer = new Renderer(m_model->GetCenter(), m_model->GetTriangles(), m_model->GetTriangle4s());
+	m_renderer = new Renderer();
 	
 	ZeroMemory(m_frameTimes, FRAME_TIMINGS_BUFFER_SIZE * sizeof(double));
 }

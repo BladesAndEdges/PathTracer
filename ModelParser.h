@@ -3,9 +3,10 @@
 #include <string>
 #include <vector>
 
-#include "Triangle4.h"
 #include "Vector3.h"
 #include "Vertex.h"
+
+#include "Triangle4.h"
 
 struct Triangle;
 
@@ -16,13 +17,13 @@ public:
 
 	ModelParser();
 
-	void ParseFile(const char* objSourceFile, const float scaleFactor, std::vector<Triangle>& out_triangles);
+	void ParseFile(const char* objSourceFile, const float scaleFactor, std::vector<Triangle>& out_triangles, std::vector<Triangle4>& out_triangle4s);
 
 	Vector3 GetCenter() const;
 
-	const std::vector<Triangle4>& GetTriangle4Data() const;
-
 private:
+
+	std::vector<Triangle4> triangle4s;
 
 	// Tri4  implementation
 	void CreateTriangles3(const std::string& fileName, const float scaleFactor);
@@ -33,13 +34,13 @@ private:
 	void CalculateSceneCenter(const std::vector<float>& positionsX, const std::vector<float>& positionsY, const std::vector<float>& positionsZ);
 	void CreateTriangle4s(std::vector<float>& triangulatedPosX, std::vector<float> triangulatedPosY, std::vector<float> triangulatedPosZ);
 
-	std::vector<Triangle4> m_triangle4s;
-
 	// Scalar with faces implementation
 	void CreateTriangles(const std::string& fileName, const float scaleFactor, std::vector<Triangle>& out_triangles);
 	void ParseAttributesWithFaces(const std::string& line, const float scaleFactor, std::vector<Vertex>& vertices);
 	Vector3 CalculateSceneCenterWithFaces();
 	void TriangulateWithFaces(const std::vector<Vertex>& vertices, std::vector<Triangle>& faces);
+
+	void CreateTriangle4s(std::vector<Triangle> triangles, std::vector<Triangle4>& out_triangle4s) const;
 
 	std::vector<Vector3> m_positions;
 	std::vector<Vertex> m_vertices;

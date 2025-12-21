@@ -5,6 +5,7 @@
 #include <sstream>
 #include <assert.h>
 #include "Triangle.h"
+#include "Triangle4.h"
 
 // --------------------------------------------------------------------------------
 ModelParser::ModelParser()
@@ -12,26 +13,29 @@ ModelParser::ModelParser()
 }
 
 // --------------------------------------------------------------------------------
-void ModelParser::ParseFile(const char* objSourceFile, const float scaleFactor, std::vector<Triangle>& out_triangles)
+void ModelParser::ParseFile(const char* objSourceFile, const float scaleFactor, std::vector<Triangle>& out_triangles, std::vector<Triangle4>& out_triangle4s)
 {
 	assert(objSourceFile != nullptr);
+	assert(scaleFactor > 0.0f);
+	assert(out_triangles.size() == 0);
+	assert(out_triangle4s.size() == 0);
 
 	CreateTriangles(objSourceFile, scaleFactor, out_triangles);
+	CreateTriangle4s(out_triangles, out_triangle4s);
 
 	// For SSE
 	CreateTriangles3(objSourceFile, scaleFactor);
+
+	assert(out_triangle4s.size() == triangle4s.size());
+
+	assert(out_triangles.size() > 0);
+	assert(out_triangle4s.size() > 0);
 }
 
 // --------------------------------------------------------------------------------
 Vector3 ModelParser::GetCenter() const
 {
 	return m_center;
-}
-
-// --------------------------------------------------------------------------------
-const std::vector<Triangle4>& ModelParser::GetTriangle4Data() const
-{
-	return m_triangle4s;
 }
 
 // --------------------------------------------------------------------------------
@@ -286,7 +290,7 @@ void ModelParser::CreateTriangle4s(std::vector<float>& triangulatedPosX, std::ve
 		tri4.m_edge2Y[3u] = triangulatedPosY[tri3Offset + 2u] - triangulatedPosY[tri3Offset];
 		tri4.m_edge2Z[3u] = triangulatedPosZ[tri3Offset + 2u] - triangulatedPosZ[tri3Offset];
 
-		m_triangle4s.push_back(tri4);
+		triangle4s.push_back(tri4);
 	}
 
 }
@@ -468,4 +472,77 @@ Vector3 ModelParser::CalculateSceneCenterWithFaces()
 	const float halfWayZ = (minZ + maxZ) / 2.0f;
 
 	return Vector3(halfwayX, halfwayY, halfWayZ);
+}
+
+// --------------------------------------------------------------------------------
+void ModelParser::CreateTriangle4s(std::vector<Triangle> triangles, std::vector<Triangle4>& out_triangle4s) const
+{
+	// Pad to a multiple of 4, if needed
+	const uint32_t remainder = (uint32_t)triangles.size() % 4u;
+	if (remainder != 0u)
+	{
+		const uint32_t padCount = 4u - remainder;
+		for (uint32_t padding = 0u; padding < padCount; padding++)
+		{
+			triangles.push_back(Triangle());
+		}
+	}
+
+	Triangle4 triangle4;
+	for (uint32_t index = 0u; index < triangles.size(); index += 4u)
+	{
+		// First triangle
+		triangle4.m_v0X[0u] = triangles[index].m_vertices[0u].m_position[0u];
+		triangle4.m_v0Y[0u] = triangles[index].m_vertices[0u].m_position[1u];
+		triangle4.m_v0Z[0u] = triangles[index].m_vertices[0u].m_position[2u];
+
+		triangle4.m_edge1X[0u] = triangles[index].m_vertices[1u].m_position[0u] - triangles[index].m_vertices[0u].m_position[0u];
+		triangle4.m_edge1Y[0u] = triangles[index].m_vertices[1u].m_position[1u] - triangles[index].m_vertices[0u].m_position[1u];
+		triangle4.m_edge1Z[0u] = triangles[index].m_vertices[1u].m_position[2u] - triangles[index].m_vertices[0u].m_position[2u];
+
+		triangle4.m_edge2X[0u] = triangles[index].m_vertices[2u].m_position[0u] - triangles[index].m_vertices[0u].m_position[0u];
+		triangle4.m_edge2Y[0u] = triangles[index].m_vertices[2u].m_position[1u] - triangles[index].m_vertices[0u].m_position[1u];
+		triangle4.m_edge2Z[0u] = triangles[index].m_vertices[2u].m_position[2u] - triangles[index].m_vertices[0u].m_position[2u];
+
+		// Second triangle
+		triangle4.m_v0X[1u] = triangles[index + 1u].m_vertices[0u].m_position[0u];
+		triangle4.m_v0Y[1u] = triangles[index + 1u].m_vertices[0u].m_position[1u];
+		triangle4.m_v0Z[1u] = triangles[index + 1u].m_vertices[0u].m_position[2u];
+
+		triangle4.m_edge1X[1u] = triangles[index + 1u].m_vertices[1u].m_position[0u] - triangles[index + 1u].m_vertices[0u].m_position[0u];
+		triangle4.m_edge1Y[1u] = triangles[index + 1u].m_vertices[1u].m_position[1u] - triangles[index + 1u].m_vertices[0u].m_position[1u];
+		triangle4.m_edge1Z[1u] = triangles[index + 1u].m_vertices[1u].m_position[2u] - triangles[index + 1u].m_vertices[0u].m_position[2u];
+
+		triangle4.m_edge2X[1u] = triangles[index + 1u].m_vertices[2u].m_position[0u] - triangles[index + 1u].m_vertices[0u].m_position[0u];
+		triangle4.m_edge2Y[1u] = triangles[index + 1u].m_vertices[2u].m_position[1u] - triangles[index + 1u].m_vertices[0u].m_position[1u];
+		triangle4.m_edge2Z[1u] = triangles[index + 1u].m_vertices[2u].m_position[2u] - triangles[index + 1u].m_vertices[0u].m_position[2u];
+
+		// Third triangle
+		triangle4.m_v0X[2u] = triangles[index + 2u].m_vertices[0u].m_position[0u];
+		triangle4.m_v0Y[2u] = triangles[index + 2u].m_vertices[0u].m_position[1u];
+		triangle4.m_v0Z[2u] = triangles[index + 2u].m_vertices[0u].m_position[2u];
+
+		triangle4.m_edge1X[2u] = triangles[index + 2u].m_vertices[1u].m_position[0u] - triangles[index + 2u].m_vertices[0u].m_position[0u];
+		triangle4.m_edge1Y[2u] = triangles[index + 2u].m_vertices[1u].m_position[1u] - triangles[index + 2u].m_vertices[0u].m_position[1u];
+		triangle4.m_edge1Z[2u] = triangles[index + 2u].m_vertices[1u].m_position[2u] - triangles[index + 2u].m_vertices[0u].m_position[2u];
+
+		triangle4.m_edge2X[2u] = triangles[index + 2u].m_vertices[2u].m_position[0u] - triangles[index + 2u].m_vertices[0u].m_position[0u];
+		triangle4.m_edge2Y[2u] = triangles[index + 2u].m_vertices[2u].m_position[1u] - triangles[index + 2u].m_vertices[0u].m_position[1u];
+		triangle4.m_edge2Z[2u] = triangles[index + 2u].m_vertices[2u].m_position[2u] - triangles[index + 2u].m_vertices[0u].m_position[2u];
+
+		// Fourth triangle
+		triangle4.m_v0X[3u] = triangles[index + 3u].m_vertices[0u].m_position[0u];
+		triangle4.m_v0Y[3u] = triangles[index + 3u].m_vertices[0u].m_position[1u];
+		triangle4.m_v0Z[3u] = triangles[index + 3u].m_vertices[0u].m_position[2u];
+
+		triangle4.m_edge1X[3u] = triangles[index + 3u].m_vertices[1u].m_position[0u] - triangles[index + 3u].m_vertices[0u].m_position[0u];
+		triangle4.m_edge1Y[3u] = triangles[index + 3u].m_vertices[1u].m_position[1u] - triangles[index + 3u].m_vertices[0u].m_position[1u];
+		triangle4.m_edge1Z[3u] = triangles[index + 3u].m_vertices[1u].m_position[2u] - triangles[index + 3u].m_vertices[0u].m_position[2u];
+
+		triangle4.m_edge2X[3u] = triangles[index + 3u].m_vertices[2u].m_position[0u] - triangles[index + 3u].m_vertices[0u].m_position[0u];
+		triangle4.m_edge2Y[3u] = triangles[index + 3u].m_vertices[2u].m_position[1u] - triangles[index + 3u].m_vertices[0u].m_position[1u];
+		triangle4.m_edge2Z[3u] = triangles[index + 3u].m_vertices[2u].m_position[2u] - triangles[index + 3u].m_vertices[0u].m_position[2u];
+
+		out_triangle4s.push_back(triangle4);
+	}
 }

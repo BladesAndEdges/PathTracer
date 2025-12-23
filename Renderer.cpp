@@ -14,9 +14,9 @@
 #include "Vector3.h"
 
 # define M_PI 3.14159265358979323846
+#define TRACE_AGAINST_NON_BVH
 //#define TRACE_AGAINST_BVH2
-#define TRACE_AGAINST_BVH4
-//#define TRACE_AGAINST_NON_BVH
+//#define TRACE_AGAINST_BVH4
 
 // Per frame
 PerformanceCounter hitTriangleCounter;
@@ -397,8 +397,8 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 	m_isFirstFrame = false;
 }
 
-#define RUNNING_SSE
-//#define RUNNING_SCALAR_WITH_FACES
+//#define RUNNING_SSE
+#define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
@@ -626,19 +626,14 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 	assignmentCounter.EndTiming();
 	assignmentTotalTime += assignmentCounter.GetMilliseconds();
 #endif
-#ifdef RUNNING_SCALAR_WITH_FACES
+#ifdef RUNNING_SCALAR
 
 	triLoopCounter.BeginTiming();
 	const std::vector<Triangle>& triangles = m_model->GetTriangles();
 	for (uint32_t triangle = 0u; triangle < triangles.size(); triangle++)
 	{
-		const Vector3 edge1 = Vector3(triangles[triangle].m_vertices[1u].m_position[0u] - triangles[triangle].m_vertices[0u].m_position[0u],
-			triangles[triangle].m_vertices[1u].m_position[1u] - triangles[triangle].m_vertices[0u].m_position[1u],
-			triangles[triangle].m_vertices[1u].m_position[2u] - triangles[triangle].m_vertices[0u].m_position[2u]);
-
-		const Vector3 edge2 = Vector3(triangles[triangle].m_vertices[2u].m_position[0u] - triangles[triangle].m_vertices[0u].m_position[0u],
-			triangles[triangle].m_vertices[2u].m_position[1u] - triangles[triangle].m_vertices[0u].m_position[1u],
-			triangles[triangle].m_vertices[2u].m_position[2u] - triangles[triangle].m_vertices[0u].m_position[2u]);
+		const Vector3 edge1 = Vector3(triangles[triangle].m_edge1.X(), triangles[triangle].m_edge1.Y(), triangles[triangle].m_edge1.Z());
+		const Vector3 edge2 = Vector3(triangles[triangle].m_edge2.X(), triangles[triangle].m_edge2.Y(), triangles[triangle].m_edge2.Z());
 
 		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 		const Vector3 pVec = Cross(ray.Direction(), edge2);
@@ -1395,13 +1390,8 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 #endif
 
 	const std::vector<Triangle>& triangles = m_model->GetTriangles();
-	const Vector3 edge1 = Vector3(triangles[triangleIndex].m_vertices[1u].m_position[0u] - triangles[triangleIndex].m_vertices[0u].m_position[0u],
-		triangles[triangleIndex].m_vertices[1u].m_position[1u] - triangles[triangleIndex].m_vertices[0u].m_position[1u],
-		triangles[triangleIndex].m_vertices[1u].m_position[2u] - triangles[triangleIndex].m_vertices[0u].m_position[2u]);
-
-	const Vector3 edge2 = Vector3(triangles[triangleIndex].m_vertices[2u].m_position[0u] - triangles[triangleIndex].m_vertices[0u].m_position[0u],
-		triangles[triangleIndex].m_vertices[2u].m_position[1u] - triangles[triangleIndex].m_vertices[0u].m_position[1u],
-		triangles[triangleIndex].m_vertices[2u].m_position[2u] - triangles[triangleIndex].m_vertices[0u].m_position[2u]);
+	const Vector3 edge1 = Vector3(triangles[triangleIndex].m_edge1.X(), triangles[triangleIndex].m_edge1.Y(), triangles[triangleIndex].m_edge1.Z());
+	const Vector3 edge2 = Vector3(triangles[triangleIndex].m_edge2.X(), triangles[triangleIndex].m_edge2.Y(), triangles[triangleIndex].m_edge2.Z());
 
 	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 	const Vector3 pVec = Cross(ray.Direction(), edge2);

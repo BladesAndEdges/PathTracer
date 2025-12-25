@@ -15,6 +15,7 @@ class BVH4AccellStructure;
 class Framebuffer;
 class Model;
 class PerformanceCounter;
+class TraversalDataManager;
 
 class Renderer
 {
@@ -48,6 +49,7 @@ private:
 	bool m_isFirstFrame;
 
 	Model* m_model;
+	TraversalDataManager* m_traversalDataManager;
 	BVH2AccellStructure* m_bvh2AccellStructure;
 	BVH4AccellStructure* m_bvh4AccellStructure;
 

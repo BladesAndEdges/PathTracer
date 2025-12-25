@@ -12,6 +12,8 @@
 #include "Model.h"
 #include "PerformanceCounter.h"
 #include "Vector3.h"
+#include "TraversalDataManager.h"
+#include "TraversalTriangle.h"
 
 # define M_PI 3.14159265358979323846
 #define TRACE_AGAINST_NON_BVH
@@ -35,10 +37,12 @@ Renderer::Renderer()
 	m_isFirstFrame = true;
 
 	m_model = new Model();
-	m_camera.SetCameraLocation(m_model->GetCenter());
-	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
+	m_traversalDataManager = new TraversalDataManager(m_model->GetTriangles());
 	m_bvh2AccellStructure = new BVH2AccellStructure(m_model->GetTriangles(), BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
 	m_bvh4AccellStructure = new BVH4AccellStructure(m_bvh2AccellStructure);
+
+	m_camera.SetCameraLocation(m_model->GetCenter());
+	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
 }
 
 // --------------------------------------------------------------------------------
@@ -629,11 +633,11 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 #ifdef RUNNING_SCALAR
 
 	triLoopCounter.BeginTiming();
-	const std::vector<Triangle>& triangles = m_model->GetTriangles();
-	for (uint32_t triangle = 0u; triangle < triangles.size(); triangle++)
+	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
+	for (uint32_t triangle = 0u; triangle < traversalTriangles.size(); triangle++)
 	{
-		const Vector3 edge1 = Vector3(triangles[triangle].m_edge1.X(), triangles[triangle].m_edge1.Y(), triangles[triangle].m_edge1.Z());
-		const Vector3 edge2 = Vector3(triangles[triangle].m_edge2.X(), triangles[triangle].m_edge2.Y(), triangles[triangle].m_edge2.Z());
+		const Vector3 edge1 = Vector3(traversalTriangles[triangle].m_edge1[0u], traversalTriangles[triangle].m_edge1[1u], traversalTriangles[triangle].m_edge1[2u]);
+		const Vector3 edge2 = Vector3(traversalTriangles[triangle].m_edge2[0u], traversalTriangles[triangle].m_edge2[1u], traversalTriangles[triangle].m_edge2[2u]);
 
 		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 		const Vector3 pVec = Cross(ray.Direction(), edge2);
@@ -645,9 +649,8 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		{
 			const float invDet = 1.0f / det;
 
-			const Vector3 tVec = ray.Origin() - Vector3(triangles[triangle].m_vertices[0u].m_position[0u],
-				triangles[triangle].m_vertices[0u].m_position[1u],
-				triangles[triangle].m_vertices[0u].m_position[2u]);
+			const Vector3 tVec = ray.Origin() - Vector3(traversalTriangles[triangle].m_v0[0u], traversalTriangles[triangle].m_v0[1u],
+				traversalTriangles[triangle].m_v0[2u]);
 
 			const float u = Dot(tVec, pVec) * invDet;
 
@@ -1013,7 +1016,7 @@ void Renderer::BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray&
 			const Triangle4 triangle4 = m_bvh4AccellStructure->GetTriangle4(triangle4Index);
 
 #ifdef BVH4SSE_TRAVERSAL_WITH_SSE_TRIANGLE_INTERSECTION
-			assert(triangle4Index < m_triangle4s.size());
+			//assert(triangle4Index < m_triangle4s.size());
 			BVH4HitTriangle4SSE<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangle4, out_hitResult, out_hasHit);
 #else
 			for (uint32_t triangle = 0u; triangle < 4u; triangle++)
@@ -1389,9 +1392,10 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	(void)(rayIndex);
 #endif
 
-	const std::vector<Triangle>& triangles = m_model->GetTriangles();
-	const Vector3 edge1 = Vector3(triangles[triangleIndex].m_edge1.X(), triangles[triangleIndex].m_edge1.Y(), triangles[triangleIndex].m_edge1.Z());
-	const Vector3 edge2 = Vector3(triangles[triangleIndex].m_edge2.X(), triangles[triangleIndex].m_edge2.Y(), triangles[triangleIndex].m_edge2.Z());
+	//This function is used in the bvh2 hit triangle, and works. However, it does not use the triangles inside the actual bvh???
+	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
+	const Vector3 edge1 = Vector3(traversalTriangles[triangleIndex].m_edge1[0u], traversalTriangles[triangleIndex].m_edge1[1u], traversalTriangles[triangleIndex].m_edge1[2u]);
+	const Vector3 edge2 = Vector3(traversalTriangles[triangleIndex].m_edge2[0u], traversalTriangles[triangleIndex].m_edge2[1u], traversalTriangles[triangleIndex].m_edge2[2u]);
 
 	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 	const Vector3 pVec = Cross(ray.Direction(), edge2);
@@ -1403,9 +1407,9 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	{
 		const float invDet = 1.0f / det;
 
-		const Vector3 tVec = ray.Origin() - Vector3(triangles[triangleIndex].m_vertices[0u].m_position[0u],
-			triangles[triangleIndex].m_vertices[0u].m_position[1u],
-			triangles[triangleIndex].m_vertices[0u].m_position[2u]);
+		const Vector3 tVec = ray.Origin() - Vector3(traversalTriangles[triangleIndex].m_v0[0u],
+			traversalTriangles[triangleIndex].m_v0[1u],
+			traversalTriangles[triangleIndex].m_v0[2u]);
 
 		const float u = Dot(tVec, pVec) * invDet;
 

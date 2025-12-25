@@ -225,7 +225,9 @@
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="TraversalDataManager.cpp" />
     <ClCompile Include="Triangle.cpp" />
+    <ClCompile Include="TriangleAccellStructure.cpp" />
     <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -235,6 +237,8 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BVH4AccellStructure.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="TraversalDataManager.h" />
+    <ClInclude Include="TraversalTriangle.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="GLContext.h" />
@@ -246,6 +250,7 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Triangle4.h" />
+    <ClInclude Include="TriangleAccellStructure.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="ViewportDesc.h" />
   </ItemGroup>

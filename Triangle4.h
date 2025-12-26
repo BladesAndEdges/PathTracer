@@ -1,7 +1,10 @@
 #pragma once
 
+// --------------------------------------------------------------------------------
 struct Triangle4
 {
+	Triangle4();
+
 	float m_v0X[4u];
 	float m_v0Y[4u];
 	float m_v0Z[4u];

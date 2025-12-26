@@ -444,7 +444,7 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 	__m128i primitiveIds = _mm_set_epi32(3, 2, 1, 0);
 
 	triLoopCounter.BeginTiming();
-	const std::vector<Triangle4>& triangle4s = m_model->GetTriangle4s();
+	const std::vector<Triangle4>& triangle4s = m_traversalDataManager->GetTraversalTriangle4s();
 	for (uint32_t currentTri4 = 0u; currentTri4 < triangle4s.size(); currentTri4++)
 	{
 		// Load tri4 data

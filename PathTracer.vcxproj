@@ -227,7 +227,7 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="TraversalDataManager.cpp" />
     <ClCompile Include="TraversalTriangle.cpp" />
-    <ClCompile Include="Triangle4.cpp" />
+    <ClCompile Include="TraversalTriangle4.cpp" />
     <ClCompile Include="Triangle.cpp" />
     <ClCompile Include="Triangle4AccellStructure.cpp" />
     <ClCompile Include="TriangleAccellStructure.cpp" />
@@ -252,7 +252,7 @@
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="Triangle4.h" />
+    <ClInclude Include="TraversalTriangle4.h" />
     <ClInclude Include="Triangle4AccellStructure.h" />
     <ClInclude Include="TriangleAccellStructure.h" />
     <ClInclude Include="Vertex.h" />

@@ -1,10 +1,10 @@
-#include "Triangle4.h"
+#include "TraversalTriangle4.h"
 
 #include <Windows.h>
 #include <WinBase.h>
 
 // --------------------------------------------------------------------------------
-Triangle4::Triangle4()
+TraversalTriangle4::TraversalTriangle4()
 {
 	SecureZeroMemory(m_v0X, 4u * sizeof(float));
 	SecureZeroMemory(m_v0Y, 4u * sizeof(float));

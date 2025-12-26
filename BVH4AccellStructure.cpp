@@ -128,7 +128,7 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 	// Handle the triangles
 	if (triangleMask)
 	{
-		Triangle4 triangles;
+		TraversalTriangle4 triangles;
 		AABB trianglesAABB;
 		uint32_t subTriangle = 0u;
 		for (uint32_t child = 0u; child < addedChildren; child++)
@@ -173,8 +173,8 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 			triangles.m_edge2Z[triangle] = std::nanf("");
 		}
 
-		const uint32_t triangle4Index = (uint32_t)m_triangle4s.size();
-		m_triangle4s.push_back(triangles);
+		const uint32_t triangle4Index = (uint32_t)m_traversalTriangle4s.size();
+		m_traversalTriangle4s.push_back(triangles);
 
 		// Place the triangle4 as a node child
 		m_innerNodesTri4[bvh4Node].m_child[subNode] = triangle4Index | (1u << 31u);
@@ -241,10 +241,10 @@ const BVH4InnerNode BVH4AccellStructure::GetInnerNodeTri4(const uint32_t index) 
 }
 
 // --------------------------------------------------------------------------------
-const Triangle4 BVH4AccellStructure::GetTriangle4(const uint32_t index) const
+const TraversalTriangle4 BVH4AccellStructure::GetTraversalTriangle4(const uint32_t index) const
 {
-	assert(index < (uint32_t)m_triangle4s.size());
-	return m_triangle4s[index];
+	assert(index < (uint32_t)m_traversalTriangle4s.size());
+	return m_traversalTriangle4s[index];
 }
 
 // --------------------------------------------------------------------------------

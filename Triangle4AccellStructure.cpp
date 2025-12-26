@@ -1,7 +1,7 @@
 #include "Triangle4AccellStructure.h"
 
 #include "TraversalTriangle.h"
-#include "Triangle4.h"
+#include "TraversalTriangle4.h"
 
 // --------------------------------------------------------------------------------
 Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle> traversalTriangles)
@@ -18,7 +18,7 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 		}
 	}
 
-	Triangle4 traversalTriangle4;
+	TraversalTriangle4 traversalTriangle4;
 	for (uint32_t index = 0u; index < traversalTriangles.size(); index += 4u)
 	{
 		// First triangle
@@ -78,7 +78,7 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<Triangle4>& Triangle4AccellStructure::GetTraversalTriangle4s() const
+const std::vector<TraversalTriangle4>& Triangle4AccellStructure::GetTraversalTriangle4s() const
 {
 	return m_traversalTriangle4s;
 }

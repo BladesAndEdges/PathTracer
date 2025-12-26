@@ -444,7 +444,7 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 	__m128i primitiveIds = _mm_set_epi32(3, 2, 1, 0);
 
 	triLoopCounter.BeginTiming();
-	const std::vector<Triangle4>& triangle4s = m_traversalDataManager->GetTraversalTriangle4s();
+	const std::vector<TraversalTriangle4>& triangle4s = m_traversalDataManager->GetTraversalTriangle4s();
 	for (uint32_t currentTri4 = 0u; currentTri4 < triangle4s.size(); currentTri4++)
 	{
 		// Load tri4 data
@@ -1013,7 +1013,7 @@ void Renderer::BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray&
 		if (node.m_child[visitIndex] >> 31u)
 		{
 			const uint32_t triangle4Index = node.m_child[visitIndex] & ~(1u << 31u);
-			const Triangle4 triangle4 = m_bvh4AccellStructure->GetTriangle4(triangle4Index);
+			const TraversalTriangle4 triangle4 = m_bvh4AccellStructure->GetTraversalTriangle4(triangle4Index);
 
 #ifdef BVH4SSE_TRAVERSAL_WITH_SSE_TRIANGLE_INTERSECTION
 			//assert(triangle4Index < m_triangle4s.size());
@@ -1511,7 +1511,7 @@ void Renderer::BVH4HitTriangle4Scalar(Ray& ray, const uint32_t rayIndex, const f
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::BVH4HitTriangle4SSE(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const Triangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::BVH4HitTriangle4SSE(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TraversalTriangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit)
 {
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);

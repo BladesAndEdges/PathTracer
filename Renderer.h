@@ -7,7 +7,7 @@
 #include "HitResult.h"
 #include "Ray.h"
 #include "Triangle.h"
-#include "Triangle4.h"
+#include "TraversalTriangle4.h"
 #include "ViewportDesc.h"
 
 class BVH2AccellStructure;
@@ -70,7 +70,7 @@ private:
 		HitResult& out_hitResult, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
-	void BVH4HitTriangle4SSE(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const Triangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit);
+	void BVH4HitTriangle4SSE(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TraversalTriangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit);
 
 	// BVH4 code
 	template<bool T_acceptAnyHit>

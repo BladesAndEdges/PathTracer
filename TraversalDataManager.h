@@ -3,7 +3,7 @@
 #include <vector>
 
 struct TraversalTriangle;
-struct Triangle4;
+struct TraversalTriangle4;
 struct Triangle;
 class TriangleAccellStructure;
 class Triangle4AccellStructure;
@@ -16,7 +16,7 @@ public:
 	TraversalDataManager(const std::vector<Triangle>& triangles);
 
 	const std::vector<TraversalTriangle>& GetTraversalTriangles() const;
-	const std::vector<Triangle4>& GetTraversalTriangle4s() const;
+	const std::vector<TraversalTriangle4>& GetTraversalTriangle4s() const;
 
 private:
 

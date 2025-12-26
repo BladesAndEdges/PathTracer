@@ -81,7 +81,7 @@
     <ClCompile Include="TraversalTriangle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Triangle4.cpp">
+    <ClCompile Include="TraversalTriangle4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -128,7 +128,7 @@
     <ClInclude Include="Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Triangle4.h">
+    <ClInclude Include="TraversalTriangle4.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BVH2AccellStructure.h">

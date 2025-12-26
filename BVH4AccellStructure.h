@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BVHNode.h"
-#include "Triangle4.h"
+#include "TraversalTriangle4.h"
 
 class BVH2AccellStructure;
 
@@ -28,7 +28,7 @@ public:
 
 	const BVH4InnerNode GetInnerNode(const uint32_t index) const;
 	const BVH4InnerNode GetInnerNodeTri4(const uint32_t index) const;
-	const Triangle4 GetTriangle4(const uint32_t index) const;
+	const TraversalTriangle4 GetTraversalTriangle4(const uint32_t index) const;
 	const uint32_t GetNumInnderNodes() const;
 
 private:
@@ -36,7 +36,7 @@ private:
 	std::vector<BVH4InnerNode> m_innerNodes;
 
 	std::vector<BVH4InnerNode> m_innerNodesTri4;
-	std::vector<Triangle4> m_triangle4s;
+	std::vector<TraversalTriangle4> m_traversalTriangle4s;
 };
 
      

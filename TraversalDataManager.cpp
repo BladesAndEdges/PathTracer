@@ -18,7 +18,7 @@ const std::vector<TraversalTriangle>& TraversalDataManager::GetTraversalTriangle
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<Triangle4>& TraversalDataManager::GetTraversalTriangle4s() const
+const std::vector<TraversalTriangle4>& TraversalDataManager::GetTraversalTriangle4s() const
 {
 	return m_triangle4AccellStructure->GetTraversalTriangle4s();
 }

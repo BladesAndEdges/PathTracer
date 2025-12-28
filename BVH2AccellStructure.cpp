@@ -5,10 +5,14 @@
 #include <algorithm>
 #include <cmath>
 
+#include "TraversalTriangle.h"
+#include "Triangle.h"
+
 #define EPSILON 0.00001f
 
 // --------------------------------------------------------------------------------
-BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles, const BVH2PartitionStrategy& bvhPartitionStrategy) : m_triangles(triangles)
+BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles, const std::vector<TraversalTriangle>& traversalTriangles, 
+	const BVH2PartitionStrategy& bvhPartitionStrategy) : m_traversalTriangles(traversalTriangles)
 {
 	assert(triangles.size() != 0);
 
@@ -30,17 +34,17 @@ BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles,
 }
 
 // --------------------------------------------------------------------------------
-const BVH2InnerNode BVH2AccellStructure::GetInnerNode(uint32_t index) const
+const BVH2InnerNode& BVH2AccellStructure::GetInnerNode(uint32_t index) const
 {
 	assert(index < (uint32_t)m_innerNodes.size());
 	return m_innerNodes[index];
 }
 
 // --------------------------------------------------------------------------------
-const Triangle BVH2AccellStructure::GetTriangle(uint32_t index) const
+const TraversalTriangle& BVH2AccellStructure::GetTraversalTriangle(const uint32_t index) const
 {
 	assert(index < m_triangles.size());
-	return m_triangles[index];
+	return m_traversalTriangles[index];
 }
 
 // --------------------------------------------------------------------------------

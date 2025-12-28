@@ -38,7 +38,7 @@ Renderer::Renderer()
 
 	m_model = new Model();
 	m_traversalDataManager = new TraversalDataManager(m_model->GetTriangles());
-	m_bvh2AccellStructure = new BVH2AccellStructure(m_model->GetTriangles(), BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
+	m_bvh2AccellStructure = new BVH2AccellStructure(m_model->GetTriangles(), m_traversalDataManager->GetTraversalTriangles(), BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
 	m_bvh4AccellStructure = new BVH4AccellStructure(m_bvh2AccellStructure);
 
 	m_camera.SetCameraLocation(m_model->GetCenter());
@@ -107,7 +107,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			{
 				Vector3 radiance(0.0f, 0.0f, 0.0f);
 				const uint32_t numSamples = 1u;
-				const uint32_t depth = 1u;
+				const uint32_t depth = 2u;
 
 				for (uint32_t sample = 0u; sample < numSamples; sample++)
 				{
@@ -1310,7 +1310,7 @@ void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 		ray.m_primaryNodeVisits++;
 	}
 
-	const BVH2InnerNode& node = m_bvh2AccellStructure->GetInnerNode(innerNodeStartIndex);
+	const BVH2InnerNode& node = m_traversalDataManager->GetBVH2InnerNode(innerNodeStartIndex);
 
 	float tNears[2u] = { INFINITY, INFINITY };
 	float hit[2u] = { false, false };
@@ -1392,10 +1392,9 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	(void)(rayIndex);
 #endif
 
-	//This function is used in the bvh2 hit triangle, and works. However, it does not use the triangles inside the actual bvh???
-	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
-	const Vector3 edge1 = Vector3(traversalTriangles[triangleIndex].m_edge1[0u], traversalTriangles[triangleIndex].m_edge1[1u], traversalTriangles[triangleIndex].m_edge1[2u]);
-	const Vector3 edge2 = Vector3(traversalTriangles[triangleIndex].m_edge2[0u], traversalTriangles[triangleIndex].m_edge2[1u], traversalTriangles[triangleIndex].m_edge2[2u]);
+	const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(triangleIndex);
+	const Vector3 edge1 = Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]);
+	const Vector3 edge2 = Vector3(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]);
 
 	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 	const Vector3 pVec = Cross(ray.Direction(), edge2);
@@ -1407,9 +1406,9 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	{
 		const float invDet = 1.0f / det;
 
-		const Vector3 tVec = ray.Origin() - Vector3(traversalTriangles[triangleIndex].m_v0[0u],
-			traversalTriangles[triangleIndex].m_v0[1u],
-			traversalTriangles[triangleIndex].m_v0[2u]);
+		const Vector3 tVec = ray.Origin() - Vector3(traversalTriangle.m_v0[0u],
+			traversalTriangle.m_v0[1u],
+			traversalTriangle.m_v0[2u]);
 
 		const float u = Dot(tVec, pVec) * invDet;
 

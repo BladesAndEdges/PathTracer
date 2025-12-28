@@ -1,7 +1,8 @@
 #include "BVH4AccellStructure.h"
 
-#include "BVH2AccellStructure.h"
 #include "AABB.h"
+#include "BVH2AccellStructure.h"
+#include "TraversalTriangle.h"
 
 // --------------------------------------------------------------------------------
 BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellStructure)
@@ -137,19 +138,19 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 			if (postShiftValue & 1u)
 			{
 				const uint32_t indexInBVH2 = children[child] & ~(1u << 31u);
-				const Triangle triangle = bvh2AccellStructure->GetTriangle(indexInBVH2);
+				const TraversalTriangle& traversalTriangle = bvh2AccellStructure->GetTraversalTriangle(indexInBVH2);
 
-				triangles.m_v0X[subTriangle] = triangle.m_vertices[0u].m_position[0u];
-				triangles.m_v0Y[subTriangle] = triangle.m_vertices[0u].m_position[1u];
-				triangles.m_v0Z[subTriangle] = triangle.m_vertices[0u].m_position[2u];
+				triangles.m_v0X[subTriangle] = traversalTriangle.m_v0[0u];
+				triangles.m_v0Y[subTriangle] = traversalTriangle.m_v0[1u];
+				triangles.m_v0Z[subTriangle] = traversalTriangle.m_v0[2u];
 
-				triangles.m_edge1X[subTriangle] = triangle.m_vertices[1u].m_position[0u] - triangle.m_vertices[0u].m_position[0u];
-				triangles.m_edge1Y[subTriangle] = triangle.m_vertices[1u].m_position[1u] - triangle.m_vertices[0u].m_position[1u];
-				triangles.m_edge1Z[subTriangle] = triangle.m_vertices[1u].m_position[2u] - triangle.m_vertices[0u].m_position[2u];
+				triangles.m_edge1X[subTriangle] = traversalTriangle.m_edge1[0u];
+				triangles.m_edge1Y[subTriangle] = traversalTriangle.m_edge1[1u];
+				triangles.m_edge1Z[subTriangle] = traversalTriangle.m_edge1[2u];
 
-				triangles.m_edge2X[subTriangle] = triangle.m_vertices[2u].m_position[0u] - triangle.m_vertices[0u].m_position[0u];
-				triangles.m_edge2Y[subTriangle] = triangle.m_vertices[2u].m_position[1u] - triangle.m_vertices[0u].m_position[1u];
-				triangles.m_edge2Z[subTriangle] = triangle.m_vertices[2u].m_position[2u] - triangle.m_vertices[0u].m_position[2u];
+				triangles.m_edge2X[subTriangle] = traversalTriangle.m_edge2[0u];
+				triangles.m_edge2Y[subTriangle] = traversalTriangle.m_edge2[1u];
+				triangles.m_edge2Z[subTriangle] = traversalTriangle.m_edge2[2u];
 
 				trianglesAABB.MergeAABB(boxes[child]);
 

@@ -806,9 +806,7 @@ void Renderer::BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray&
 		ray.m_primaryAABBIntersectionTests += 4u;
 	}
 
-	// It asserts in Get inner node as when there is a nan, for the default aabb, 
-	// the comparison let's through a compare that passes
-	const BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNodeTri4(innerNodeStartIndex);
+	const BVH4InnerNode& node = m_traversalDataManager->GetBVH4InnerNode(innerNodeStartIndex);
 
 #ifdef SORTED_BVH4
 

@@ -235,14 +235,14 @@ const BVH4InnerNode BVH4AccellStructure::GetInnerNode(const uint32_t index) cons
 }
 
 // --------------------------------------------------------------------------------
-const BVH4InnerNode BVH4AccellStructure::GetInnerNodeTri4(const uint32_t index) const
+const BVH4InnerNode& BVH4AccellStructure::GetInnerNodeTri4(const uint32_t index) const
 {
 	assert(index < m_innerNodesTri4.size());
 	return m_innerNodesTri4[index];
 }
 
 // --------------------------------------------------------------------------------
-const TraversalTriangle4 BVH4AccellStructure::GetTraversalTriangle4(const uint32_t index) const
+const TraversalTriangle4& BVH4AccellStructure::GetTraversalTriangle4(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_traversalTriangle4s.size());
 	return m_traversalTriangle4s[index];

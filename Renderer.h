@@ -49,10 +49,7 @@ private:
 	std::vector<Vector3> m_texelCenters;
 	bool m_isFirstFrame;
 
-	Model* m_model;
 	TraversalDataManager* m_traversalDataManager;
-	BVH2AccellStructure* m_bvh2AccellStructure;
-	BVH4AccellStructure* m_bvh4AccellStructure;
 
 	template<bool T_acceptAnyHit>
 	void TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);

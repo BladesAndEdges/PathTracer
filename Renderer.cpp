@@ -36,12 +36,11 @@ Renderer::Renderer()
 	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc));
 	m_isFirstFrame = true;
 
-	m_model = new Model();
-	m_traversalDataManager = new TraversalDataManager(m_model->GetTriangles());
-	m_bvh2AccellStructure = new BVH2AccellStructure(m_model->GetTriangles(), m_traversalDataManager->GetTraversalTriangles(), BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
-	m_bvh4AccellStructure = new BVH4AccellStructure(m_bvh2AccellStructure);
+	const Model* model = new Model();
+	m_traversalDataManager = new TraversalDataManager(model->GetTriangles());
 
-	m_camera.SetCameraLocation(m_model->GetCenter());
+
+	m_camera.SetCameraLocation(model->GetCenter());
 	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
 }
 

@@ -401,8 +401,8 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 	m_isFirstFrame = false;
 }
 
-//#define RUNNING_SSE
-#define RUNNING_SCALAR
+#define RUNNING_SSE
+//#define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
@@ -781,24 +781,17 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 }
 
 // --------------------------------------------------------------------------------
-#define BVH4_TRAVERSAL_WITH_TRI4
 template<bool T_acceptAnyHit>
 void Renderer::TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
 	bool hasHit = false;
-#ifdef BVH4_TRAVERSAL_WITH_TRI4
-	BVH4DFSTraversalWithTri4<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
-#endif
-#ifndef BVH4_TRAVERSAL_WITH_TRI4
 	BVH4DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
-#endif
 }
 
 //#define SORTED_BVH4
-#define BVH4SSE_TRAVERSAL_WITH_SSE_TRIANGLE_INTERSECTION
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
 {
 	if (!T_acceptAnyHit)
 	{
@@ -1013,257 +1006,7 @@ void Renderer::BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray&
 			const uint32_t triangle4Index = node.m_child[visitIndex] & ~(1u << 31u);
 			const TraversalTriangle4 triangle4 = m_bvh4AccellStructure->GetTraversalTriangle4(triangle4Index);
 
-#ifdef BVH4SSE_TRAVERSAL_WITH_SSE_TRIANGLE_INTERSECTION
-			//assert(triangle4Index < m_triangle4s.size());
-			BVH4HitTriangle4SSE<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangle4, out_hitResult, out_hasHit);
-#else
-			for (uint32_t triangle = 0u; triangle < 4u; triangle++)
-			{
-				const Vector3 edge1 = Vector3(triangle4.m_edge1X[triangle], triangle4.m_edge1Y[triangle], triangle4.m_edge1Z[triangle]);
-				const Vector3 edge2 = Vector3(triangle4.m_edge2X[triangle], triangle4.m_edge2Y[triangle], triangle4.m_edge2Z[triangle]);
-				const Vector3 vertex0 = Vector3(triangle4.m_v0X[triangle], triangle4.m_v0Y[triangle], triangle4.m_v0Z[triangle]);
-
-				BVH4HitTriangle4Scalar<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, edge1, edge2, vertex0, out_hitResult, out_hasHit);
-			}
-
-			assert(out_hitResult.m_intersectionPoint.X() == out_hitResultSSE.m_intersectionPoint.X());
-			assert(out_hitResult.m_intersectionPoint.Y() == out_hitResultSSE.m_intersectionPoint.Y());
-			assert(out_hitResult.m_intersectionPoint.Z() == out_hitResultSSE.m_intersectionPoint.Z());
-
-#endif // !BVH4SSE_TRAVERSAL_WITH_SSE_TRIANGLE_INTERSECTION
-		}
-		else
-		{
-			BVH4DFSTraversalWithTri4<T_acceptAnyHit>(node.m_child[visitIndex], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-		}
-
-		if constexpr (T_acceptAnyHit)
-		{
-			if (out_hasHit)
-			{
-				return;
-			}
-		}
-	}
-#endif
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
-{
-	if (!T_acceptAnyHit)
-	{
-		ray.m_primaryNodeVisits++;
-		ray.m_primaryAABBIntersectionTests += 4u;
-	}
-
-	const BVH4InnerNode node = m_bvh4AccellStructure->GetInnerNode(innerNodeStartIndex);
-
-#ifdef SORTED_BVH4
-
-#if _DEBUG
-	float theTNears[4u] = { INFINITY, INFINITY, INFINITY, INFINITY };
-	int32_t theTNearsAsInts[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	int32_t theTNearsAfterMask[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	int32_t theTNearsAfterShiftLeft[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	int32_t theCombinedTNearAndChildIndex[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-#endif
-
-	uint32_t hitCount = 0u;
-	int32_t nearPlaneAndChildIndex[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	for (uint32_t child = 0u; child < 4u; child++)
-	{
-		theTNearsAfterMask[child] = theTNearsAsInts[child] & 0x3FFFFFFE;
-		theTNearsAfterShiftLeft[child] = theTNearsAfterMask[child] << 1;
-		theCombinedTNearAndChildIndex[child] = theTNearsAfterShiftLeft[child] | child;
-
-		float tNear = INFINITY;
-		if (RayAABBIntersection(ray, T_acceptAnyHit, node.m_aabbMinX[child], node.m_aabbMinY[child], node.m_aabbMinZ[child], node.m_aabbMaxX[child],
-			node.m_aabbMaxY[child], node.m_aabbMaxZ[child], tMax, &tNear))
-		{
-#if _DEBUG
-			theTNears[child] = tNear;
-			theTNearsAsInts[child] = *((int32_t*)&tNear);
-			theTNearsAfterMask[child] = theTNearsAsInts[child] & 0x3FFFFFFE;
-			theTNearsAfterShiftLeft[child] = theTNearsAfterMask[child] << 1;
-			theCombinedTNearAndChildIndex[child] = theTNearsAfterShiftLeft[child] | child;
-#endif
-			nearPlaneAndChildIndex[child] = ((*(int32_t*)&tNear & 0x3FFFFFFE) << 1) | child;
-			hitCount++;
-		}
-	}
-
-	// Early out if no hit
-	if (!hitCount)
-	{
-		return;
-	}
-
-	// Sort in ascending order
-#if 1
-	const int32_t a = std::min(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]);
-	const int32_t b = std::max(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]);
-	const int32_t c = std::min(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]);
-	const int32_t d = std::max(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]);
-
-	int32_t visitOrder[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	visitOrder[0u] = std::min(a, c);
-	visitOrder[2u] = std::max(a, c);
-	visitOrder[1u] = std::min(b, d);
-	visitOrder[3u] = std::max(b, d);
-
-	const int32_t e = std::min(visitOrder[1u], visitOrder[2u]);
-	const int32_t f = std::max(visitOrder[1u], visitOrder[2u]);
-
-	visitOrder[1u] = e;
-	visitOrder[2u] = f;
-
-#else
-	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[1u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]); }
-	if (nearPlaneAndChildIndex[2u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]); }
-	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[2u]); }
-	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[3u]); }
-	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[2u]); }
-#endif
-
-#ifdef _DEBUG
-	//for (uint32_t visitNode = 0u; visitNode < 3u; visitNode++)
-	//{
-	//	assert(nearPlaneAndChildIndex[visitNode] <= nearPlaneAndChildIndex[visitNode + 1u]);
-	//}
-#endif
-
-	//Traversal
-	for (uint32_t child = 0u; child < hitCount; child++)
-	{
-#if 1
-		const uint32_t visitIndex = (uint32_t)(visitOrder[child] & 0x00000003);
-#else
-		const uint32_t visitIndex = (uint32_t)nearPlaneAndChildIndex[child] & 0x00000003;
-#endif
-		if (node.m_child[visitIndex] >> 31u)
-		{
-			const uint32_t triangleIndex = node.m_child[visitIndex] & ~(1u << 31u);
-			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
-		}
-		else
-		{
-			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[visitIndex], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-		}
-
-		if constexpr (T_acceptAnyHit)
-		{
-			if (out_hasHit)
-			{
-				return;
-			}
-		}
-	}
-#endif
-#ifndef SORTED_BVH4
-
-	// 0 and tMAx
-	const __m128 zeroReg = _mm_set1_ps(0.0f);
-	const __m128 tMaxReg = _mm_set1_ps(tMax);
-
-	// AABB paramaters
-	const __m128 minXs = _mm_loadu_ps(node.m_aabbMinX);
-	const __m128 minYs = _mm_loadu_ps(node.m_aabbMinY);
-	const __m128 minZs = _mm_loadu_ps(node.m_aabbMinZ);
-	const __m128 maxXs = _mm_loadu_ps(node.m_aabbMaxX);
-	const __m128 maxYs = _mm_loadu_ps(node.m_aabbMaxY);
-	const __m128 maxZs = _mm_loadu_ps(node.m_aabbMaxZ);
-
-	//Ray data
-	const __m128 rayInverseX = _mm_set1_ps(ray.InverseDirection().X());
-	const __m128 rayInverseY = _mm_set1_ps(ray.InverseDirection().Y());
-	const __m128 rayInverseZ = _mm_set1_ps(ray.InverseDirection().Z());
-
-	const __m128 rayNegativeOriginTimesInvDirX = _mm_set1_ps(ray.NegativeOriginTimesInvDir().X());
-	const __m128 rayNegativeOriginTimesInvDirY = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Y());
-	const __m128 rayNegativeOriginTimesInvDirZ = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Z());
-
-	// TNears
-	const __m128 t0X = _mm_fmadd_ps(minXs, rayInverseX, rayNegativeOriginTimesInvDirX);
-	const __m128 t0Y = _mm_fmadd_ps(minYs, rayInverseY, rayNegativeOriginTimesInvDirY);
-	const __m128 t0Z = _mm_fmadd_ps(minZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
-
-	// TFars
-	const __m128 t1X = _mm_fmadd_ps(maxXs, rayInverseX, rayNegativeOriginTimesInvDirX);
-	const __m128 t1Y = _mm_fmadd_ps(maxYs, rayInverseY, rayNegativeOriginTimesInvDirY);
-	const __m128 t1Z = _mm_fmadd_ps(maxZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
-
-	// Entries and exits
-	const __m128 enterX = _mm_min_ps(t0X, t1X);
-	const __m128 enterY = _mm_min_ps(t0Y, t1Y);
-	const __m128 enterZ = _mm_min_ps(t0Z, t1Z);
-
-	const __m128 exitX = _mm_max_ps(t0X, t1X);
-	const __m128 exitY = _mm_max_ps(t0Y, t1Y);
-	const __m128 exitZ = _mm_max_ps(t0Z, t1Z);
-
-	// t0 and t1
-	const __m128 t0 = _mm_max_ps(_mm_max_ps(enterX, enterY), _mm_max_ps(zeroReg, enterZ));
-	const __m128 t1 = _mm_min_ps(_mm_min_ps(exitX, exitY), _mm_min_ps(tMaxReg, exitZ));
-
-	// hasIntersected
-	const __m128 hasIntersected = _mm_cmpge_ps(t1, t0);
-	const int intersectionMask = _mm_movemask_ps(hasIntersected);
-
-	if (!intersectionMask)
-	{
-		return;
-	}
-
-	// Packing
-	const __m128i int32Max = _mm_set1_epi32(INT32_MAX);
-	const __m128i t0AsInts = _mm_castps_si128(_mm_or_ps(_mm_and_ps(hasIntersected, t0), _mm_andnot_ps(hasIntersected, _mm_castsi128_ps(int32Max))));
-	const __m128i postChopBits = _mm_and_si128(t0AsInts, _mm_set1_epi32(0x3FFFFFFE));
-	const __m128i shiftedLeft = _mm_slli_epi32(postChopBits, 1);
-
-	const __m128i childIndicesInOrder = _mm_set_epi32(3, 2, 1, 0);
-	const __m128i combinedT0AndIndex = _mm_or_epi32(shiftedLeft, childIndicesInOrder);
-
-	// Sort
-	const __m128i shuffle0 = _mm_shuffle_epi32(combinedT0AndIndex, _MM_SHUFFLE(1, 0, 1, 0));
-	const __m128i min0 = _mm_min_epi32(combinedT0AndIndex, shuffle0);
-	const __m128i max0 = _mm_max_epi32(combinedT0AndIndex, shuffle0);
-
-	const __m128i shuffle1 = _mm_shuffle_epi32(max0, _MM_SHUFFLE(2, 3, 1, 0));;
-	const __m128i min1 = _mm_min_epi32(min0, shuffle1);
-	const __m128i max1 = _mm_max_epi32(min0, shuffle1);
-
-	const __m128i shuffle2 = _mm_shuffle_epi32(max1, _MM_SHUFFLE(2, 3, 1, 0));
-	const __m128i l3 = _mm_max_epi32(max1, shuffle2);
-	const __m128i l2 = _mm_min_epi32(max1, shuffle2);
-
-	const __m128i shuffle3 = _mm_shuffle_epi32(min1, _MM_SHUFFLE(2, 3, 1, 0));
-	const __m128i l1 = _mm_max_epi32(min1, shuffle3);
-	const __m128i l0 = _mm_min_epi32(min1, shuffle3);
-
-	// Figure this out
-	const __m128i unpack0 = _mm_unpackhi_epi32(l1, l3);
-	const __m128i unpack1 = _mm_unpackhi_epi32(l0, l2);
-	const __m128i result = _mm_unpackhi_epi32(unpack1, unpack0);
-
-	const int visitOrderIndices[4u] =
-	{
-		_mm_cvtsi128_si32(result),
-		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(1, 1, 1, 1))),
-		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(2, 2, 2, 2))),
-		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(3, 3, 3, 3)))
-	};
-
-	const uint32_t intersectionCount = __popcnt(*((uint32_t*)&intersectionMask));
-	for (uint32_t i = 0u; i < intersectionCount; i++)
-	{
-		const uint32_t visitIndex = (uint32_t)(visitOrderIndices[i] & 0x00000003);
-
-		if (node.m_child[visitIndex] >> 31u)
-		{
-			const uint32_t triangleIndex = node.m_child[visitIndex] & ~(1u << 31u);
-			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
+			BVH4HitTriangle4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangle4, out_hitResult, out_hasHit);
 		}
 		else
 		{
@@ -1445,70 +1188,7 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::BVH4HitTriangle4Scalar(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const Vector3& edge1, const Vector3& edge2, const Vector3& vertex0, HitResult& out_hitResult, bool& out_hasHit)
-{
-	if (!T_acceptAnyHit)
-	{
-		ray.m_primaryTriangleIntersectionTests++;
-	}
-
-#ifdef _DEBUG
-	assert(rayIndex >= 0u);
-#endif
-#ifdef NDEBUG
-	(void)(rayIndex);
-#endif
-
-	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
-	const Vector3 pVec = Cross(ray.Direction(), edge2);
-	const float det = Dot(pVec, edge1);
-
-	const Vector3 normal = Normalize(Cross(edge1, edge2));
-
-	if (std::fabs(det) >= 1e-8f)
-	{
-		const float invDet = 1.0f / det;
-
-		const Vector3 tVec = ray.Origin() - vertex0;
-
-		const float u = Dot(tVec, pVec) * invDet;
-
-		if ((u >= 0.0f) && (u <= 1.0f))
-		{
-			const Vector3 qVec = Cross(tVec, edge1);
-			const float v = Dot(ray.Direction(), qVec) * invDet;
-
-			if ((v >= 0.0f) && ((u + v) <= 1.0f))
-			{
-				const float t = Dot(edge2, qVec) * invDet;
-
-				if ((t >= tMin) && (t <= tMax))
-				{
-					tMax = t;
-
-					out_hitResult.m_t = t;
-
-					out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-
-					out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-
-					out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-
-					out_hitResult.m_primitiveId = 7777u;
-
-					if (T_acceptAnyHit)
-					{
-						out_hasHit = true;
-					}
-				}
-			}
-		}
-	}
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-void Renderer::BVH4HitTriangle4SSE(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TraversalTriangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TraversalTriangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit)
 {
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);

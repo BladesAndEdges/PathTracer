@@ -17,6 +17,7 @@ class Model;
 class PerformanceCounter;
 class TraversalDataManager;
 
+// --------------------------------------------------------------------------------
 class Renderer
 {
 public:
@@ -66,18 +67,11 @@ private:
 	void HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
-	void BVH4HitTriangle4Scalar(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const Vector3& edge1, const Vector3& edge2, const Vector3& vertex0, 
-		HitResult& out_hitResult, bool& out_hasHit);
-
-	template<bool T_acceptAnyHit>
-	void BVH4HitTriangle4SSE(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TraversalTriangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit);
+	void BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TraversalTriangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit);
 
 	// BVH4 code
 	template<bool T_acceptAnyHit>
 	void TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
-
-	template<bool T_acceptAnyHit>
-	void BVH4DFSTraversalWithTri4(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
 	void BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);

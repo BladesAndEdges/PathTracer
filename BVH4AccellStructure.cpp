@@ -3,6 +3,7 @@
 #include "AABB.h"
 #include "BVH2AccellStructure.h"
 #include "TraversalTriangle.h"
+#include "TraversalTriangle4.h"
 
 // --------------------------------------------------------------------------------
 BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellStructure)
@@ -10,7 +11,6 @@ BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellSt
 	assert(bvh2AccellStructure != nullptr);
 	// Add getter for the size of the internal node vector, and check it is not empty
 	const uint32_t bvhRootIndex = BuildBVH4NodeFromBVH2NodeTri4(bvh2AccellStructure, 0);
-	const uint32_t bv = BuildBVH4NodeFromBVH2Node(bvh2AccellStructure, 0);
 
 	for (uint32_t i = 0u; i < m_innerNodesTri4.size(); i++)
 	{
@@ -20,7 +20,6 @@ BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellSt
 		}
 	}
 
-	(void)bv;
 	(void)bvhRootIndex;
 }
 
@@ -56,59 +55,6 @@ void RecursiveGetChildren(const BVH2AccellStructure* bvh2AccellStructure, const 
 		RecursiveGetChildren(bvh2AccellStructure, rootNode.m_leftChild, rootNode.m_leftAABB, depth + 1, children, boxes, addedChildren, triangleMask);
 		RecursiveGetChildren(bvh2AccellStructure, rootNode.m_rightChild, rootNode.m_rightAABB, depth + 1, children, boxes, addedChildren, triangleMask);
 	}
-}
-
-// --------------------------------------------------------------------------------
-uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2Node(const BVH2AccellStructure* bvh2AccellStructure, const uint32_t bvh2SubtreeRootIndex)
-{
-	if (bvh2SubtreeRootIndex >> 31u)
-	{
-		return bvh2SubtreeRootIndex;
-	}
-
-	// Get children in local subtree
-	uint32_t children[4u];
-	AABB boxes[4u];
-	uint32_t addedChildren = 0u;
-	uint32_t triangleMask = 0u;
-
-	RecursiveGetChildren(bvh2AccellStructure, bvh2SubtreeRootIndex, AABB(), 0, children, boxes, addedChildren, triangleMask);
-	assert(addedChildren >= 1u);
-	assert(addedChildren <= 4u);
-	
-
-	BVH4InnerNode node;
-	const uint32_t bvh4InnerNodeIndex = (uint32_t)m_innerNodes.size();
-	m_innerNodes.push_back(node);
-
-	for (uint32_t childIndex = 0; childIndex < addedChildren; childIndex++)
-	{
-		m_innerNodes[bvh4InnerNodeIndex].m_child[childIndex] = BuildBVH4NodeFromBVH2Node(bvh2AccellStructure, children[childIndex]);
-
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinX[childIndex] = boxes[childIndex].m_min.X();
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinY[childIndex] = boxes[childIndex].m_min.Y();
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinZ[childIndex] = boxes[childIndex].m_min.Z();
-
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxX[childIndex] = boxes[childIndex].m_max.X();
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxY[childIndex] = boxes[childIndex].m_max.Y();
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxZ[childIndex] = boxes[childIndex].m_max.Z();
-	}
-
-	// Create dummies
-	for (uint32_t childIndex = addedChildren; childIndex < 4u; childIndex++)
-	{
-		m_innerNodes[bvh4InnerNodeIndex].m_child[childIndex] = 0x7fffffffu;
-
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinX[childIndex] = std::nanf("");
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinY[childIndex] = std::nanf("");
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMinZ[childIndex] = std::nanf("");
-																
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxX[childIndex] = std::nanf("");
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxY[childIndex] = std::nanf("");
-		m_innerNodes[bvh4InnerNodeIndex].m_aabbMaxZ[childIndex] = std::nanf("");
-	}
-
-	return bvh4InnerNodeIndex;
 }
 
 // --------------------------------------------------------------------------------
@@ -228,13 +174,6 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 }
 
 // --------------------------------------------------------------------------------
-const BVH4InnerNode BVH4AccellStructure::GetInnerNode(const uint32_t index) const
-{
-	assert(index < (uint32_t)m_innerNodes.size());
-	return m_innerNodes[index];
-}
-
-// --------------------------------------------------------------------------------
 const BVH4InnerNode& BVH4AccellStructure::GetInnerNodeTri4(const uint32_t index) const
 {
 	assert(index < m_innerNodesTri4.size());
@@ -246,10 +185,4 @@ const TraversalTriangle4& BVH4AccellStructure::GetTraversalTriangle4(const uint3
 {
 	assert(index < (uint32_t)m_traversalTriangle4s.size());
 	return m_traversalTriangle4s[index];
-}
-
-// --------------------------------------------------------------------------------
-const uint32_t BVH4AccellStructure::GetNumInnderNodes() const
-{
-	return (uint32_t)m_innerNodes.size();
 }

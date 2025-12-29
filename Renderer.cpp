@@ -1004,7 +1004,7 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 		if (node.m_child[visitIndex] >> 31u)
 		{
 			const uint32_t triangle4Index = node.m_child[visitIndex] & ~(1u << 31u);
-			const TraversalTriangle4 triangle4 = m_bvh4AccellStructure->GetTraversalTriangle4(triangle4Index);
+			const TraversalTriangle4& triangle4 = m_traversalDataManager->GetBVH4TraversalTriangle4(triangle4Index);
 
 			BVH4HitTriangle4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangle4, out_hitResult, out_hasHit);
 		}

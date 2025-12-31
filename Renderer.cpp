@@ -20,15 +20,6 @@
 //#define TRACE_AGAINST_BVH2
 //#define TRACE_AGAINST_BVH4
 
-// Per frame
-PerformanceCounter hitTriangleCounter;
-double hitTriangleTotalTime;
-
-PerformanceCounter triLoopCounter;
-double triLoopTotalTime;
-
-PerformanceCounter assignmentCounter;
-double assignmentTotalTime;
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
@@ -81,10 +72,6 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 		Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
 
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-	hitTriangleTotalTime = 0.0;
-	triLoopTotalTime = 0.0;
-	assignmentTotalTime = 0.0;
 
 	pc.BeginTiming();
 	uint8_t* bytes = framebuffer->GetDataPtr();
@@ -339,18 +326,6 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	char buffer[128];
 	sprintf_s(buffer, "Total frame time: %f \n", pc.GetMilliseconds());
 	OutputDebugStringA(buffer);
-
-	char buffer1[128];
-	sprintf_s(buffer1, "Total time spent in HitTriangle: %f \n", hitTriangleTotalTime);
-	OutputDebugStringA(buffer1);
-
-	char buffer2[128];
-	sprintf_s(buffer2, "Total time spent on triangle loop: %f \n", triLoopTotalTime);
-	OutputDebugStringA(buffer2);
-
-	char buffer3[128];
-	sprintf_s(buffer3, "Total time spent on assignment: %f \n", assignmentTotalTime);
-	OutputDebugStringA(buffer3);
 }
 
 // --------------------------------------------------------------------------------
@@ -407,7 +382,6 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 template<bool T_acceptAnyHit>
 void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
-	hitTriangleCounter.BeginTiming();
 
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);
@@ -442,7 +416,6 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 	const __m128i c_incrementRegister = _mm_set1_epi32(4);
 	__m128i primitiveIds = _mm_set_epi32(3, 2, 1, 0);
 
-	triLoopCounter.BeginTiming();
 	const std::vector<TraversalTriangle4>& triangle4s = m_traversalDataManager->GetTraversalTriangle4s();
 	for (uint32_t currentTri4 = 0u; currentTri4 < triangle4s.size(); currentTri4++)
 	{
@@ -579,8 +552,6 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		// Update increment values
 		primitiveIds = _mm_add_epi32(primitiveIds, c_incrementRegister);
 	}
-	triLoopCounter.EndTiming();
-	triLoopTotalTime += triLoopCounter.GetMilliseconds();
 
 	// Smallest T and it's primitive id in the XY lanes
 	const __m128 minTShuffleXY = _mm_shuffle_ps(smallestTs, smallestTs, _MM_SHUFFLE(0, 0, 2, 3));
@@ -599,8 +570,6 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 	const __m128i primIdtoKeepX = _mm_or_si128(_mm_and_si128(primIdMaskX, primIdShuffleX), _mm_andnot_si128(primIdMaskX, primIdToKeepXY));
 
 	const int primitiveId = _mm_cvtsi128_si32(primIdtoKeepX);
-
-	assignmentCounter.BeginTiming();
 	if (primitiveId > -1)
 	{
 		tMax = _mm_cvtss_f32(minTComparisonX);
@@ -626,12 +595,9 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 
 		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 	}
-	assignmentCounter.EndTiming();
-	assignmentTotalTime += assignmentCounter.GetMilliseconds();
 #endif
 #ifdef RUNNING_SCALAR
 
-	triLoopCounter.BeginTiming();
 	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
 	for (uint32_t triangle = 0u; triangle < traversalTriangles.size(); triangle++)
 	{
@@ -686,12 +652,8 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		}
 	}
 
-	triLoopCounter.EndTiming();
-	triLoopTotalTime += triLoopCounter.GetMilliseconds();
 #endif
 
-	hitTriangleCounter.EndTiming();
-	hitTriangleTotalTime += hitTriangleCounter.GetMilliseconds();
 }
 // --------------------------------------------------------------------------------
 Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)

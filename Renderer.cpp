@@ -20,7 +20,6 @@
 //#define TRACE_AGAINST_BVH2
 //#define TRACE_AGAINST_BVH4
 
-
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
 {
@@ -72,7 +71,6 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 		Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
 
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 	pc.BeginTiming();
 	uint8_t* bytes = framebuffer->GetDataPtr();
 	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
@@ -382,7 +380,6 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 template<bool T_acceptAnyHit>
 void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
-
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);
 #endif
@@ -598,6 +595,8 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 #endif
 #ifdef RUNNING_SCALAR
 
+	Vector3 primitiveNormal;
+	uint32_t primitiveId = UINT32_MAX;
 	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
 	for (uint32_t triangle = 0u; triangle < traversalTriangles.size(); triangle++)
 	{
@@ -607,8 +606,6 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
 		const Vector3 pVec = Cross(ray.Direction(), edge2);
 		const float det = Dot(pVec, edge1);
-
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
 
 		if (std::fabs(det) >= 1e-8f)
 		{
@@ -631,16 +628,7 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 					if ((t >= tMin) && (t <= tMax))
 					{
 						tMax = t;
-
-						out_hitResult.m_t = t;
-
-						out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-
-						out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-
-						out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-
-						out_hitResult.m_primitiveId = triangle;
+						primitiveId = triangle;
 
 						if (T_acceptAnyHit)
 						{
@@ -652,8 +640,29 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		}
 	}
 
-#endif
+	if (primitiveId != UINT32_MAX)
+	{
+		out_hitResult.m_t = tMax;
 
+		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+
+		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+
+		const Vector3 edge1 = Vector3(traversalTriangles[primitiveId].m_edge1[0u],
+			traversalTriangles[primitiveId].m_edge1[1u],
+			traversalTriangles[primitiveId].m_edge1[2u]);
+
+		const Vector3 edge2 = Vector3(traversalTriangles[primitiveId].m_edge2[0u],
+			traversalTriangles[primitiveId].m_edge2[1u],
+			traversalTriangles[primitiveId].m_edge2[2u]);
+
+		const Vector3 normal = Normalize(Cross(edge1, edge2));
+
+		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;;
+
+		out_hitResult.m_primitiveId = primitiveId;
+	}
+#endif
 }
 // --------------------------------------------------------------------------------
 Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)

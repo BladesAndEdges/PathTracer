@@ -595,7 +595,6 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 #endif
 #ifdef RUNNING_SCALAR
 
-	Vector3 primitiveNormal;
 	uint32_t primitiveId = UINT32_MAX;
 	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
 	for (uint32_t triangle = 0u; triangle < traversalTriangles.size(); triangle++)
@@ -1058,7 +1057,7 @@ void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 
 		if (visitOrder[child] >> 31u)
 		{
-			const uint32_t triangleIndex = visitOrder[child] & ~(1u << 31u);
+			const uint32_t triangle = visitOrder[child] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
 		else if (RayAABBIntersection(ray, T_acceptAnyHit, aabbs[child].m_min.X(), aabbs[child].m_min.Y(), aabbs[child].m_min.Z(),
@@ -1111,8 +1110,7 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	const Vector3 pVec = Cross(ray.Direction(), edge2);
 	const float det = Dot(pVec, edge1);
 
-	const Vector3 normal = Normalize(Cross(edge1, edge2));
-
+	bool isSmallerT = false;
 	if (std::fabs(det) >= 1e-8f)
 	{
 		const float invDet = 1.0f / det;
@@ -1135,16 +1133,7 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 				if ((t >= tMin) && (t <= tMax))
 				{
 					tMax = t;
-
-					out_hitResult.m_t = t;
-
-					out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-
-					out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-
-					out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-
-					out_hitResult.m_primitiveId = triangleIndex;
+					isSmallerT = true;
 
 					if (T_acceptAnyHit)
 					{
@@ -1153,6 +1142,17 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 				}
 			}
 		}
+	}
+
+	if (isSmallerT)
+	{
+		out_hitResult.m_t = tMax;
+		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+
+		const Vector3 normal = Normalize(Cross(edge1, edge2));
+		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+		out_hitResult.m_primitiveId = triangleIndex;
 	}
 }
 

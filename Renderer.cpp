@@ -1057,7 +1057,7 @@ void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 
 		if (visitOrder[child] >> 31u)
 		{
-			const uint32_t triangle = visitOrder[child] & ~(1u << 31u);
+			const uint32_t triangleIndex = visitOrder[child] & ~(1u << 31u);
 			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
 		}
 		else if (RayAABBIntersection(ray, T_acceptAnyHit, aabbs[child].m_min.X(), aabbs[child].m_min.Y(), aabbs[child].m_min.Z(),

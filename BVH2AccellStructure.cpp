@@ -43,7 +43,7 @@ const BVH2InnerNode& BVH2AccellStructure::GetInnerNode(uint32_t index) const
 // --------------------------------------------------------------------------------
 const TraversalTriangle& BVH2AccellStructure::GetTraversalTriangle(const uint32_t index) const
 {
-	assert(index < m_triangles.size());
+	assert(index < m_traversalTriangles.size());
 	return m_traversalTriangles[index];
 }
 

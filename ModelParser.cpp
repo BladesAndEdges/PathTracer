@@ -17,12 +17,10 @@ void ModelParser::ParseFile(const char* objSourceFile, const float scaleFactor, 
 	assert(objSourceFile != nullptr);
 	assert(scaleFactor > 0.0f);
 	assert(out_triangles.size() == 0);
-	assert(out_triangle4s.size() == 0);
 
 	CreateTriangles(objSourceFile, scaleFactor, out_triangles);
 
 	assert(out_triangles.size() > 0);
-	assert(out_triangle4s.size() > 0);
 }
 
 // --------------------------------------------------------------------------------
@@ -65,16 +63,16 @@ void ModelParser::CreateTriangles(const std::string& fileName, const float scale
 			std::vector<Triangle> triangles;
 			Triangulate(faceVertices, triangles);
 
-			for (uint32_t i = 0u; i < triangles.size(); i++)
-			{
-				triangles[i].m_edge1.SetX(triangles[i].m_vertices[1u].m_position[0u] - triangles[i].m_vertices[0u].m_position[0u]);
-				triangles[i].m_edge1.SetY(triangles[i].m_vertices[1u].m_position[1u] - triangles[i].m_vertices[0u].m_position[1u]);
-				triangles[i].m_edge1.SetZ(triangles[i].m_vertices[1u].m_position[2u] - triangles[i].m_vertices[0u].m_position[2u]);
-
-				triangles[i].m_edge2.SetX(triangles[i].m_vertices[2u].m_position[0u] - triangles[i].m_vertices[0u].m_position[0u]);
-				triangles[i].m_edge2.SetY(triangles[i].m_vertices[2u].m_position[1u] - triangles[i].m_vertices[0u].m_position[1u]);
-				triangles[i].m_edge2.SetZ(triangles[i].m_vertices[2u].m_position[2u] - triangles[i].m_vertices[0u].m_position[2u]);
-			}
+			//for (uint32_t i = 0u; i < triangles.size(); i++)
+			//{
+			//	triangles[i].m_edge1.SetX(triangles[i].m_vertices[1u].m_position[0u] - triangles[i].m_vertices[0u].m_position[0u]);
+			//	triangles[i].m_edge1.SetY(triangles[i].m_vertices[1u].m_position[1u] - triangles[i].m_vertices[0u].m_position[1u]);
+			//	triangles[i].m_edge1.SetZ(triangles[i].m_vertices[1u].m_position[2u] - triangles[i].m_vertices[0u].m_position[2u]);
+			//
+			//	triangles[i].m_edge2.SetX(triangles[i].m_vertices[2u].m_position[0u] - triangles[i].m_vertices[0u].m_position[0u]);
+			//	triangles[i].m_edge2.SetY(triangles[i].m_vertices[2u].m_position[1u] - triangles[i].m_vertices[0u].m_position[1u]);
+			//	triangles[i].m_edge2.SetZ(triangles[i].m_vertices[2u].m_position[2u] - triangles[i].m_vertices[0u].m_position[2u]);
+			//}
 
 			out_triangles.insert(std::end(out_triangles), std::begin(triangles), std::end(triangles));
 		}

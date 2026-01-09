@@ -218,6 +218,7 @@
     <ClCompile Include="GLContext.cpp" />
     <ClCompile Include="HitResult.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MaterialManager.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ModelParser.cpp" />
     <ClCompile Include="PerformanceCounter.cpp" />
@@ -239,6 +240,7 @@
     <ClInclude Include="BVHNode.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BVH4AccellStructure.h" />
+    <ClInclude Include="MaterialManager.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="TraversalDataManager.h" />
     <ClInclude Include="TraversalTriangle.h" />

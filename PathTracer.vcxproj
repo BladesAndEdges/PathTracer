@@ -226,6 +226,7 @@
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TraversalDataManager.cpp" />
     <ClCompile Include="TraversalTriangle.cpp" />
     <ClCompile Include="TraversalTriangle4.cpp" />
@@ -242,6 +243,8 @@
     <ClInclude Include="BVH4AccellStructure.h" />
     <ClInclude Include="MaterialManager.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TraversalDataManager.h" />
     <ClInclude Include="TraversalTriangle.h" />
     <ClInclude Include="Triangle.h" />

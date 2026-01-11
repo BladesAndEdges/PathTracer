@@ -4,9 +4,11 @@
 #include <string>
 #include <vector>
 
+class TextureManager;
+
 struct Material
 {
-	std::string path;
+	uint32_t diffuseIndex;
 };
 
 // --------------------------------------------------------------------------------
@@ -27,5 +29,7 @@ private:
 
 	std::vector<Material> m_materials;
 	std::vector<std::string> m_materialNames;
+
+	TextureManager* m_textureManager;
 };
 

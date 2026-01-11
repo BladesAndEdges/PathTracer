@@ -6,12 +6,15 @@
 #include <string>
 #include <sstream>
 
+#include "TextureManager.h"
+
 // --------------------------------------------------------------------------------
 MaterialManager::MaterialManager(const char* mtlFile)
 {
 	std::filesystem::path filepath = mtlFile;
 	if (filepath.extension() == ".mtl" || filepath.extension() == ".MTL")
 	{
+		m_textureManager = new TextureManager();
 		Load(mtlFile);
 		assert(m_materialNames.size() == m_materials.size());
 	}
@@ -76,7 +79,7 @@ void MaterialManager::ProcessMaterial(std::ifstream& ifs, Material& material)
 		{
 			std::string diffuseTexture;
 			istream >> diffuseTexture;
-			material.path = diffuseTexture; // Would load otherwise when texture loading is made
+			material.diffuseIndex = m_textureManager->Load(diffuseTexture.data()); // Would load otherwise when texture loading is made
 		}
 	}
 }

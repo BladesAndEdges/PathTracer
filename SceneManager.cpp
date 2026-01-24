@@ -9,12 +9,12 @@
 #include "MaterialManager.h"
 #include "Triangle.h"
 #include "Vector2.h"
-#include "Vector3.h"
 #include "Vertex.h"
 
 
 // --------------------------------------------------------------------------------
-SceneManager::SceneManager(const std::string& objFile, const std::string& mtlFile) : m_materialManager(nullptr)
+SceneManager::SceneManager(const std::string& objFile, const std::string& mtlFile) : m_materialManager(nullptr),
+																					m_initialCameraPos(Vector3(2.88791323f, 7.37331104f, -0.183363333f))
 {
 	std::filesystem::path oFile = objFile;
 	std::filesystem::path mFile = mtlFile;
@@ -38,6 +38,12 @@ SceneManager::SceneManager(const std::string& objFile, const std::string& mtlFil
 const std::vector<Triangle>& SceneManager::GetTriangles() const
 {
 	return m_triangles;
+}
+
+// --------------------------------------------------------------------------------
+Vector3 SceneManager::GetInitialCameraPosition() const
+{
+	return m_initialCameraPos;
 }
 
 // --------------------------------------------------------------------------------

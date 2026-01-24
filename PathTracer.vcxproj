@@ -219,8 +219,6 @@
     <ClCompile Include="HitResult.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MaterialManager.cpp" />
-    <ClCompile Include="Model.cpp" />
-    <ClCompile Include="ModelParser.cpp" />
     <ClCompile Include="PerformanceCounter.cpp" />
     <ClCompile Include="BVH4AccellStructure.cpp" />
     <ClCompile Include="Ray.cpp" />
@@ -243,7 +241,6 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BVH4AccellStructure.h" />
     <ClInclude Include="MaterialManager.h" />
-    <ClInclude Include="Model.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextureManager.h" />
@@ -254,7 +251,6 @@
     <ClInclude Include="GLContext.h" />
     <ClInclude Include="HitResult.h" />
     <ClInclude Include="Mesh.h" />
-    <ClInclude Include="ModelParser.h" />
     <ClInclude Include="PerformanceCounter.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Renderer.h" />

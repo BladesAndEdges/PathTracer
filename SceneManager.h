@@ -3,11 +3,11 @@
 #include <string>
 #include <vector>
 
+#include "Vector3.h"
 
 class MaterialManager;
 struct Triangle;
 class Vector2;
-class Vector3;
 struct Vertex;
 
 // --------------------------------------------------------------------------------
@@ -21,6 +21,7 @@ public:
 	SceneManager& operator=(const SceneManager&) = delete;
 
 	const std::vector<Triangle>& GetTriangles() const;
+	Vector3 GetInitialCameraPosition() const;
 
 private:
 
@@ -32,5 +33,7 @@ private:
 
 	MaterialManager* m_materialManager;
 	std::vector<Triangle> m_triangles;
+
+	Vector3 m_initialCameraPos;
 };
 

@@ -9,16 +9,15 @@
 #include "BVH2AccellStructure.h"
 #include "BVH4AccellStructure.h"
 #include "Framebuffer.h"
-#include "Model.h"
 #include "PerformanceCounter.h"
-#include "Vector3.h"
+#include "SceneManager.h"
 #include "TraversalDataManager.h"
 #include "TraversalTriangle.h"
 
 # define M_PI 3.14159265358979323846
-#define TRACE_AGAINST_NON_BVH
+//#define TRACE_AGAINST_NON_BVH
 //#define TRACE_AGAINST_BVH2
-//#define TRACE_AGAINST_BVH4
+#define TRACE_AGAINST_BVH4
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
@@ -26,11 +25,12 @@ Renderer::Renderer()
 	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc));
 	m_isFirstFrame = true;
 
-	const Model* model = new Model();
-	m_traversalDataManager = new TraversalDataManager(model->GetTriangles());
+	m_sceneManager = new SceneManager("sponza.obj", "sponza.mtl");
+
+	m_traversalDataManager = new TraversalDataManager(m_sceneManager->GetTriangles());
 
 
-	m_camera.SetCameraLocation(model->GetCenter());
+	m_camera.SetCameraLocation(m_sceneManager->GetInitialCameraPosition());
 	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
 }
 

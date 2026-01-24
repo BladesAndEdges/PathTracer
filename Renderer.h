@@ -13,8 +13,8 @@
 class BVH2AccellStructure;
 class BVH4AccellStructure;
 class Framebuffer;
-class Model;
 class PerformanceCounter;
+class SceneManager;
 class TraversalDataManager;
 
 // --------------------------------------------------------------------------------
@@ -50,6 +50,7 @@ private:
 	bool m_isFirstFrame;
 
 	TraversalDataManager* m_traversalDataManager;
+	SceneManager* m_sceneManager;
 
 	template<bool T_acceptAnyHit>
 	void TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);

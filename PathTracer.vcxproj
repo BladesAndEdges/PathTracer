@@ -225,6 +225,7 @@
     <ClCompile Include="BVH4AccellStructure.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TraversalDataManager.cpp" />
@@ -243,6 +244,7 @@
     <ClInclude Include="BVH4AccellStructure.h" />
     <ClInclude Include="MaterialManager.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="SceneManager.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TraversalDataManager.h" />

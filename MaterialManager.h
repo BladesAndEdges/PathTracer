@@ -22,6 +22,8 @@ public:
 	MaterialManager(const MaterialManager&) = delete;
 	MaterialManager& operator=(const MaterialManager&) = delete;
 
+	uint32_t GetMaterialIndexByName(const std::string& name) const;
+
 private:
 
 	void Load(const char* mtlFile);

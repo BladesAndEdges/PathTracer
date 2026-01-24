@@ -25,9 +25,25 @@ MaterialManager::MaterialManager(const char* mtlFile)
 }
 
 // --------------------------------------------------------------------------------
+uint32_t MaterialManager::GetMaterialIndexByName(const std::string& name) const
+{
+	for (uint32_t index = 0u; index < m_materialNames.size(); index++)
+	{
+		if (name == m_materialNames[index])
+		{
+			return index;
+		}
+	}
+
+	return UINT32_MAX;
+}
+
+// --------------------------------------------------------------------------------
 void MaterialManager::Load(const char* mtlFile)
 {
-	std::ifstream ifs(mtlFile);
+	const std::string path = "./Scenes/Sponza/" + std::string(mtlFile);
+
+	std::ifstream ifs(path);
 	if (ifs.fail())
 	{
 		assert(false);

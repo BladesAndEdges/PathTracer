@@ -33,6 +33,7 @@ private:
 
 	MaterialManager* m_materialManager;
 	std::vector<Triangle> m_triangles;
+	std::vector<uint32_t> m_triangleMaterials;
 
 	Vector3 m_initialCameraPos;
 };

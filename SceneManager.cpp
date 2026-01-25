@@ -109,6 +109,7 @@ void SceneManager::Load(const std::string& objFile)
 			}
 
 			m_triangles.insert(std::end(m_triangles), std::begin(triangles), std::end(triangles));
+			m_triangleMaterials.insert(std::end(m_triangleMaterials), triangles.size(), materialId);
 		}
 	}
 }

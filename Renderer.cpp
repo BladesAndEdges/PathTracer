@@ -29,7 +29,6 @@ Renderer::Renderer()
 
 	m_traversalDataManager = new TraversalDataManager(m_sceneManager->GetTriangles());
 
-
 	m_camera.SetCameraLocation(m_sceneManager->GetInitialCameraPosition());
 	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
 }

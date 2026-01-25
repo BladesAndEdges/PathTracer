@@ -97,17 +97,6 @@ void SceneManager::Load(const std::string& objFile)
 			std::vector<Triangle> triangles;
 			Triangulate(triangleVertices, triangles);
 
-			for (uint32_t i = 0u; i < triangles.size(); i++)
-			{
-				triangles[i].m_edge1.SetX(triangles[i].m_vertices[1u].m_position[0u] - triangles[i].m_vertices[0u].m_position[0u]);
-				triangles[i].m_edge1.SetY(triangles[i].m_vertices[1u].m_position[1u] - triangles[i].m_vertices[0u].m_position[1u]);
-				triangles[i].m_edge1.SetZ(triangles[i].m_vertices[1u].m_position[2u] - triangles[i].m_vertices[0u].m_position[2u]);
-
-				triangles[i].m_edge2.SetX(triangles[i].m_vertices[2u].m_position[0u] - triangles[i].m_vertices[0u].m_position[0u]);
-				triangles[i].m_edge2.SetY(triangles[i].m_vertices[2u].m_position[1u] - triangles[i].m_vertices[0u].m_position[1u]);
-				triangles[i].m_edge2.SetZ(triangles[i].m_vertices[2u].m_position[2u] - triangles[i].m_vertices[0u].m_position[2u]);
-			}
-
 			m_triangles.insert(std::end(m_triangles), std::begin(triangles), std::end(triangles));
 			m_triangleMaterials.insert(std::end(m_triangleMaterials), triangles.size(), materialId);
 		}

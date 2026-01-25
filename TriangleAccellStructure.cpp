@@ -12,14 +12,14 @@ TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& tr
 		traversalTriangle.m_v0[0u] = triangles[triangle].m_vertices[0u].m_position[0u];
 		traversalTriangle.m_v0[1u] = triangles[triangle].m_vertices[0u].m_position[1u];
 		traversalTriangle.m_v0[2u] = triangles[triangle].m_vertices[0u].m_position[2u];
-	
-		traversalTriangle.m_edge1[0u] = triangles[triangle].m_edge1.X();
-		traversalTriangle.m_edge1[1u] = triangles[triangle].m_edge1.Y();
-		traversalTriangle.m_edge1[2u] = triangles[triangle].m_edge1.Z();
-	
-		traversalTriangle.m_edge2[0u] = triangles[triangle].m_edge2.X();
-		traversalTriangle.m_edge2[1u] = triangles[triangle].m_edge2.Y();
-		traversalTriangle.m_edge2[2u] = triangles[triangle].m_edge2.Z();
+
+		traversalTriangle.m_edge1[0u] = triangles[triangle].m_vertices[1u].m_position[0u] - triangles[triangle].m_vertices[0u].m_position[0u];
+		traversalTriangle.m_edge1[1u] = triangles[triangle].m_vertices[1u].m_position[1u] - triangles[triangle].m_vertices[0u].m_position[1u];
+		traversalTriangle.m_edge1[2u] = triangles[triangle].m_vertices[1u].m_position[2u] - triangles[triangle].m_vertices[0u].m_position[2u];
+
+		traversalTriangle.m_edge2[0u] = triangles[triangle].m_vertices[2u].m_position[0u] - triangles[triangle].m_vertices[0u].m_position[0u];
+		traversalTriangle.m_edge2[1u] = triangles[triangle].m_vertices[2u].m_position[1u] - triangles[triangle].m_vertices[0u].m_position[1u];
+		traversalTriangle.m_edge2[2u] = triangles[triangle].m_vertices[2u].m_position[2u] - triangles[triangle].m_vertices[0u].m_position[2u];
 
 		m_traversalTriangles.push_back(traversalTriangle);
 	}

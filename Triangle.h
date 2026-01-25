@@ -8,8 +8,6 @@ struct AABB;
 struct Triangle
 {
 	Vertex m_vertices[3u];
-	Vector3 m_edge1;
-	Vector3 m_edge2;
 };
 
 // --------------------------------------------------------------------------------

@@ -38,12 +38,14 @@ public:
 	const BVH4InnerNode& GetInnerNodeTri4(const uint32_t index) const;
 	const TraversalTriangle4& GetTraversalTriangle4(const uint32_t index) const;
 	const TriangleIndices& GetTriangleIndices(const uint32_t index) const;
+	const Material4Index& GetMaterial4Index(const uint32_t index) const;
 
 private:
 
 	std::vector<BVH4InnerNode> m_innerNodesTri4;
 	std::vector<TraversalTriangle4> m_traversalTriangle4s;
 	std::vector<TriangleIndices> m_triangleIndices;
+	std::vector<Material4Index> m_material4Indices;
 };
 
      

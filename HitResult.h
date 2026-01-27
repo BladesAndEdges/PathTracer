@@ -11,5 +11,6 @@ struct HitResult
 	Vector3 m_colour = Vector3(0.98f, 0.28f, 0.89f);
 	Vector3 m_normal = Vector3(-1.0f, -1.0f, -1.0f);
 	uint32_t m_primitiveId = UINT32_MAX;
+	uint32_t m_materialId = UINT32_MAX;
 };
 

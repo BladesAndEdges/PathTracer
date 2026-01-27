@@ -96,3 +96,9 @@ const std::vector<TraversalTriangle4>& Triangle4AccellStructure::GetTraversalTri
 {
 	return m_traversalTriangle4s;
 }
+
+// --------------------------------------------------------------------------------
+const std::vector<Material4Index>& Triangle4AccellStructure::GetMaterial4Indices() const
+{
+	return m_perTriangle4Materials;
+}

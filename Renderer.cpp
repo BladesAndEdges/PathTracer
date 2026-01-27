@@ -9,6 +9,7 @@
 #include "BVH2AccellStructure.h"
 #include "BVH4AccellStructure.h"
 #include "Framebuffer.h"
+#include "Material4Index.h"
 #include "PerformanceCounter.h"
 #include "SceneManager.h"
 #include "TraversalDataManager.h"
@@ -414,6 +415,7 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 	__m128i primitiveIds = _mm_set_epi32(3, 2, 1, 0);
 
 	const std::vector<TraversalTriangle4>& triangle4s = m_traversalDataManager->GetTraversalTriangle4s();
+	const std::vector<Material4Index>& material4Indices = m_traversalDataManager->GetMaterial4Indices();
 	for (uint32_t currentTri4 = 0u; currentTri4 < triangle4s.size(); currentTri4++)
 	{
 		// Load tri4 data
@@ -591,12 +593,15 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		const Vector3 normal = Normalize(Cross(edge1, edge2));
 
 		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+
+		out_hitResult.m_materialId = material4Indices[tri4Id].m_indices[triId];
 	}
 #endif
 #ifdef RUNNING_SCALAR
 
 	uint32_t primitiveId = UINT32_MAX;
 	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
+	const std::vector<uint32_t>& materialIndices = m_traversalDataManager->GetMaterialIndices();
 	for (uint32_t triangle = 0u; triangle < traversalTriangles.size(); triangle++)
 	{
 		const Vector3 edge1 = Vector3(traversalTriangles[triangle].m_edge1[0u], traversalTriangles[triangle].m_edge1[1u], traversalTriangles[triangle].m_edge1[2u]);
@@ -660,6 +665,8 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;;
 
 		out_hitResult.m_primitiveId = primitiveId;
+
+		out_hitResult.m_materialId = materialIndices[primitiveId];
 	}
 #endif
 }
@@ -975,8 +982,9 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 			const uint32_t triangle4Index = node.m_child[visitIndex] & ~(1u << 31u);
 			const TraversalTriangle4& triangle4 = m_traversalDataManager->GetBVH4TraversalTriangle4(triangle4Index);
 			const TriangleIndices triangleIndices = m_traversalDataManager->GetBVH4TriangleIndices(triangle4Index);
+			const Material4Index material4Index = m_traversalDataManager->GetBVH4Material4Index(triangle4Index);
 
-			BVH4HitTriangle4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndices, triangle4, out_hitResult, out_hasHit);
+			BVH4HitTriangle4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndices, triangle4, material4Index, out_hitResult, out_hasHit);
 		}
 		else
 		{
@@ -1154,13 +1162,14 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 		const Vector3 normal = Normalize(Cross(edge1, edge2));
 		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 		out_hitResult.m_primitiveId = triangleIndex;
+		out_hitResult.m_materialId = triangleIndex;
 	}
 }
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TriangleIndices& triangleIndices, const TraversalTriangle4 triangle4, 
-	HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TriangleIndices& triangleIndices, const TraversalTriangle4& triangle4, 
+	const Material4Index& material4Index, HitResult& out_hitResult, bool& out_hasHit)
 {
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);
@@ -1331,6 +1340,7 @@ void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float t
 		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);;
 
 		out_hitResult.m_primitiveId = triangleIndices.m_triangleIndices[childIndexToVisit];
+		out_hitResult.m_materialId = material4Index.m_indices[childIndexToVisit];
 
 		const Vector3 edge1 = Vector3(triangle4.m_edge1X[childIndexToVisit],
 			triangle4.m_edge1Y[childIndexToVisit],

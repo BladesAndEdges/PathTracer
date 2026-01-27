@@ -14,6 +14,7 @@ BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellSt
 	const uint32_t bvhRootIndex = BuildBVH4NodeFromBVH2NodeTri4(bvh2AccellStructure, 0);
 
 	assert(m_traversalTriangle4s.size() == m_triangleIndices.size());
+	assert(m_traversalTriangle4s.size() == m_material4Indices.size());
 
 	(void)bvhRootIndex;
 }
@@ -115,7 +116,7 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 			triangles.m_edge2Z[triangle] = std::nanf("");
 		}
 
-		// Add the materials associated with the triangle4
+		// Add the triangle indices associated with the triangle4
 		TriangleIndices triangleIndices;
 		uint32_t triangleIndex = 0u;
 		for (uint32_t child = 0u; child < addedChildren; child++)
@@ -128,10 +129,24 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 			}
 		}
 
+		// Add the materials associated with the triangle4
+		Material4Index material4Index;
+		uint32_t material = 0u;
+		for (uint32_t child = 0u; child < addedChildren; child++)
+		{
+			const uint32_t postShiftValue = triangleMask >> (3u - child);
+			if (postShiftValue & 1u)
+			{
+				const uint32_t indexInBVH2 = children[child] & ~(1u << 31u);
+				material4Index.m_indices[material] = bvh2AccellStructure->GetMaterialIndex(indexInBVH2);
+				material++;
+			}
+		}
+
 		const uint32_t triangle4Index = (uint32_t)m_traversalTriangle4s.size();
 		m_traversalTriangle4s.push_back(triangles);
-
 		m_triangleIndices.push_back(triangleIndices);
+		m_material4Indices.push_back(material4Index);
 
 		// Place the triangle4 as a node child
 		m_innerNodesTri4[bvh4Node].m_child[subNode] = triangle4Index | (1u << 31u);
@@ -202,4 +217,11 @@ const TriangleIndices& BVH4AccellStructure::GetTriangleIndices(const uint32_t in
 {
 	assert(index < (uint32_t)m_triangleIndices.size());
 	return m_triangleIndices[index];
+}
+
+// --------------------------------------------------------------------------------
+const Material4Index& BVH4AccellStructure::GetMaterial4Index(const uint32_t index) const
+{
+	assert(index < (uint32_t)m_material4Indices.size());
+	return m_material4Indices[index];
 }

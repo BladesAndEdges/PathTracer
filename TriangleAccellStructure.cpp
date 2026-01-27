@@ -4,7 +4,7 @@
 #include "Triangle.h"
 
 // --------------------------------------------------------------------------------
-TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& triangles)
+TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& triangles, const std::vector<uint32_t>& perTriangleMaterials) : m_perTriangleMaterials(perTriangleMaterials)
 {
 	TraversalTriangle traversalTriangle;
 	for (uint32_t triangle = 0u; triangle < triangles.size(); triangle++)
@@ -29,4 +29,10 @@ TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& tr
 const std::vector<TraversalTriangle>& TriangleAccellStructure::GetTraversalTriangles() const
 {
 	return m_traversalTriangles;
+}
+
+// --------------------------------------------------------------------------------
+const std::vector<uint32_t>& TriangleAccellStructure::GetPerTriangleMaterials() const
+{
+	return m_perTriangleMaterials;
 }

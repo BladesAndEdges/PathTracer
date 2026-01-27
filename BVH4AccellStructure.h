@@ -4,6 +4,7 @@
 #include <vector>
 
 class BVH2AccellStructure;
+struct Material4Index;
 struct TraversalTriangle4;
 
 // --------------------------------------------------------------------------------
@@ -21,6 +22,12 @@ struct alignas(16) BVH4InnerNode
 };
 
 // --------------------------------------------------------------------------------
+struct TriangleIndices
+{
+	uint32_t m_triangleIndices[4u] = { UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX };
+};
+
+// --------------------------------------------------------------------------------
 class BVH4AccellStructure
 {
 public:
@@ -30,11 +37,13 @@ public:
 
 	const BVH4InnerNode& GetInnerNodeTri4(const uint32_t index) const;
 	const TraversalTriangle4& GetTraversalTriangle4(const uint32_t index) const;
+	const TriangleIndices& GetTriangleIndices(const uint32_t index) const;
 
 private:
 
 	std::vector<BVH4InnerNode> m_innerNodesTri4;
 	std::vector<TraversalTriangle4> m_traversalTriangle4s;
+	std::vector<TriangleIndices> m_triangleIndices;
 };
 
      

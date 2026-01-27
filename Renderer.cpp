@@ -27,7 +27,7 @@ Renderer::Renderer()
 
 	m_sceneManager = new SceneManager("sponza.obj", "sponza.mtl");
 
-	m_traversalDataManager = new TraversalDataManager(m_sceneManager->GetTriangles());
+	m_traversalDataManager = new TraversalDataManager(m_sceneManager->GetTriangles(), m_sceneManager->GetPerTriangleMaterials());
 
 	m_camera.SetCameraLocation(m_sceneManager->GetInitialCameraPosition());
 	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
@@ -63,7 +63,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	const SHORT vKeyState = GetAsyncKeyState(0x56);
 	const SHORT bKeyState = GetAsyncKeyState(0x42);
 	const SHORT nKeyState = GetAsyncKeyState(0x4E);
-	const SHORT mKeyState = GetAsyncKeyState(0x4D);
+	//const SHORT mKeyState = GetAsyncKeyState(0x4D);
 	const SHORT xKeyState = GetAsyncKeyState(0x58);
 
 	const Vector3 primitiveDebugColours[5u] = { Vector3(0.94f, 0.34f, 0.30f), Vector3(0.30f, 0.94f, 0.70f), Vector3(0.51f, 0.70f, 0.96f),
@@ -86,7 +86,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			float green = 0.0f;
 			float blue = 0.0f;
 
-			if ((cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u) && (xKeyState == 0u))
+			if (/*(cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u) && (xKeyState == 0u)*/false)
 			{
 				Vector3 radiance(0.0f, 0.0f, 0.0f);
 				const uint32_t numSamples = 1u;
@@ -292,7 +292,8 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				blue = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Z() + 0.5f : 0.0f;
 			}
 
-			if (mKeyState > 0u)
+			//if (mKeyState > 0u)
+			if(true)
 			{
 				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 
@@ -973,8 +974,9 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 		{
 			const uint32_t triangle4Index = node.m_child[visitIndex] & ~(1u << 31u);
 			const TraversalTriangle4& triangle4 = m_traversalDataManager->GetBVH4TraversalTriangle4(triangle4Index);
+			const TriangleIndices triangleIndices = m_traversalDataManager->GetBVH4TriangleIndices(triangle4Index);
 
-			BVH4HitTriangle4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangle4, out_hitResult, out_hasHit);
+			BVH4HitTriangle4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndices, triangle4, out_hitResult, out_hasHit);
 		}
 		else
 		{
@@ -1157,7 +1159,8 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TraversalTriangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TriangleIndices& triangleIndices, const TraversalTriangle4 triangle4, 
+	HitResult& out_hitResult, bool& out_hasHit)
 {
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);
@@ -1327,7 +1330,7 @@ void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float t
 		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
 		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);;
 
-		out_hitResult.m_primitiveId = childIndexToVisit;
+		out_hitResult.m_primitiveId = triangleIndices.m_triangleIndices[childIndexToVisit];
 
 		const Vector3 edge1 = Vector3(triangle4.m_edge1X[childIndexToVisit],
 			triangle4.m_edge1Y[childIndexToVisit],

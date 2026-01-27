@@ -41,6 +41,12 @@ const std::vector<Triangle>& SceneManager::GetTriangles() const
 }
 
 // --------------------------------------------------------------------------------
+const std::vector<uint32_t>& SceneManager::GetPerTriangleMaterials() const
+{
+	return m_perTriangleMaterials;
+}
+
+// --------------------------------------------------------------------------------
 Vector3 SceneManager::GetInitialCameraPosition() const
 {
 	return m_initialCameraPos;
@@ -98,7 +104,7 @@ void SceneManager::Load(const std::string& objFile)
 			Triangulate(triangleVertices, triangles);
 
 			m_triangles.insert(std::end(m_triangles), std::begin(triangles), std::end(triangles));
-			m_triangleMaterials.insert(std::end(m_triangleMaterials), triangles.size(), materialId);
+			m_perTriangleMaterials.insert(std::end(m_perTriangleMaterials), triangles.size(), materialId);
 		}
 	}
 }

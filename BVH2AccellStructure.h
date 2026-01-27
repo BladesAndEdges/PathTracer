@@ -38,10 +38,12 @@ class BVH2AccellStructure
 {
 public:
 
-	BVH2AccellStructure(const std::vector<Triangle>& triangles, const std::vector<TraversalTriangle>& traversalTriangles, const BVH2PartitionStrategy& bvhPartitionStrategy);
+	BVH2AccellStructure(const std::vector<Triangle>& triangles, const std::vector<TraversalTriangle>& traversalTriangles, 
+		const std::vector<uint32_t>& perTriangleMaterials, const BVH2PartitionStrategy& bvhPartitionStrategy);
 
 	const BVH2InnerNode& GetInnerNode(uint32_t index) const;
 	const TraversalTriangle& GetTraversalTriangle(const uint32_t index) const;
+	uint32_t GetMaterialIndex(const uint32_t index) const;
 
 	uint32_t GetNodeCount() const;
 
@@ -54,5 +56,6 @@ private:
 
 	std::vector<BVH2InnerNode> m_innerNodes;
 	std::vector<TraversalTriangle> m_traversalTriangles;
+	std::vector<uint32_t> m_perTriangleMaterials;
 };
 

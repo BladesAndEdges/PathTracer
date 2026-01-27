@@ -21,6 +21,7 @@ public:
 	SceneManager& operator=(const SceneManager&) = delete;
 
 	const std::vector<Triangle>& GetTriangles() const;
+	const std::vector<uint32_t>& GetPerTriangleMaterials() const;
 	Vector3 GetInitialCameraPosition() const;
 
 private:
@@ -33,7 +34,7 @@ private:
 
 	MaterialManager* m_materialManager;
 	std::vector<Triangle> m_triangles;
-	std::vector<uint32_t> m_triangleMaterials;
+	std::vector<uint32_t> m_perTriangleMaterials;
 
 	Vector3 m_initialCameraPos;
 };

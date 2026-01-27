@@ -218,6 +218,7 @@
     <ClCompile Include="GLContext.cpp" />
     <ClCompile Include="HitResult.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Material4Index.cpp" />
     <ClCompile Include="MaterialManager.cpp" />
     <ClCompile Include="PerformanceCounter.cpp" />
     <ClCompile Include="BVH4AccellStructure.cpp" />
@@ -240,6 +241,7 @@
     <ClInclude Include="BVHNode.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BVH4AccellStructure.h" />
+    <ClInclude Include="Material4Index.h" />
     <ClInclude Include="MaterialManager.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="stb_image.h" />

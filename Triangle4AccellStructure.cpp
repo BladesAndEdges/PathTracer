@@ -1,10 +1,12 @@
 #include "Triangle4AccellStructure.h"
 
+#include "Material4Index.h"
 #include "TraversalTriangle.h"
 #include "TraversalTriangle4.h"
 
 // --------------------------------------------------------------------------------
-Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle> traversalTriangles)
+Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle> traversalTriangles, 
+	std::vector<uint32_t> perTriangleMaterials)
 {
 	// Pad to a multiple of 4, if needed
 	const uint32_t remainder = (uint32_t)traversalTriangles.size() % 4u;
@@ -15,6 +17,7 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 		for (uint32_t padding = 0u; padding < padCount; padding++)
 		{
 			traversalTriangles.push_back(traversalTriangle);
+			perTriangleMaterials.push_back(UINT32_MAX);
 		}
 	}
 
@@ -74,6 +77,17 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 		traversalTriangle4.m_edge2Z[3u] = traversalTriangles[index + 3u].m_edge2[2u];
 
 		m_traversalTriangle4s.push_back(traversalTriangle4);
+	}
+
+	Material4Index material4Index;
+	for (uint32_t index = 0u; index < perTriangleMaterials.size(); index+=4u)
+	{
+		material4Index.m_indices[0u] = perTriangleMaterials[index];
+		material4Index.m_indices[1u] = perTriangleMaterials[index + 1u];
+		material4Index.m_indices[2u] = perTriangleMaterials[index + 2u];
+		material4Index.m_indices[3u] = perTriangleMaterials[index + 3u];
+
+		m_perTriangle4Materials.push_back(material4Index);
 	}
 }
 

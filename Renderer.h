@@ -16,6 +16,7 @@ class Framebuffer;
 class PerformanceCounter;
 class SceneManager;
 class TraversalDataManager;
+struct TriangleIndices;
 
 // --------------------------------------------------------------------------------
 class Renderer
@@ -65,7 +66,7 @@ private:
 	void HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
-	void BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TraversalTriangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit);
+	void BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TriangleIndices& triangleIndices, const TraversalTriangle4 triangle4, HitResult& out_hitResult, bool& out_hasHit);
 
 	// BVH4 code
 	template<bool T_acceptAnyHit>

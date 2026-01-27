@@ -11,8 +11,9 @@
 #define EPSILON 0.00001f
 
 // --------------------------------------------------------------------------------
-BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles, const std::vector<TraversalTriangle>& traversalTriangles, 
-	const BVH2PartitionStrategy& bvhPartitionStrategy) : m_traversalTriangles(traversalTriangles)
+BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles, const std::vector<TraversalTriangle>& traversalTriangles,
+	const std::vector<uint32_t>& perTriangleMaterials, const BVH2PartitionStrategy& bvhPartitionStrategy) : m_traversalTriangles(traversalTriangles),
+																									  m_perTriangleMaterials(perTriangleMaterials)
 {
 	assert(triangles.size() != 0);
 
@@ -43,8 +44,15 @@ const BVH2InnerNode& BVH2AccellStructure::GetInnerNode(uint32_t index) const
 // --------------------------------------------------------------------------------
 const TraversalTriangle& BVH2AccellStructure::GetTraversalTriangle(const uint32_t index) const
 {
-	assert(index < m_traversalTriangles.size());
+	assert(index < (uint32_t)m_traversalTriangles.size());
 	return m_traversalTriangles[index];
+}
+
+// --------------------------------------------------------------------------------
+uint32_t BVH2AccellStructure::GetMaterialIndex(const uint32_t index) const
+{
+	assert(index < (uint32_t)m_perTriangleMaterials.size());
+	return m_perTriangleMaterials[index];
 }
 
 // --------------------------------------------------------------------------------

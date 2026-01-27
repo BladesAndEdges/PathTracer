@@ -2,6 +2,7 @@
 
 #include "AABB.h"
 #include "BVH2AccellStructure.h"
+#include "Material4Index.h"
 #include "TraversalTriangle.h"
 #include "TraversalTriangle4.h"
 
@@ -12,13 +13,7 @@ BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellSt
 	// Add getter for the size of the internal node vector, and check it is not empty
 	const uint32_t bvhRootIndex = BuildBVH4NodeFromBVH2NodeTri4(bvh2AccellStructure, 0);
 
-	for (uint32_t i = 0u; i < m_innerNodesTri4.size(); i++)
-	{
-		for (uint32_t j = 0u; j < 4u; j++)
-		{
-			assert(m_innerNodesTri4[i].m_child[j] != 0u);
-		}
-	}
+	assert(m_traversalTriangle4s.size() == m_triangleIndices.size());
 
 	(void)bvhRootIndex;
 }
@@ -120,8 +115,23 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 			triangles.m_edge2Z[triangle] = std::nanf("");
 		}
 
+		// Add the materials associated with the triangle4
+		TriangleIndices triangleIndices;
+		uint32_t triangleIndex = 0u;
+		for (uint32_t child = 0u; child < addedChildren; child++)
+		{
+			const uint32_t postShiftValue = triangleMask >> (3u - child);
+			if (postShiftValue & 1u)
+			{
+				triangleIndices.m_triangleIndices[triangleIndex] = children[child] & ~(1u << 31u);
+				triangleIndex++;
+			}
+		}
+
 		const uint32_t triangle4Index = (uint32_t)m_traversalTriangle4s.size();
 		m_traversalTriangle4s.push_back(triangles);
+
+		m_triangleIndices.push_back(triangleIndices);
 
 		// Place the triangle4 as a node child
 		m_innerNodesTri4[bvh4Node].m_child[subNode] = triangle4Index | (1u << 31u);
@@ -185,4 +195,11 @@ const TraversalTriangle4& BVH4AccellStructure::GetTraversalTriangle4(const uint3
 {
 	assert(index < (uint32_t)m_traversalTriangle4s.size());
 	return m_traversalTriangle4s[index];
+}
+
+// --------------------------------------------------------------------------------
+const TriangleIndices& BVH4AccellStructure::GetTriangleIndices(const uint32_t index) const
+{
+	assert(index < (uint32_t)m_triangleIndices.size());
+	return m_triangleIndices[index];
 }

@@ -7,11 +7,12 @@
 #include "Triangle4AccellStructure.h"
 
 // --------------------------------------------------------------------------------
-TraversalDataManager::TraversalDataManager(const std::vector<Triangle>& triangles)
+TraversalDataManager::TraversalDataManager(const std::vector<Triangle>& triangles, const std::vector<uint32_t> perTriangleMaterials)
 {
-	m_triangleAccellStructure = new TriangleAccellStructure(triangles);
-	m_triangle4AccellStructure = new Triangle4AccellStructure(m_triangleAccellStructure->GetTraversalTriangles());
-	m_bvh2AccellStructure = new BVH2AccellStructure(triangles, m_triangleAccellStructure->GetTraversalTriangles(), BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
+	m_triangleAccellStructure = new TriangleAccellStructure(triangles, perTriangleMaterials);
+	m_triangle4AccellStructure = new Triangle4AccellStructure(m_triangleAccellStructure->GetTraversalTriangles(), m_triangleAccellStructure->GetPerTriangleMaterials());
+	m_bvh2AccellStructure = new BVH2AccellStructure(triangles, m_triangleAccellStructure->GetTraversalTriangles(), m_triangleAccellStructure->GetPerTriangleMaterials(),
+		BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
 	m_bvh4AccellStructure = new BVH4AccellStructure(m_bvh2AccellStructure);
 }
 
@@ -50,4 +51,10 @@ const BVH4InnerNode& TraversalDataManager::GetBVH4InnerNode(const uint32_t index
 const TraversalTriangle4& TraversalDataManager::GetBVH4TraversalTriangle4(const uint32_t index) const
 {
 	return m_bvh4AccellStructure->GetTraversalTriangle4(index);
+}
+
+// --------------------------------------------------------------------------------
+const TriangleIndices& TraversalDataManager::GetBVH4TriangleIndices(const uint32_t index) const
+{
+	return m_bvh4AccellStructure->GetTriangleIndices(index);
 }

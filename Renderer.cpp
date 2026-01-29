@@ -64,8 +64,9 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	const SHORT vKeyState = GetAsyncKeyState(0x56);
 	const SHORT bKeyState = GetAsyncKeyState(0x42);
 	const SHORT nKeyState = GetAsyncKeyState(0x4E);
-	//const SHORT mKeyState = GetAsyncKeyState(0x4D);
+	const SHORT mKeyState = GetAsyncKeyState(0x4D);
 	const SHORT xKeyState = GetAsyncKeyState(0x58);
+	const SHORT lKeyState = GetAsyncKeyState(0x4C);
 
 	const Vector3 primitiveDebugColours[5u] = { Vector3(0.94f, 0.34f, 0.30f), Vector3(0.30f, 0.94f, 0.70f), Vector3(0.51f, 0.70f, 0.96f),
 		Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
@@ -87,7 +88,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			float green = 0.0f;
 			float blue = 0.0f;
 
-			if (/*(cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u) && (xKeyState == 0u)*/false)
+			if ((cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u) && (xKeyState == 0u) && (lKeyState == 0u))
 			{
 				Vector3 radiance(0.0f, 0.0f, 0.0f);
 				const uint32_t numSamples = 1u;
@@ -293,8 +294,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				blue = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Z() + 0.5f : 0.0f;
 			}
 
-			//if (mKeyState > 0u)
-			if(true)
+			if (mKeyState > 0u)
 			{
 				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 
@@ -311,6 +311,25 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				red = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].X() : 0.0f;
 				green = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Y() : 0.0f;
 				blue = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Z() : 0.0f;
+			}
+
+			if (lKeyState > 0u)
+			{
+				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+
+#ifdef TRACE_AGAINST_BVH2
+				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
+				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
+#endif // !TRACE_AGAINST_BVH
+
+				red = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).X() : 0.0f;
+				green = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).Y() : 0.0f;
+				blue = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).Z() : 0.0f;
 			}
 
 			bytes[texelByteIndex] = uint8_t(red * 255.0f);
@@ -1162,7 +1181,7 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 		const Vector3 normal = Normalize(Cross(edge1, edge2));
 		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 		out_hitResult.m_primitiveId = triangleIndex;
-		out_hitResult.m_materialId = triangleIndex;
+		out_hitResult.m_materialId = m_traversalDataManager->GetBVH2MaterialIndex(triangleIndex);
 	}
 }
 

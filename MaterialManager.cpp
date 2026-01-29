@@ -7,6 +7,34 @@
 #include <sstream>
 
 #include "TextureManager.h"
+#include "Vector3.h"
+
+const Vector3 debugColours[20u]
+{
+	Vector3(1.0f, 0.0f, 0.0f),
+	Vector3(0.0f, 1.0f, 0.0f),
+	Vector3(0.0f, 0.0f, 1.0f),
+	Vector3(1.0f, 1.0f, 0.0f),
+	Vector3(1.0f, 0.0f, 1.0f),
+	Vector3(0.0f, 1.0f, 1.0f),
+
+	Vector3(0.5f, 0.0f, 0.0f),
+	Vector3(0.0f, 0.5f, 0.0f),
+	Vector3(0.0f, 0.0f, 0.5f),
+	Vector3(0.5f, 0.5f, 0.0f),
+	Vector3(0.5f, 0.0f, 0.5f),
+	Vector3(0.0f, 0.5f, 0.5f),
+
+	Vector3(1.0f, 0.3f, 0.0f),
+	Vector3(0.0f, 1.0f, 0.3f),
+	Vector3(0.3f, 0.0f, 1.0f),
+	Vector3(1.0f, 0.3f, 0.3f),
+	Vector3(1.0f, 0.3f, 1.0f),
+	Vector3(0.3f, 1.0f, 1.0f),
+
+	Vector3(1.0f, 0.3f, 0.5f),
+	Vector3(1.0f, 1.0f, 1.0f)
+};
 
 // --------------------------------------------------------------------------------
 MaterialManager::MaterialManager(const char* mtlFile)
@@ -36,6 +64,12 @@ uint32_t MaterialManager::GetMaterialIndexByName(const std::string& name) const
 	}
 
 	return UINT32_MAX;
+}
+
+// --------------------------------------------------------------------------------
+Vector3 MaterialManager::GetDebugMaterialColour(const uint32_t index) const
+{
+	return debugColours[index];
 }
 
 // --------------------------------------------------------------------------------

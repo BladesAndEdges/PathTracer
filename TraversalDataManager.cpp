@@ -50,8 +50,13 @@ const BVH2InnerNode& TraversalDataManager::GetBVH2InnerNode(const uint32_t index
 // --------------------------------------------------------------------------------
 const TraversalTriangle& TraversalDataManager::GetBVH2TraversalTriangle(const uint32_t index) const
 {
-	// TO DO: assert the index is valid
 	return m_bvh2AccellStructure->GetTraversalTriangle(index);
+}
+
+// --------------------------------------------------------------------------------
+const uint32_t TraversalDataManager::GetBVH2MaterialIndex(const uint32_t index) const
+{
+	return m_bvh2AccellStructure->GetMaterialIndex(index);
 }
 
 // --------------------------------------------------------------------------------

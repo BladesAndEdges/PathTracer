@@ -5,6 +5,7 @@
 #include <vector>
 
 class TextureManager;
+class Vector3;
 
 struct Material
 {
@@ -23,6 +24,7 @@ public:
 	MaterialManager& operator=(const MaterialManager&) = delete;
 
 	uint32_t GetMaterialIndexByName(const std::string& name) const;
+	Vector3 GetDebugMaterialColour(const uint32_t index) const;
 
 private:
 

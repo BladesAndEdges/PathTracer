@@ -23,6 +23,7 @@ public:
 	const std::vector<Triangle>& GetTriangles() const;
 	const std::vector<uint32_t>& GetPerTriangleMaterials() const;
 	Vector3 GetInitialCameraPosition() const;
+	Vector3 GetDebugMaterialColour(const uint32_t index) const;
 
 private:
 

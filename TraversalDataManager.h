@@ -29,6 +29,7 @@ public:
 
 	const BVH2InnerNode& GetBVH2InnerNode(const uint32_t index) const;
 	const TraversalTriangle& GetBVH2TraversalTriangle(const uint32_t index) const;
+	const uint32_t GetBVH2MaterialIndex(const uint32_t index) const;
 
 	const BVH4InnerNode& GetBVH4InnerNode(const uint32_t index) const;
 	const TraversalTriangle4& GetBVH4TraversalTriangle4(const uint32_t index) const;

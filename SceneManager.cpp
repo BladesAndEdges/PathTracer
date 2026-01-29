@@ -53,6 +53,12 @@ Vector3 SceneManager::GetInitialCameraPosition() const
 }
 
 // --------------------------------------------------------------------------------
+Vector3 SceneManager::GetDebugMaterialColour(const uint32_t index) const
+{
+	return m_materialManager->GetDebugMaterialColour(index);
+}
+
+// --------------------------------------------------------------------------------
 void SceneManager::Load(const std::string& objFile)
 {
 	const std::string path = "./Scenes/Sponza/" + objFile;

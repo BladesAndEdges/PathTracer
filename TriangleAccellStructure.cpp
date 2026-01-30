@@ -2,10 +2,12 @@
 
 #include "TraversalTriangle.h"
 #include "Triangle.h"
+#include "TriangleTexCoords.h"
 
 // --------------------------------------------------------------------------------
 TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& triangles, const std::vector<uint32_t>& perTriangleMaterials) : m_perTriangleMaterials(perTriangleMaterials)
 {
+	// Traversal data
 	TraversalTriangle traversalTriangle;
 	for (uint32_t triangle = 0u; triangle < triangles.size(); triangle++)
 	{
@@ -23,6 +25,22 @@ TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& tr
 
 		m_traversalTriangles.push_back(traversalTriangle);
 	}
+
+	// Texture coordinate data
+	TriangleTexCoords triangleTexCoords;
+	for (uint32_t triangle = 0u; triangle < triangles.size(); triangle++)
+	{
+		triangleTexCoords.m_v0uv[0u] = triangles[triangle].m_vertices[0u].m_textureCoordinate[0u];
+		triangleTexCoords.m_v0uv[1u] = triangles[triangle].m_vertices[0u].m_textureCoordinate[1u];
+
+		triangleTexCoords.m_v1uv[0u] = triangles[triangle].m_vertices[1u].m_textureCoordinate[0u];
+		triangleTexCoords.m_v1uv[1u] = triangles[triangle].m_vertices[1u].m_textureCoordinate[1u];
+
+		triangleTexCoords.m_v2uv[0u] = triangles[triangle].m_vertices[2u].m_textureCoordinate[0u];
+		triangleTexCoords.m_v2uv[1u] = triangles[triangle].m_vertices[2u].m_textureCoordinate[1u];
+
+		m_triangleTexCoords.push_back(triangleTexCoords);
+	}
 }
 
 // --------------------------------------------------------------------------------
@@ -35,4 +53,10 @@ const std::vector<TraversalTriangle>& TriangleAccellStructure::GetTraversalTrian
 const std::vector<uint32_t>& TriangleAccellStructure::GetPerTriangleMaterials() const
 {
 	return m_perTriangleMaterials;
+}
+
+// --------------------------------------------------------------------------------
+const std::vector<TriangleTexCoords>& TriangleAccellStructure::GetTriangleTexCoords() const
+{
+	return m_triangleTexCoords;
 }

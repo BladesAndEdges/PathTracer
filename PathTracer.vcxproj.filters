@@ -170,6 +170,9 @@
     <ClInclude Include="Material4Index.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TriangleTexCoords.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Ray.inl">

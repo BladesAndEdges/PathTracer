@@ -260,6 +260,7 @@
     <ClInclude Include="TraversalTriangle4.h" />
     <ClInclude Include="Triangle4AccellStructure.h" />
     <ClInclude Include="TriangleAccellStructure.h" />
+    <ClInclude Include="TriangleTexCoords.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="ViewportDesc.h" />
   </ItemGroup>

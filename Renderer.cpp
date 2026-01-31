@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <emmintrin.h>
+#include <float.h>
 #include <immintrin.h>
 
 #include "BVH2AccellStructure.h"
@@ -14,11 +15,12 @@
 #include "SceneManager.h"
 #include "TraversalDataManager.h"
 #include "TraversalTriangle.h"
+#include "TriangleTexCoords.h"
 
 # define M_PI 3.14159265358979323846
 //#define TRACE_AGAINST_NON_BVH
-//#define TRACE_AGAINST_BVH2
-#define TRACE_AGAINST_BVH4
+#define TRACE_AGAINST_BVH2
+//#define TRACE_AGAINST_BVH4
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
@@ -67,6 +69,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	const SHORT mKeyState = GetAsyncKeyState(0x4D);
 	const SHORT xKeyState = GetAsyncKeyState(0x58);
 	const SHORT lKeyState = GetAsyncKeyState(0x4C);
+	const SHORT kKeyState = GetAsyncKeyState(0x4B);
 
 	const Vector3 primitiveDebugColours[5u] = { Vector3(0.94f, 0.34f, 0.30f), Vector3(0.30f, 0.94f, 0.70f), Vector3(0.51f, 0.70f, 0.96f),
 		Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
@@ -88,11 +91,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			float green = 0.0f;
 			float blue = 0.0f;
 
-			if ((cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u) && (xKeyState == 0u) && (lKeyState == 0u))
+			if ((cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u) && (xKeyState == 0u) && (lKeyState == 0u) && (kKeyState == 0u))
 			{
 				Vector3 radiance(0.0f, 0.0f, 0.0f);
 				const uint32_t numSamples = 1u;
-				const uint32_t depth = 2u;
+				const uint32_t depth = 1u;
 
 				for (uint32_t sample = 0u; sample < numSamples; sample++)
 				{
@@ -332,6 +335,26 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				blue = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).Z() : 0.0f;
 			}
 
+			// Texture coordinates
+			if (kKeyState > 0u)
+			{
+				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+
+#ifdef TRACE_AGAINST_BVH2
+				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH
+				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
+#endif // !TRACE_AGAINST_BVH
+
+				red = (hr.m_primitiveId != UINT32_MAX) ? hr.m_texureCoordinate.X() : 0.0f;
+				green = (hr.m_primitiveId != UINT32_MAX) ? hr.m_texureCoordinate.Y() : 0.0f;
+				blue = 0.0f;
+			}
+
 			bytes[texelByteIndex] = uint8_t(red * 255.0f);
 			bytes[texelByteIndex + 1u] = uint8_t(green * 255.0f);
 			bytes[texelByteIndex + 2u] = uint8_t(blue * 255.0f);
@@ -393,8 +416,8 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 	m_isFirstFrame = false;
 }
 
-#define RUNNING_SSE
-//#define RUNNING_SCALAR
+//#define RUNNING_SSE
+#define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
@@ -435,6 +458,7 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 
 	const std::vector<TraversalTriangle4>& triangle4s = m_traversalDataManager->GetTraversalTriangle4s();
 	const std::vector<Material4Index>& material4Indices = m_traversalDataManager->GetMaterial4Indices();
+	const std::vector<TriangleTexCoords4>& triangleTexCoords4 = m_traversalDataManager->GetTriangleTexCoords4();
 	for (uint32_t currentTri4 = 0u; currentTri4 < triangle4s.size(); currentTri4++)
 	{
 		// Load tri4 data
@@ -595,7 +619,6 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		out_hitResult.m_t = _mm_cvtss_f32(minTComparisonX);
 
 		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(out_hitResult.m_t);
-		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);;
 
 		out_hitResult.m_primitiveId = primitiveId;
 
@@ -614,13 +637,18 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
 		out_hitResult.m_materialId = material4Indices[tri4Id].m_indices[triId];
+
+		out_hitResult.m_colour = triangleTexCoords4[tri4Id]
 	}
 #endif
 #ifdef RUNNING_SCALAR
 
 	uint32_t primitiveId = UINT32_MAX;
+	float triangleU = FLT_MAX;
+	float triangleV = FLT_MAX; 
 	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
 	const std::vector<uint32_t>& materialIndices = m_traversalDataManager->GetMaterialIndices();
+	const std::vector<TriangleTexCoords>& triangleTexCoords = m_traversalDataManager->GetTriangleTexCoords();
 	for (uint32_t triangle = 0u; triangle < traversalTriangles.size(); triangle++)
 	{
 		const Vector3 edge1 = Vector3(traversalTriangles[triangle].m_edge1[0u], traversalTriangles[triangle].m_edge1[1u], traversalTriangles[triangle].m_edge1[2u]);
@@ -652,6 +680,8 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 					{
 						tMax = t;
 						primitiveId = triangle;
+						triangleU = u;
+						triangleV = v;
 
 						if (T_acceptAnyHit)
 						{
@@ -668,6 +698,15 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 		out_hitResult.m_t = tMax;
 
 		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+
+		const TriangleTexCoords texCoords = triangleTexCoords[primitiveId];
+		out_hitResult.m_texureCoordinate.SetX((1.0f - triangleU - triangleV) * texCoords.m_v0uv[0u] +
+			triangleU * texCoords.m_v1uv[0u] +
+			triangleV * texCoords.m_v2uv[0u]);
+
+		out_hitResult.m_texureCoordinate.SetY((1.0f - triangleU - triangleV) * texCoords.m_v0uv[1u] +
+			triangleU * texCoords.m_v1uv[1u] +
+			triangleV * texCoords.m_v2uv[1u]);
 
 		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
 
@@ -689,6 +728,7 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 	}
 #endif
 }
+
 // --------------------------------------------------------------------------------
 Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 {
@@ -1138,6 +1178,9 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	const Vector3 pVec = Cross(ray.Direction(), edge2);
 	const float det = Dot(pVec, edge1);
 
+
+	float u = FLT_MAX;
+	float v = FLT_MAX;
 	bool isSmallerT = false;
 	if (std::fabs(det) >= 1e-8f)
 	{
@@ -1147,12 +1190,12 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 			traversalTriangle.m_v0[1u],
 			traversalTriangle.m_v0[2u]);
 
-		const float u = Dot(tVec, pVec) * invDet;
+		u = Dot(tVec, pVec) * invDet;
 
 		if ((u >= 0.0f) && (u <= 1.0f))
 		{
 			const Vector3 qVec = Cross(tVec, edge1);
-			const float v = Dot(ray.Direction(), qVec) * invDet;
+			v = Dot(ray.Direction(), qVec) * invDet;
 
 			if ((v >= 0.0f) && ((u + v) <= 1.0f))
 			{
@@ -1176,6 +1219,10 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 	{
 		out_hitResult.m_t = tMax;
 		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+
+		const TriangleTexCoords& texCoords = m_traversalDataManager->GetBVH2TriangleTexCoords(triangleIndex);
+		out_hitResult.m_texureCoordinate.SetX((1.0f - u - v) * texCoords.m_v0uv[0u] + u * texCoords.m_v1uv[0u] + v * texCoords.m_v2uv[0u]);
+		out_hitResult.m_texureCoordinate.SetY((1.0f - u - v) * texCoords.m_v0uv[1u] + u * texCoords.m_v1uv[1u] + v * texCoords.m_v2uv[1u]);
 		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
 
 		const Vector3 normal = Normalize(Cross(edge1, edge2));

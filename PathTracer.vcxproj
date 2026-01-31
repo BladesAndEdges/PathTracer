@@ -233,6 +233,7 @@
     <ClCompile Include="Triangle.cpp" />
     <ClCompile Include="Triangle4AccellStructure.cpp" />
     <ClCompile Include="TriangleAccellStructure.cpp" />
+    <ClCompile Include="TriangleTexCoords.cpp" />
     <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -261,6 +262,7 @@
     <ClInclude Include="Triangle4AccellStructure.h" />
     <ClInclude Include="TriangleAccellStructure.h" />
     <ClInclude Include="TriangleTexCoords.h" />
+    <ClInclude Include="TriangleTexCoords4.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="ViewportDesc.h" />
   </ItemGroup>

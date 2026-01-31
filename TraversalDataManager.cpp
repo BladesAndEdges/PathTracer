@@ -2,8 +2,8 @@
 
 #include "BVH2AccellStructure.h"
 #include "BVH4AccellStructure.h"
-#include "Material4Index.h"
 #include "TraversalTriangle.h"
+#include "TriangleTexCoords.h"
 #include "TriangleAccellStructure.h"
 #include "Triangle4AccellStructure.h"
 
@@ -11,9 +11,10 @@
 TraversalDataManager::TraversalDataManager(const std::vector<Triangle>& triangles, const std::vector<uint32_t> perTriangleMaterials)
 {
 	m_triangleAccellStructure = new TriangleAccellStructure(triangles, perTriangleMaterials);
-	m_triangle4AccellStructure = new Triangle4AccellStructure(m_triangleAccellStructure->GetTraversalTriangles(), m_triangleAccellStructure->GetPerTriangleMaterials());
+	m_triangle4AccellStructure = new Triangle4AccellStructure(m_triangleAccellStructure->GetTraversalTriangles(), m_triangleAccellStructure->GetPerTriangleMaterials(), 
+		m_triangleAccellStructure->GetTriangleTexCoords());
 	m_bvh2AccellStructure = new BVH2AccellStructure(triangles, m_triangleAccellStructure->GetTraversalTriangles(), m_triangleAccellStructure->GetPerTriangleMaterials(),
-		BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
+		m_triangleAccellStructure->GetTriangleTexCoords(), BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
 	m_bvh4AccellStructure = new BVH4AccellStructure(m_bvh2AccellStructure);
 }
 
@@ -30,6 +31,12 @@ const std::vector<uint32_t>& TraversalDataManager::GetMaterialIndices() const
 }
 
 // --------------------------------------------------------------------------------
+const std::vector<TriangleTexCoords>& TraversalDataManager::GetTriangleTexCoords() const
+{
+	return m_triangleAccellStructure->GetTriangleTexCoords();
+}
+
+// --------------------------------------------------------------------------------
 const std::vector<TraversalTriangle4>& TraversalDataManager::GetTraversalTriangle4s() const
 {
 	return m_triangle4AccellStructure->GetTraversalTriangle4s();
@@ -39,6 +46,12 @@ const std::vector<TraversalTriangle4>& TraversalDataManager::GetTraversalTriangl
 const std::vector<Material4Index>& TraversalDataManager::GetMaterial4Indices() const
 {
 	return m_triangle4AccellStructure->GetMaterial4Indices();
+}
+
+// --------------------------------------------------------------------------------
+const std::vector<TriangleTexCoords4>& TraversalDataManager::GetTriangleTexCoords4() const
+{
+	return m_triangle4AccellStructure->GetTriangleTexCoords4();
 }
 
 // --------------------------------------------------------------------------------
@@ -57,6 +70,12 @@ const TraversalTriangle& TraversalDataManager::GetBVH2TraversalTriangle(const ui
 const uint32_t TraversalDataManager::GetBVH2MaterialIndex(const uint32_t index) const
 {
 	return m_bvh2AccellStructure->GetMaterialIndex(index);
+}
+
+// --------------------------------------------------------------------------------
+const TriangleTexCoords& TraversalDataManager::GetBVH2TriangleTexCoords(const uint32_t index) const
+{
+	return m_bvh2AccellStructure->GetTriangleTexCoords(index);
 }
 
 // --------------------------------------------------------------------------------
@@ -81,4 +100,10 @@ const TriangleIndices& TraversalDataManager::GetBVH4TriangleIndices(const uint32
 const Material4Index& TraversalDataManager::GetBVH4Material4Index(const uint32_t index) const
 {
 	return m_bvh4AccellStructure->GetMaterial4Index(index);
+}
+
+// --------------------------------------------------------------------------------
+const TriangleTexCoords4& TraversalDataManager::GetBVH4TriangleTexCoords4(const uint32_t index) const
+{
+	return m_bvh4AccellStructure->GetTriangleTexCoords4(index);
 }

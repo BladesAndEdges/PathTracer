@@ -5,6 +5,8 @@
 #include "Material4Index.h"
 #include "TraversalTriangle.h"
 #include "TraversalTriangle4.h"
+#include "TriangleTexCoords.h"
+#include "TriangleTexCoords4.h"
 
 // --------------------------------------------------------------------------------
 BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellStructure)
@@ -143,10 +145,35 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 			}
 		}
 
+		// Triangle tex coords
+		TriangleTexCoords4 triangleTexCoords4;
+		uint32_t texCoord = 0u;
+		for (uint32_t child = 0u; child < addedChildren; child++)
+		{
+			const uint32_t postShiftValue = triangleMask >> (3u - child);
+			if (postShiftValue & 1u)
+			{
+				const uint32_t indexInBVH2 = children[child] & ~(1u << 31u);
+				const TriangleTexCoords& triangleTexCoords = bvh2AccellStructure->GetTriangleTexCoords(indexInBVH2);
+
+				triangleTexCoords4.m_v0U[texCoord] = triangleTexCoords.m_v0uv[0u];
+				triangleTexCoords4.m_v0V[texCoord] = triangleTexCoords.m_v0uv[1u];
+
+				triangleTexCoords4.m_v1U[texCoord] = triangleTexCoords.m_v1uv[0u];
+				triangleTexCoords4.m_v1V[texCoord] = triangleTexCoords.m_v1uv[1u];
+
+				triangleTexCoords4.m_v2U[texCoord] = triangleTexCoords.m_v2uv[0u];
+				triangleTexCoords4.m_v2V[texCoord] = triangleTexCoords.m_v2uv[1u];
+
+				texCoord++;
+			}
+		}
+
 		const uint32_t triangle4Index = (uint32_t)m_traversalTriangle4s.size();
 		m_traversalTriangle4s.push_back(triangles);
 		m_triangleIndices.push_back(triangleIndices);
 		m_material4Indices.push_back(material4Index);
+		m_triangleTexCoords4.push_back(triangleTexCoords4);
 
 		// Place the triangle4 as a node child
 		m_innerNodesTri4[bvh4Node].m_child[subNode] = triangle4Index | (1u << 31u);
@@ -224,4 +251,11 @@ const Material4Index& BVH4AccellStructure::GetMaterial4Index(const uint32_t inde
 {
 	assert(index < (uint32_t)m_material4Indices.size());
 	return m_material4Indices[index];
+}
+
+// --------------------------------------------------------------------------------
+const TriangleTexCoords4& BVH4AccellStructure::GetTriangleTexCoords4(const uint32_t index) const
+{
+	assert(index < (uint32_t)m_triangleTexCoords4.size());
+	return m_triangleTexCoords4[index];
 }

@@ -7,13 +7,17 @@
 
 #include "TraversalTriangle.h"
 #include "Triangle.h"
+#include "TriangleTexCoords.h"
 
 #define EPSILON 0.00001f
 
 // --------------------------------------------------------------------------------
-BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles, const std::vector<TraversalTriangle>& traversalTriangles,
-	const std::vector<uint32_t>& perTriangleMaterials, const BVH2PartitionStrategy& bvhPartitionStrategy) : m_traversalTriangles(traversalTriangles),
-																									  m_perTriangleMaterials(perTriangleMaterials)
+BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles, 
+	const std::vector<TraversalTriangle>& traversalTriangles,
+	const std::vector<uint32_t>& perTriangleMaterials, 
+	const std::vector<TriangleTexCoords>& triangleTexCoords, const BVH2PartitionStrategy& bvhPartitionStrategy) : m_traversalTriangles(traversalTriangles),
+																										         m_perTriangleMaterials(perTriangleMaterials),
+																												 m_triangleTexCoords(triangleTexCoords)
 {
 	assert(triangles.size() != 0);
 
@@ -53,6 +57,12 @@ uint32_t BVH2AccellStructure::GetMaterialIndex(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_perTriangleMaterials.size());
 	return m_perTriangleMaterials[index];
+}
+
+const TriangleTexCoords& BVH2AccellStructure::GetTriangleTexCoords(const uint32_t index) const
+{
+	assert(index < (uint32_t)m_triangleTexCoords.size());
+	return m_triangleTexCoords[index];
 }
 
 // --------------------------------------------------------------------------------

@@ -16,11 +16,12 @@
 #include "TraversalDataManager.h"
 #include "TraversalTriangle.h"
 #include "TriangleTexCoords.h"
+#include "TriangleTexCoords4.h"
 
 # define M_PI 3.14159265358979323846
 //#define TRACE_AGAINST_NON_BVH
-#define TRACE_AGAINST_BVH2
-//#define TRACE_AGAINST_BVH4
+//#define TRACE_AGAINST_BVH2
+#define TRACE_AGAINST_BVH4
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
@@ -416,8 +417,8 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 	m_isFirstFrame = false;
 }
 
-//#define RUNNING_SSE
-#define RUNNING_SCALAR
+#define RUNNING_SSE
+//#define RUNNING_SCALAR
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
@@ -458,7 +459,6 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 
 	const std::vector<TraversalTriangle4>& triangle4s = m_traversalDataManager->GetTraversalTriangle4s();
 	const std::vector<Material4Index>& material4Indices = m_traversalDataManager->GetMaterial4Indices();
-	const std::vector<TriangleTexCoords4>& triangleTexCoords4 = m_traversalDataManager->GetTriangleTexCoords4();
 	for (uint32_t currentTri4 = 0u; currentTri4 < triangle4s.size(); currentTri4++)
 	{
 		// Load tri4 data
@@ -638,7 +638,7 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 
 		out_hitResult.m_materialId = material4Indices[tri4Id].m_indices[triId];
 
-		out_hitResult.m_colour = triangleTexCoords4[tri4Id]
+		out_hitResult.m_colour = Vector3(1.0f, 0.0f, 0.0f);
 	}
 #endif
 #ifdef RUNNING_SCALAR
@@ -1042,8 +1042,9 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 			const TraversalTriangle4& triangle4 = m_traversalDataManager->GetBVH4TraversalTriangle4(triangle4Index);
 			const TriangleIndices triangleIndices = m_traversalDataManager->GetBVH4TriangleIndices(triangle4Index);
 			const Material4Index material4Index = m_traversalDataManager->GetBVH4Material4Index(triangle4Index);
+			const TriangleTexCoords4 triangleTexCoords4 = m_traversalDataManager->GetBVH4TriangleTexCoords4(triangle4Index);
 
-			BVH4HitTriangle4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndices, triangle4, material4Index, out_hitResult, out_hasHit);
+			BVH4HitTriangle4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndices, triangle4, material4Index, triangleTexCoords4, out_hitResult, out_hasHit);
 		}
 		else
 		{
@@ -1234,8 +1235,8 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TriangleIndices& triangleIndices, const TraversalTriangle4& triangle4, 
-	const Material4Index& material4Index, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TriangleIndices& triangleIndices, const TraversalTriangle4& triangle4,
+	const Material4Index& material4Index, const TriangleTexCoords4& triangleTexCoords4, HitResult& out_hitResult, bool& out_hasHit)
 {
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);
@@ -1379,14 +1380,14 @@ void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float t
 	const __m128i intMaxVector = _mm_set_epi32(INT_MAX, INT_MAX, INT_MAX, INT_MAX);
 	const __m128i validTIndices = _mm_or_epi32(_mm_and_epi32(_mm_castps_si128(tValidityMask), orderedIndices), _mm_andnot_epi32(_mm_castps_si128(tValidityMask), intMaxVector));
 
-	// Smallest T and it's primitive id in the XY lanes
+	// Move the smallest t value in the X lane of minTComparisonX
 	const __m128 minTShuffleXY = _mm_shuffle_ps(validTs, validTs, _MM_SHUFFLE(0, 0, 2, 3));
 	const __m128 minTComparisonXY = _mm_min_ps(validTs, minTShuffleXY);
 
-	// Smallest T and it's primitive Id now sotred in the 0th lane
 	const __m128 minTShuffleX = _mm_shuffle_ps(minTComparisonXY, minTComparisonXY, _MM_SHUFFLE(0, 0, 0, 1));
 	const __m128 minTComparisonX = _mm_min_ps(minTComparisonXY, minTShuffleX);
 
+	// Shuffle the primitiveIds
 	const __m128i primIdShuffleXY = _mm_shuffle_epi32(validTIndices, _MM_SHUFFLE(0, 0, 2, 3));
 	const __m128i primIdMaskXY = _mm_castps_si128(_mm_cmplt_ps(minTShuffleXY, validTs));
 	const __m128i primIdToKeepXY = _mm_or_si128(_mm_and_si128(primIdMaskXY, primIdShuffleXY), _mm_andnot_si128(primIdMaskXY, validTIndices));
@@ -1395,7 +1396,15 @@ void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float t
 	const __m128i primIdMaskX = _mm_castps_si128(_mm_cmplt_ps(minTShuffleX, minTComparisonXY));
 	const __m128i primIdtoKeepX = _mm_or_si128(_mm_and_si128(primIdMaskX, primIdShuffleX), _mm_andnot_si128(primIdMaskX, primIdToKeepXY));
 
+	// Maybe do this with shuffles??
 	const int childIndexToVisit = _mm_cvtsi128_si32(primIdtoKeepX);
+
+	float uValues[4u];
+	_mm_storeu_ps(uValues, u);
+
+	float vValues[4u];
+	_mm_storeu_ps(vValues, v);
+
 	if (childIndexToVisit != INT_MAX)
 	{
 		tMax = _mm_cvtss_f32(minTComparisonX);
@@ -1407,6 +1416,15 @@ void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float t
 
 		out_hitResult.m_primitiveId = triangleIndices.m_triangleIndices[childIndexToVisit];
 		out_hitResult.m_materialId = material4Index.m_indices[childIndexToVisit];
+
+		const float triangleU = uValues[childIndexToVisit];
+		const float triangleV = vValues[childIndexToVisit];
+
+		out_hitResult.m_texureCoordinate.SetX(((1.0f - triangleU - triangleV) * triangleTexCoords4.m_v0U[childIndexToVisit]) +
+			(triangleU * triangleTexCoords4.m_v1U[childIndexToVisit]) + (triangleV * triangleTexCoords4.m_v2U[childIndexToVisit]));
+
+		out_hitResult.m_texureCoordinate.SetY(((1.0f - triangleU - triangleV) * triangleTexCoords4.m_v0V[childIndexToVisit]) +
+			(triangleU * triangleTexCoords4.m_v1V[childIndexToVisit]) + (triangleV * triangleTexCoords4.m_v2V[childIndexToVisit]));
 
 		const Vector3 edge1 = Vector3(triangle4.m_edge1X[childIndexToVisit],
 			triangle4.m_edge1Y[childIndexToVisit],

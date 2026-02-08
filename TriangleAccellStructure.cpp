@@ -44,6 +44,24 @@ TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& tr
 }
 
 // --------------------------------------------------------------------------------
+const uint32_t TriangleAccellStructure::GetTraversalTrianglesCount() const
+{
+	return (uint32_t)m_traversalTriangles.size();
+}
+
+// --------------------------------------------------------------------------------
+const TraversalTriangle& TriangleAccellStructure::GetTraversalTriangle(const uint32_t index) const
+{
+	return m_traversalTriangles[index];
+}
+
+// --------------------------------------------------------------------------------
+const TriangleTexCoords& TriangleAccellStructure::GetTriangleTexCoords(const uint32_t index) const
+{
+	return m_triangleTexCoords[index];
+}
+
+// --------------------------------------------------------------------------------
 const std::vector<TraversalTriangle>& TriangleAccellStructure::GetTraversalTriangles() const
 {
 	return m_traversalTriangles;

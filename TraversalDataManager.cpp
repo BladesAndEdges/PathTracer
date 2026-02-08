@@ -19,6 +19,24 @@ TraversalDataManager::TraversalDataManager(const std::vector<Triangle>& triangle
 }
 
 // --------------------------------------------------------------------------------
+const uint32_t TraversalDataManager::GetTraversalTrianglesCount() const
+{
+	return (uint32_t)m_triangleAccellStructure->GetTraversalTrianglesCount();
+}
+
+// --------------------------------------------------------------------------------
+const TraversalTriangle& TraversalDataManager::GetTraversalTriangle(const uint32_t index) const
+{
+	return m_triangleAccellStructure->GetTraversalTriangle(index);
+}
+
+// --------------------------------------------------------------------------------
+const TriangleTexCoords& TraversalDataManager::GetTriangleTexCoords(const uint32_t index) const
+{
+	return m_triangleAccellStructure->GetTriangleTexCoords(index);
+}
+
+// --------------------------------------------------------------------------------
 const std::vector<TraversalTriangle>& TraversalDataManager::GetTraversalTriangles() const
 {
 	return m_triangleAccellStructure->GetTraversalTriangles();

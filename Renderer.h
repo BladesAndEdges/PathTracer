@@ -17,6 +17,7 @@ struct Material4Index;
 class PerformanceCounter;
 class SceneManager;
 class TraversalDataManager;
+struct TraversalTriangle;
 struct TriangleIndices;
 struct TriangleTexCoords4;
 
@@ -36,14 +37,16 @@ private:
 
 	void RegenerateViewSpaceDirections(Framebuffer* framebuffer);
 
-	// Debug build contains an extra ray index paramater
 	template<bool T_acceptAnyHit>
-	void HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
+	void HitTriangles4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
 
 	Vector3 PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth);
 
 	template<bool T_acceptAnyHit>
-	HitResult TraceRay(Ray& ray, const uint32_t rayIndex, const float tMin);
+	HitResult TraceRayNonBVH(Ray& ray, const uint32_t rayIndex, const float tMin);
+
+	template<bool T_acceptAnyHit>
+	HitResult TraceRay4NonBVH(Ray& ray, const uint32_t rayIndex, const float tMin);
 
 	Camera m_camera;
 	Vector3 m_lightDirection;
@@ -66,6 +69,9 @@ private:
 
 	template<bool T_acceptAnyHit>
 	void HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
+
+	__forceinline void HitTriangleV2(Ray& ray, const TraversalTriangle& traversalTriangle, const uint32_t primitiveId, const float tMin, uint32_t& out_primitiveId,
+		float& out_tMax, float& out_u, float& out_v, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
 	void BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TriangleIndices& triangleIndices, const TraversalTriangle4& triangle4, 

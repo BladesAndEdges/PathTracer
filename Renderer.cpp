@@ -20,6 +20,7 @@
 
 # define M_PI 3.14159265358979323846
 //#define TRACE_AGAINST_NON_BVH
+//#define TRACE_AGAINST_NON_BVH_SSE
 //#define TRACE_AGAINST_BVH2
 #define TRACE_AGAINST_BVH4
 
@@ -143,9 +144,13 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				primaryRayNodeVisits[rayIndex] = primaryRay.m_primaryNodeVisits;
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
 				primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
-#endif // !TRACE_AGAINST_NON_BVH
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
+				primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
+#endif
 
 				if ((row == framebuffer->GetHeight() - 1u) && (column == framebuffer->GetWidth() - 1u))
 				{
@@ -206,8 +211,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
 
 				//const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, primaryHr.m_normal), 0.0f), 1.0f);
 
@@ -222,8 +230,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 					const HitResult shadowHr = TraceAgainstBVH4<true>(shadowRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-					const HitResult shadowHr = TraceRay<true>(shadowRay, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+					const HitResult shadowHr = TraceRayNonBVH<true>(shadowRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+					const HitResult shadowHr = TraceRay4NonBVH<true>(primaryRay, rayIndex, 1e-5f);
+#endif
 
 					red = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
 					green = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
@@ -248,8 +259,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
 
 				const float maxDepth = 10.0f;
 
@@ -269,8 +283,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
 
 				const float maxDepth = 10.0f;
 
@@ -290,8 +307,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
 
 				red = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.X() + 0.5f : 0.0f;
 				green = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Y() + 0.5f : 0.0f;
@@ -309,8 +329,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
 
 				red = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].X() : 0.0f;
 				green = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Y() : 0.0f;
@@ -328,8 +351,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
 
 				red = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).X() : 0.0f;
 				green = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).Y() : 0.0f;
@@ -348,11 +374,14 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRay<false>(primaryRay, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
+#endif
 
-				red = (hr.m_primitiveId != UINT32_MAX) ? hr.m_texureCoordinate.X() : 0.0f;
-				green = (hr.m_primitiveId != UINT32_MAX) ? hr.m_texureCoordinate.Y() : 0.0f;
+				red = (hr.m_primitiveId != UINT32_MAX) ? hr.m_texCoords.X() : 0.0f;
+				green = (hr.m_primitiveId != UINT32_MAX) ? hr.m_texCoords.Y() : 0.0f;
 				blue = 0.0f;
 			}
 
@@ -417,12 +446,9 @@ void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
 	m_isFirstFrame = false;
 }
 
-#define RUNNING_SSE
-//#define RUNNING_SCALAR
-
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
+void Renderer::HitTriangles4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
 {
 #ifdef _DEBUG
 	assert(rayIndex >= 0u);
@@ -431,7 +457,6 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 	(void)(rayIndex);
 #endif
 
-#ifdef RUNNING_SSE
 	// Constant registers
 	const __m128 c_epsilon = _mm_set1_ps(1e-8f);
 	const __m128 c_allZeros = _mm_set1_ps(0.0f);
@@ -638,95 +663,8 @@ void Renderer::HitTriangles(Ray& ray, const uint32_t rayIndex, const float tMin,
 
 		out_hitResult.m_materialId = material4Indices[tri4Id].m_indices[triId];
 
-		out_hitResult.m_colour = Vector3(1.0f, 0.0f, 0.0f);
-	}
-#endif
-#ifdef RUNNING_SCALAR
-
-	uint32_t primitiveId = UINT32_MAX;
-	float triangleU = FLT_MAX;
-	float triangleV = FLT_MAX; 
-	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
-	const std::vector<uint32_t>& materialIndices = m_traversalDataManager->GetMaterialIndices();
-	const std::vector<TriangleTexCoords>& triangleTexCoords = m_traversalDataManager->GetTriangleTexCoords();
-	for (uint32_t triangle = 0u; triangle < traversalTriangles.size(); triangle++)
-	{
-		const Vector3 edge1 = Vector3(traversalTriangles[triangle].m_edge1[0u], traversalTriangles[triangle].m_edge1[1u], traversalTriangles[triangle].m_edge1[2u]);
-		const Vector3 edge2 = Vector3(traversalTriangles[triangle].m_edge2[0u], traversalTriangles[triangle].m_edge2[1u], traversalTriangles[triangle].m_edge2[2u]);
-
-		// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
-		const Vector3 pVec = Cross(ray.Direction(), edge2);
-		const float det = Dot(pVec, edge1);
-
-		if (std::fabs(det) >= 1e-8f)
-		{
-			const float invDet = 1.0f / det;
-
-			const Vector3 tVec = ray.Origin() - Vector3(traversalTriangles[triangle].m_v0[0u], traversalTriangles[triangle].m_v0[1u],
-				traversalTriangles[triangle].m_v0[2u]);
-
-			const float u = Dot(tVec, pVec) * invDet;
-
-			if ((u >= 0.0f) && (u <= 1.0f))
-			{
-				const Vector3 qVec = Cross(tVec, edge1);
-				const float v = Dot(ray.Direction(), qVec) * invDet;
-
-				if ((v >= 0.0f) && ((u + v) <= 1.0f))
-				{
-					const float t = Dot(edge2, qVec) * invDet;
-
-					if ((t >= tMin) && (t <= tMax))
-					{
-						tMax = t;
-						primitiveId = triangle;
-						triangleU = u;
-						triangleV = v;
-
-						if (T_acceptAnyHit)
-						{
-							break;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if (primitiveId != UINT32_MAX)
-	{
-		out_hitResult.m_t = tMax;
-
-		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
-
-		const TriangleTexCoords texCoords = triangleTexCoords[primitiveId];
-		out_hitResult.m_texureCoordinate.SetX((1.0f - triangleU - triangleV) * texCoords.m_v0uv[0u] +
-			triangleU * texCoords.m_v1uv[0u] +
-			triangleV * texCoords.m_v2uv[0u]);
-
-		out_hitResult.m_texureCoordinate.SetY((1.0f - triangleU - triangleV) * texCoords.m_v0uv[1u] +
-			triangleU * texCoords.m_v1uv[1u] +
-			triangleV * texCoords.m_v2uv[1u]);
-
 		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-
-		const Vector3 edge1 = Vector3(traversalTriangles[primitiveId].m_edge1[0u],
-			traversalTriangles[primitiveId].m_edge1[1u],
-			traversalTriangles[primitiveId].m_edge1[2u]);
-
-		const Vector3 edge2 = Vector3(traversalTriangles[primitiveId].m_edge2[0u],
-			traversalTriangles[primitiveId].m_edge2[1u],
-			traversalTriangles[primitiveId].m_edge2[2u]);
-
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-
-		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;;
-
-		out_hitResult.m_primitiveId = primitiveId;
-
-		out_hitResult.m_materialId = materialIndices[primitiveId];
 	}
-#endif
 }
 
 // --------------------------------------------------------------------------------
@@ -746,8 +684,11 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 	const HitResult c_primaryHitResult = TraceAgainstBVH4<false>(ray, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-	const HitResult c_primaryHitResult = TraceRay<false>(ray, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+	const HitResult c_primaryHitResult = TraceRayNonBVH<false>(ray, rayIndex, 1e-5f);
+#endif 
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+	const HitResult c_primaryHitResult = TraceRay4NonBVH<false>(ray, rayIndex, 1e-5f);
+#endif 
 
 	if (c_primaryHitResult.m_t != INFINITY)
 	{
@@ -787,8 +728,11 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 			const HitResult c_secondaryRayHitResult = TraceAgainstBVH4<true>(c_shadowRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH
-			const HitResult c_secondaryRayHitResult = TraceRay<true>(c_shadowRay, rayIndex, 1e-5f);
-#endif // !TRACE_AGAINST_BVH
+			const HitResult c_secondaryRayHitResult = TraceRayNonBVH<true>(c_shadowRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+			const HitResult c_secondaryRayHitResult = TraceRay4NonBVH<true>(c_shadowRay, rayIndex, 1e-5f);
+#endif
 
 			if (c_secondaryRayHitResult.m_t == INFINITY)
 			{
@@ -1222,14 +1166,57 @@ void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, 
 		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
 
 		const TriangleTexCoords& texCoords = m_traversalDataManager->GetBVH2TriangleTexCoords(triangleIndex);
-		out_hitResult.m_texureCoordinate.SetX((1.0f - u - v) * texCoords.m_v0uv[0u] + u * texCoords.m_v1uv[0u] + v * texCoords.m_v2uv[0u]);
-		out_hitResult.m_texureCoordinate.SetY((1.0f - u - v) * texCoords.m_v0uv[1u] + u * texCoords.m_v1uv[1u] + v * texCoords.m_v2uv[1u]);
+		out_hitResult.m_texCoords.SetX((1.0f - u - v) * texCoords.m_v0uv[0u] + u * texCoords.m_v1uv[0u] + v * texCoords.m_v2uv[0u]);
+		out_hitResult.m_texCoords.SetY((1.0f - u - v) * texCoords.m_v0uv[1u] + u * texCoords.m_v1uv[1u] + v * texCoords.m_v2uv[1u]);
 		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
 
 		const Vector3 normal = Normalize(Cross(edge1, edge2));
 		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 		out_hitResult.m_primitiveId = triangleIndex;
 		out_hitResult.m_materialId = m_traversalDataManager->GetBVH2MaterialIndex(triangleIndex);
+	}
+}
+
+// --------------------------------------------------------------------------------
+__forceinline void Renderer::HitTriangleV2(Ray& ray, const TraversalTriangle& traversalTriangle, const uint32_t primitiveId, const float tMin, uint32_t& out_primitiveId,
+	float& out_tMax, float& out_u, float& out_v, bool& out_hasHit)
+{
+	const Vector3 edge1 = Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]);
+	const Vector3 edge2 = Vector3(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]);
+
+	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
+	const Vector3 pVec = Cross(ray.Direction(), edge2);
+	const float det = Dot(pVec, edge1);
+
+	if (std::fabs(det) >= 1e-8f)
+	{
+		const float invDet = 1.0f / det;
+
+		const Vector3 tVec = ray.Origin() - Vector3(traversalTriangle.m_v0[0u],
+			traversalTriangle.m_v0[1u],
+			traversalTriangle.m_v0[2u]);
+
+		const float u = Dot(tVec, pVec) * invDet;
+
+		if ((u >= 0.0f) && (u <= 1.0f))
+		{
+			const Vector3 qVec = Cross(tVec, edge1);
+			const float v = Dot(ray.Direction(), qVec) * invDet;
+
+			if ((v >= 0.0f) && ((u + v) <= 1.0f))
+			{
+				const float t = Dot(edge2, qVec) * invDet;
+
+				if ((t >= tMin) && (t <= out_tMax))
+				{
+					out_primitiveId = primitiveId;
+					out_tMax = t;
+					out_u = u;
+					out_v = v;
+					out_hasHit = true;
+				}
+			}
+		}
 	}
 }
 
@@ -1420,10 +1407,10 @@ void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float t
 		const float triangleU = uValues[childIndexToVisit];
 		const float triangleV = vValues[childIndexToVisit];
 
-		out_hitResult.m_texureCoordinate.SetX(((1.0f - triangleU - triangleV) * triangleTexCoords4.m_v0U[childIndexToVisit]) +
+		out_hitResult.m_texCoords.SetX(((1.0f - triangleU - triangleV) * triangleTexCoords4.m_v0U[childIndexToVisit]) +
 			(triangleU * triangleTexCoords4.m_v1U[childIndexToVisit]) + (triangleV * triangleTexCoords4.m_v2U[childIndexToVisit]));
 
-		out_hitResult.m_texureCoordinate.SetY(((1.0f - triangleU - triangleV) * triangleTexCoords4.m_v0V[childIndexToVisit]) +
+		out_hitResult.m_texCoords.SetY(((1.0f - triangleU - triangleV) * triangleTexCoords4.m_v0V[childIndexToVisit]) +
 			(triangleU * triangleTexCoords4.m_v1V[childIndexToVisit]) + (triangleV * triangleTexCoords4.m_v2V[childIndexToVisit]));
 
 		const Vector3 edge1 = Vector3(triangle4.m_edge1X[childIndexToVisit],
@@ -1450,12 +1437,79 @@ void Renderer::BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float t
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-HitResult Renderer::TraceRay(Ray& ray, const uint32_t rayIndex, const float tMin)
+HitResult Renderer::TraceRayNonBVH(Ray& ray, const uint32_t rayIndex, const float tMin)
+{
+	// Probably should be moved elsewhere
+#ifdef _DEBUG
+	assert(rayIndex >= 0u);
+#endif
+#ifdef NDEBUG
+	(void)(rayIndex);
+#endif
+
+	HitResult hitResult;
+	bool hasHit = false;
+	float tMax = INFINITY;
+	float tu = FLT_MAX;
+	float tv = FLT_MAX;
+	uint32_t primitiveId = UINT32_MAX;
+
+	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
+	const TraversalTriangle* const beginTriangle = &traversalTriangles[0u];
+	const TraversalTriangle* const endTriangle = beginTriangle + traversalTriangles.size();
+
+	const std::vector<uint32_t>& materialIndices = m_traversalDataManager->GetMaterialIndices();
+	const std::vector<TriangleTexCoords>& triangleTexCoords = m_traversalDataManager->GetTriangleTexCoords();
+
+	uint32_t triangleIndex = 0u;
+	for (const TraversalTriangle* triangle = beginTriangle; triangle != endTriangle; triangle++)
+	{
+		HitTriangleV2(ray, *triangle, triangleIndex, tMin, primitiveId, tMax, tu, tv, hasHit);
+
+		if (T_acceptAnyHit)
+		{
+			if (hasHit)
+			{
+				break;
+			}
+		}
+
+		triangleIndex++;
+	}
+
+	if (hasHit)
+	{
+		hitResult.m_t = tMax;
+
+		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+
+		const TriangleTexCoords& texCoords = triangleTexCoords[primitiveId];
+		hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
+		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
+
+		hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+
+		const Vector3 edge1(traversalTriangles[primitiveId].m_edge1[0u], traversalTriangles[primitiveId].m_edge1[1u], traversalTriangles[primitiveId].m_edge1[2u]);
+		const Vector3 edge2(traversalTriangles[primitiveId].m_edge2[0u], traversalTriangles[primitiveId].m_edge2[1u], traversalTriangles[primitiveId].m_edge2[2u]);
+		const Vector3 normal = Normalize(Cross(edge1, edge2));
+		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+
+		hitResult.m_primitiveId = primitiveId;
+
+		hitResult.m_materialId = materialIndices[primitiveId];
+	}
+
+	return hitResult;
+}
+
+// --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
+HitResult Renderer::TraceRay4NonBVH(Ray& ray, const uint32_t rayIndex, const float tMin)
 {
 	HitResult hitResult;
 	float tMax = INFINITY;
 
-	HitTriangles<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
+	HitTriangles4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
 
 	return hitResult;
 }

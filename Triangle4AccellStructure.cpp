@@ -113,6 +113,8 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 
 		triangleTexCoords4.m_v0U[3u] = triangleTexCoords[index + 2u].m_v0uv[0u];
 		triangleTexCoords4.m_v0V[3u] = triangleTexCoords[index + 2u].m_v0uv[1u];
+
+		m_triangleTexCoords4.push_back(triangleTexCoords4);
 	}
 }
 

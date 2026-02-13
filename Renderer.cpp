@@ -20,9 +20,9 @@
 
 # define M_PI 3.14159265358979323846
 //#define TRACE_AGAINST_NON_BVH
-#define TRACE_AGAINST_NON_BVH_SSE
+//#define TRACE_AGAINST_NON_BVH_SSE
 //#define TRACE_AGAINST_BVH2
-//#define TRACE_AGAINST_BVH4
+#define TRACE_AGAINST_BVH4
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
@@ -538,14 +538,6 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 	return radiance;
 }
 
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-void Renderer::TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
-{
-	bool hasHit = false;
-	BVH4DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
-}
-
 //#define SORTED_BVH4
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
@@ -791,16 +783,10 @@ HitResult Renderer::TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const fl
 {
 	HitResult hitResult;
 	float tMax = INFINITY;
-	TraverseBVH4<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
-	return hitResult;
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-void Renderer::TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult)
-{
 	bool hasHit = false;
-	BVH2DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, out_hitResult, hasHit);
+	BVH4DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, hitResult, hasHit);
+
+	return hitResult;
 }
 
 // --------------------------------------------------------------------------------
@@ -874,7 +860,9 @@ HitResult Renderer::TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const fl
 {
 	HitResult hitResult;
 	float tMax = INFINITY;
-	TraverseBVH2<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, hitResult);
+	bool hasHit = false;
+	BVH2DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, hitResult, hasHit);
+	
 	return hitResult;
 }
 

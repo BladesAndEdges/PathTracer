@@ -56,9 +56,6 @@ private:
 	SceneManager* m_sceneManager;
 
 	template<bool T_acceptAnyHit>
-	void TraverseBVH2(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
-
-	template<bool T_acceptAnyHit>
 	void BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
@@ -78,9 +75,6 @@ private:
 		const Material4Index& material4Index, const TriangleTexCoords4& triangleTexCoords4, HitResult& out_hitResult, bool& out_hasHit);
 
 	// BVH4 code
-	template<bool T_acceptAnyHit>
-	void TraverseBVH4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
-
 	template<bool T_acceptAnyHit>
 	void BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
 

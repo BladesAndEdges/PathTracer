@@ -70,6 +70,9 @@ private:
 	__forceinline void HitTriangleV2(Ray& ray, const TraversalTriangle& traversalTriangle, const uint32_t primitiveId, const float tMin, uint32_t& out_primitiveId,
 		float& out_tMax, float& out_u, float& out_v, bool& out_hasHit);
 
+	void HitTriangle4(Ray& ray, const TraversalTriangle4& traversalTriangle4, const int triangle4, const float tMin, 
+		__m128i& out_triangle4, __m128& out_tMax, __m128& out_u, __m128& out_v, int& moveMask);
+
 	template<bool T_acceptAnyHit>
 	void BVH4HitTriangle4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const TriangleIndices& triangleIndices, const TraversalTriangle4& triangle4, 
 		const Material4Index& material4Index, const TriangleTexCoords4& triangleTexCoords4, HitResult& out_hitResult, bool& out_hasHit);

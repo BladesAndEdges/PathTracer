@@ -37,9 +37,6 @@ private:
 
 	void RegenerateViewSpaceDirections(Framebuffer* framebuffer);
 
-	template<bool T_acceptAnyHit>
-	void HitTriangles4(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult);
-
 	Vector3 PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth);
 
 	template<bool T_acceptAnyHit>

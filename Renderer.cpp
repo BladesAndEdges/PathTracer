@@ -233,7 +233,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 					const HitResult shadowHr = TraceRayNonBVH<true>(shadowRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-					const HitResult shadowHr = TraceRay4NonBVH<true>(primaryRay, rayIndex, 1e-5f);
+					const HitResult shadowHr = TraceRay4NonBVH<true>(shadowRay, rayIndex, 1e-5f);
 #endif
 
 					red = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;

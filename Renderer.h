@@ -56,15 +56,13 @@ private:
 	SceneManager* m_sceneManager;
 
 	template<bool T_acceptAnyHit>
-	void BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
+	void BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const float tMin, uint32_t& out_primitiveId,
+		float& out_tMax, float& out_u, float& out_v, bool& out_hasHit);
 
 	template<bool T_acceptAnyHit>
 	HitResult TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const float tMin);
 
-	template<bool T_acceptAnyHit>
-	void HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit);
-
-	__forceinline void HitTriangleV2(Ray& ray, const TraversalTriangle& traversalTriangle, const uint32_t primitiveId, const float tMin, uint32_t& out_primitiveId,
+	__forceinline void HitTriangle(Ray& ray, const TraversalTriangle& traversalTriangle, const uint32_t primitiveId, const float tMin, uint32_t& out_primitiveId,
 		float& out_tMax, float& out_u, float& out_v, bool& out_hasHit);
 
 	void HitTriangle4(Ray& ray, const TraversalTriangle4& traversalTriangle4, const int triangle4, const float tMin, 

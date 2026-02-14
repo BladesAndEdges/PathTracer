@@ -21,8 +21,8 @@
 # define M_PI 3.14159265358979323846
 //#define TRACE_AGAINST_NON_BVH
 //#define TRACE_AGAINST_NON_BVH_SSE
-//#define TRACE_AGAINST_BVH2
-#define TRACE_AGAINST_BVH4
+#define TRACE_AGAINST_BVH2
+//#define TRACE_AGAINST_BVH4
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
@@ -791,7 +791,8 @@ HitResult Renderer::TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const fl
 
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
-void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit)
+void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const float tMin, uint32_t& out_primitiveId,
+	float& out_tMax, float& out_u, float& out_v, bool& out_hasHit)
 {
 	if (!T_acceptAnyHit)
 	{
@@ -803,9 +804,9 @@ void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 	float tNears[2u] = { INFINITY, INFINITY };
 	float hit[2u] = { false, false };
 	hit[0u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_leftAABB.m_min.X(), node.m_leftAABB.m_min.Y(), node.m_leftAABB.m_min.Z(),
-		node.m_leftAABB.m_max.X(), node.m_leftAABB.m_max.Y(), node.m_leftAABB.m_max.Z(), tMax, &tNears[0u]);
+		node.m_leftAABB.m_max.X(), node.m_leftAABB.m_max.Y(), node.m_leftAABB.m_max.Z(), out_tMax, &tNears[0u]);
 	hit[1u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_rightAABB.m_min.X(), node.m_rightAABB.m_min.Y(), node.m_rightAABB.m_min.Z(),
-		node.m_rightAABB.m_max.X(), node.m_rightAABB.m_max.Y(), node.m_rightAABB.m_max.Z(), tMax, &tNears[0u]);
+		node.m_rightAABB.m_max.X(), node.m_rightAABB.m_max.Y(), node.m_rightAABB.m_max.Z(), out_tMax, &tNears[0u]);
 
 	if (!hit[0u] && !hit[1u])
 	{
@@ -836,12 +837,13 @@ void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 		if (visitOrder[child] >> 31u)
 		{
 			const uint32_t triangleIndex = visitOrder[child] & ~(1u << 31u);
-			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
+			const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(triangleIndex);
+			HitTriangle(ray, traversalTriangle, triangleIndex, tMin, out_primitiveId, out_tMax, out_u, out_v, out_hasHit);
 		}
 		else if (RayAABBIntersection(ray, T_acceptAnyHit, aabbs[child].m_min.X(), aabbs[child].m_min.Y(), aabbs[child].m_min.Z(),
-			aabbs[child].m_max.X(), aabbs[child].m_max.Y(), aabbs[child].m_max.Z(), tMax, nullptr))
+			aabbs[child].m_max.X(), aabbs[child].m_max.Y(), aabbs[child].m_max.Z(), out_tMax, nullptr))
 		{
-			BVH2DFSTraversal<T_acceptAnyHit>(visitOrder[child], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+			BVH2DFSTraversal<T_acceptAnyHit>(visitOrder[child], ray, tMin, out_primitiveId, out_tMax, out_u, out_v, out_hasHit);
 		}
 
 		if constexpr (T_acceptAnyHit)
@@ -858,94 +860,46 @@ void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 template<bool T_acceptAnyHit>
 HitResult Renderer::TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const float tMin)
 {
+	(void)rayIndex;
+
 	HitResult hitResult;
-	float tMax = INFINITY;
 	bool hasHit = false;
-	BVH2DFSTraversal<T_acceptAnyHit>(0u, ray, rayIndex, tMin, tMax, hitResult, hasHit);
+	float tMax = INFINITY;
+	float tu = FLT_MAX;
+	float tv = FLT_MAX;
+	uint32_t primitiveId = UINT32_MAX;
+
+	BVH2DFSTraversal<T_acceptAnyHit>(0u, ray, tMin, primitiveId, tMax, tu, tv, hasHit);
 	
+	if (hasHit)
+	{
+		hitResult.m_t = tMax;
+
+		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+
+
+		const TriangleTexCoords& texCoords = m_traversalDataManager->GetBVH2TriangleTexCoords(primitiveId);
+		hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
+		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
+
+		hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+
+		const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(primitiveId);
+		const Vector3 edge1(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]);
+		const Vector3 edge2(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]);
+		const Vector3 normal = Normalize(Cross(edge1, edge2));
+		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+
+		hitResult.m_primitiveId = primitiveId;
+
+		hitResult.m_materialId = m_traversalDataManager->GetBVH2MaterialIndex(primitiveId);
+	}
+
 	return hitResult;
 }
 
 // --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-void Renderer::HitTriangle(Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, const uint32_t triangleIndex, HitResult& out_hitResult, bool& out_hasHit)
-{
-	if (!T_acceptAnyHit)
-	{
-		ray.m_primaryTriangleIntersectionTests++;
-	}
-
-#ifdef _DEBUG
-	assert(rayIndex >= 0u);
-#endif
-#ifdef NDEBUG
-	(void)(rayIndex);
-#endif
-
-	const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(triangleIndex);
-	const Vector3 edge1 = Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]);
-	const Vector3 edge2 = Vector3(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]);
-
-	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
-	const Vector3 pVec = Cross(ray.Direction(), edge2);
-	const float det = Dot(pVec, edge1);
-
-
-	float u = FLT_MAX;
-	float v = FLT_MAX;
-	bool isSmallerT = false;
-	if (std::fabs(det) >= 1e-8f)
-	{
-		const float invDet = 1.0f / det;
-
-		const Vector3 tVec = ray.Origin() - Vector3(traversalTriangle.m_v0[0u],
-			traversalTriangle.m_v0[1u],
-			traversalTriangle.m_v0[2u]);
-
-		u = Dot(tVec, pVec) * invDet;
-
-		if ((u >= 0.0f) && (u <= 1.0f))
-		{
-			const Vector3 qVec = Cross(tVec, edge1);
-			v = Dot(ray.Direction(), qVec) * invDet;
-
-			if ((v >= 0.0f) && ((u + v) <= 1.0f))
-			{
-				const float t = Dot(edge2, qVec) * invDet;
-
-				if ((t >= tMin) && (t <= tMax))
-				{
-					tMax = t;
-					isSmallerT = true;
-
-					if (T_acceptAnyHit)
-					{
-						out_hasHit = true;
-					}
-				}
-			}
-		}
-	}
-
-	if (isSmallerT)
-	{
-		out_hitResult.m_t = tMax;
-		out_hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
-
-		const TriangleTexCoords& texCoords = m_traversalDataManager->GetBVH2TriangleTexCoords(triangleIndex);
-		out_hitResult.m_texCoords.SetX((1.0f - u - v) * texCoords.m_v0uv[0u] + u * texCoords.m_v1uv[0u] + v * texCoords.m_v2uv[0u]);
-		out_hitResult.m_texCoords.SetY((1.0f - u - v) * texCoords.m_v0uv[1u] + u * texCoords.m_v1uv[1u] + v * texCoords.m_v2uv[1u]);
-		out_hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		out_hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-		out_hitResult.m_primitiveId = triangleIndex;
-		out_hitResult.m_materialId = m_traversalDataManager->GetBVH2MaterialIndex(triangleIndex);
-	}
-}
-
-// --------------------------------------------------------------------------------
-__forceinline void Renderer::HitTriangleV2(Ray& ray, const TraversalTriangle& traversalTriangle, const uint32_t primitiveId, const float tMin, uint32_t& out_primitiveId,
+__forceinline void Renderer::HitTriangle(Ray& ray, const TraversalTriangle& traversalTriangle, const uint32_t primitiveId, const float tMin, uint32_t& out_primitiveId,
 	float& out_tMax, float& out_u, float& out_v, bool& out_hasHit)
 {
 	const Vector3 edge1 = Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]);
@@ -1384,7 +1338,7 @@ HitResult Renderer::TraceRayNonBVH(Ray& ray, const uint32_t rayIndex, const floa
 	uint32_t triangleIndex = 0u;
 	for (const TraversalTriangle* triangle = beginTriangle; triangle != endTriangle; triangle++)
 	{
-		HitTriangleV2(ray, *triangle, triangleIndex, tMin, primitiveId, tMax, tu, tv, hasHit);
+		HitTriangle(ray, *triangle, triangleIndex, tMin, primitiveId, tMax, tu, tv, hasHit);
 
 		if (T_acceptAnyHit)
 		{

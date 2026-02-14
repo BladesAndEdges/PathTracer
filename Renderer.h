@@ -74,7 +74,7 @@ private:
 
 	// BVH4 code
 	template<bool T_acceptAnyHit>
-	void BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const uint32_t rayIndex, const float tMin, float& tMax, HitResult& out_hitResult, bool& out_hasHit);
+	void BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const float tMin, __m128i& out_primitiveId, __m128& out_tMax, __m128& out_u, __m128& out_v, int& moveMask);
 
 	template<bool T_acceptAnyHit>
 	HitResult TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const float tMin);

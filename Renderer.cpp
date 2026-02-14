@@ -10,6 +10,7 @@
 #include "BVH2AccellStructure.h"
 #include "BVH4AccellStructure.h"
 #include "Framebuffer.h"
+#include "Intersections.h"
 #include "Material4Index.h"
 #include "PerformanceCounter.h"
 #include "SceneManager.h"
@@ -20,8 +21,8 @@
 
 # define M_PI 3.14159265358979323846
 //#define TRACE_AGAINST_NON_BVH
-//#define TRACE_AGAINST_NON_BVH_SSE
-#define TRACE_AGAINST_BVH2
+#define TRACE_AGAINST_NON_BVH_SSE
+//#define TRACE_AGAINST_BVH2
 //#define TRACE_AGAINST_BVH4
 
 // --------------------------------------------------------------------------------
@@ -538,626 +539,6 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 	return radiance;
 }
 
-//#define SORTED_BVH4
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const float tMin, __m128i& out_primitiveId, __m128& out_tMax, __m128& out_u, __m128& out_v, int& moveMask)
-{
-	if (!T_acceptAnyHit)
-	{
-		ray.m_primaryNodeVisits++;
-		ray.m_primaryAABBIntersectionTests += 4u;
-	}
-
-	const BVH4InnerNode& node = m_traversalDataManager->GetBVH4InnerNode(innerNodeStartIndex);
-
-#ifdef SORTED_BVH4
-
-#if _DEBUG
-	float theTNears[4u] = { INFINITY, INFINITY, INFINITY, INFINITY };
-	int32_t theTNearsAsInts[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	int32_t theTNearsAfterMask[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	int32_t theTNearsAfterShiftLeft[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	int32_t theCombinedTNearAndChildIndex[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-#endif
-
-	uint32_t hitCount = 0u;
-	int32_t nearPlaneAndChildIndex[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	for (uint32_t child = 0u; child < 4u; child++)
-	{
-		theTNearsAfterMask[child] = theTNearsAsInts[child] & 0x3FFFFFFE;
-		theTNearsAfterShiftLeft[child] = theTNearsAfterMask[child] << 1;
-		theCombinedTNearAndChildIndex[child] = theTNearsAfterShiftLeft[child] | child;
-
-		float tNear = INFINITY;
-		if (RayAABBIntersection(ray, T_acceptAnyHit, node.m_aabbMinX[child], node.m_aabbMinY[child], node.m_aabbMinZ[child], node.m_aabbMaxX[child],
-			node.m_aabbMaxY[child], node.m_aabbMaxZ[child], tMax, &tNear))
-		{
-#if _DEBUG
-			theTNears[child] = tNear;
-			theTNearsAsInts[child] = *((int32_t*)&tNear);
-			theTNearsAfterMask[child] = theTNearsAsInts[child] & 0x3FFFFFFE;
-			theTNearsAfterShiftLeft[child] = theTNearsAfterMask[child] << 1;
-			theCombinedTNearAndChildIndex[child] = theTNearsAfterShiftLeft[child] | child;
-#endif
-			nearPlaneAndChildIndex[child] = ((*(int32_t*)&tNear & 0x3FFFFFFE) << 1) | child;
-			hitCount++;
-		}
-	}
-
-	// Early out if no hit
-	if (!hitCount)
-	{
-		return;
-	}
-
-	// Sort in ascending order
-#if 1
-	const int32_t a = std::min(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]);
-	const int32_t b = std::max(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]);
-	const int32_t c = std::min(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]);
-	const int32_t d = std::max(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]);
-
-	int32_t visitOrder[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
-	visitOrder[0u] = std::min(a, c);
-	visitOrder[2u] = std::max(a, c);
-	visitOrder[1u] = std::min(b, d);
-	visitOrder[3u] = std::max(b, d);
-
-	const int32_t e = std::min(visitOrder[1u], visitOrder[2u]);
-	const int32_t f = std::max(visitOrder[1u], visitOrder[2u]);
-
-	visitOrder[1u] = e;
-	visitOrder[2u] = f;
-
-#else
-	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[1u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]); }
-	if (nearPlaneAndChildIndex[2u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]); }
-	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[2u]); }
-	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[3u]); }
-	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[2u]); }
-#endif
-
-#ifdef _DEBUG
-	//for (uint32_t visitNode = 0u; visitNode < 3u; visitNode++)
-	//{
-	//	assert(nearPlaneAndChildIndex[visitNode] <= nearPlaneAndChildIndex[visitNode + 1u]);
-	//}
-#endif
-
-	//Traversal
-	for (uint32_t child = 0u; child < hitCount; child++)
-	{
-#if 1
-		const uint32_t visitIndex = (uint32_t)(visitOrder[child] & 0x00000003);
-#else
-		const uint32_t visitIndex = (uint32_t)nearPlaneAndChildIndex[child] & 0x00000003;
-#endif
-		if (node.m_child[visitIndex] >> 31u)
-		{
-			const uint32_t triangleIndex = node.m_child[visitIndex] & ~(1u << 31u);
-			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
-		}
-		else
-		{
-			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[visitIndex], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
-		}
-
-		if constexpr (T_acceptAnyHit)
-		{
-			if (out_hasHit)
-			{
-				return;
-			}
-		}
-	}
-#endif
-#ifndef SORTED_BVH4
-
-	// 0 and tMAx
-	const __m128 zeroReg = _mm_set1_ps(0.0f);
-
-	// AABB paramaters
-	const __m128 minXs = _mm_loadu_ps(node.m_aabbMinX);
-	const __m128 minYs = _mm_loadu_ps(node.m_aabbMinY);
-	const __m128 minZs = _mm_loadu_ps(node.m_aabbMinZ);
-	const __m128 maxXs = _mm_loadu_ps(node.m_aabbMaxX);
-	const __m128 maxYs = _mm_loadu_ps(node.m_aabbMaxY);
-	const __m128 maxZs = _mm_loadu_ps(node.m_aabbMaxZ);
-
-	//Ray data
-	const __m128 rayInverseX = _mm_set1_ps(ray.InverseDirection().X());
-	const __m128 rayInverseY = _mm_set1_ps(ray.InverseDirection().Y());
-	const __m128 rayInverseZ = _mm_set1_ps(ray.InverseDirection().Z());
-
-	const __m128 rayNegativeOriginTimesInvDirX = _mm_set1_ps(ray.NegativeOriginTimesInvDir().X());
-	const __m128 rayNegativeOriginTimesInvDirY = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Y());
-	const __m128 rayNegativeOriginTimesInvDirZ = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Z());
-
-	// TNears
-	const __m128 t0X = _mm_fmadd_ps(minXs, rayInverseX, rayNegativeOriginTimesInvDirX);
-	const __m128 t0Y = _mm_fmadd_ps(minYs, rayInverseY, rayNegativeOriginTimesInvDirY);
-	const __m128 t0Z = _mm_fmadd_ps(minZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
-
-	// TFars
-	const __m128 t1X = _mm_fmadd_ps(maxXs, rayInverseX, rayNegativeOriginTimesInvDirX);
-	const __m128 t1Y = _mm_fmadd_ps(maxYs, rayInverseY, rayNegativeOriginTimesInvDirY);
-	const __m128 t1Z = _mm_fmadd_ps(maxZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
-
-	// Entries and exits
-	const __m128 enterX = _mm_min_ps(t0X, t1X);
-	const __m128 enterY = _mm_min_ps(t0Y, t1Y);
-	const __m128 enterZ = _mm_min_ps(t0Z, t1Z);
-
-	const __m128 exitX = _mm_max_ps(t0X, t1X);
-	const __m128 exitY = _mm_max_ps(t0Y, t1Y);
-	const __m128 exitZ = _mm_max_ps(t0Z, t1Z);
-
-	// t0 and t1
-	const __m128 t0 = _mm_max_ps(_mm_max_ps(enterX, enterY), _mm_max_ps(zeroReg, enterZ));
-	const __m128 t1 = _mm_min_ps(_mm_min_ps(exitX, exitY), _mm_min_ps(out_tMax, exitZ));
-
-	// hasIntersected
-	const __m128 hasIntersected = _mm_cmpge_ps(t1, t0);
-	const int intersectionMask = _mm_movemask_ps(hasIntersected);
-
-	if (!intersectionMask)
-	{
-		return;
-	}
-
-	// Packing
-	const __m128i int32Max = _mm_set1_epi32(INT32_MAX);
-	const __m128i t0AsInts = _mm_castps_si128(_mm_or_ps(_mm_and_ps(hasIntersected, t0), _mm_andnot_ps(hasIntersected, _mm_castsi128_ps(int32Max))));
-	const __m128i postChopBits = _mm_and_si128(t0AsInts, _mm_set1_epi32(0x3FFFFFFE));
-	const __m128i shiftedLeft = _mm_slli_epi32(postChopBits, 1);
-
-	const __m128i childIndicesInOrder = _mm_set_epi32(3, 2, 1, 0);
-	const __m128i combinedT0AndIndex = _mm_or_epi32(shiftedLeft, childIndicesInOrder);
-
-	// Sort
-	const __m128i shuffle0 = _mm_shuffle_epi32(combinedT0AndIndex, _MM_SHUFFLE(1, 0, 1, 0));
-	const __m128i min0 = _mm_min_epi32(combinedT0AndIndex, shuffle0);
-	const __m128i max0 = _mm_max_epi32(combinedT0AndIndex, shuffle0);
-
-	const __m128i shuffle1 = _mm_shuffle_epi32(max0, _MM_SHUFFLE(2, 3, 1, 0));;
-	const __m128i min1 = _mm_min_epi32(min0, shuffle1);
-	const __m128i max1 = _mm_max_epi32(min0, shuffle1);
-
-	const __m128i shuffle2 = _mm_shuffle_epi32(max1, _MM_SHUFFLE(2, 3, 1, 0));
-	const __m128i l3 = _mm_max_epi32(max1, shuffle2);
-	const __m128i l2 = _mm_min_epi32(max1, shuffle2);
-
-	const __m128i shuffle3 = _mm_shuffle_epi32(min1, _MM_SHUFFLE(2, 3, 1, 0));
-	const __m128i l1 = _mm_max_epi32(min1, shuffle3);
-	const __m128i l0 = _mm_min_epi32(min1, shuffle3);
-
-	// Figure this out
-	const __m128i unpack0 = _mm_unpackhi_epi32(l1, l3);
-	const __m128i unpack1 = _mm_unpackhi_epi32(l0, l2);
-	const __m128i result = _mm_unpackhi_epi32(unpack1, unpack0);
-
-	const int visitOrderIndices[4u] =
-	{
-		_mm_cvtsi128_si32(result),
-		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(1, 1, 1, 1))),
-		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(2, 2, 2, 2))),
-		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(3, 3, 3, 3)))
-	};
-
-	const uint32_t intersectionCount = __popcnt(*((uint32_t*)&intersectionMask));
-	for (uint32_t i = 0u; i < intersectionCount; i++)
-	{
-		const uint32_t visitIndex = (uint32_t)(visitOrderIndices[i] & 0x00000003);
-
-		if (node.m_child[visitIndex] >> 31u)
-		{
-			const uint32_t triangle4Index = node.m_child[visitIndex] & ~(1u << 31u);
-			const TraversalTriangle4& triangle4 = m_traversalDataManager->GetBVH4TraversalTriangle4(triangle4Index);
-
-			HitTriangle4(ray, triangle4, triangle4Index, tMin, out_primitiveId, out_tMax, out_u, out_v, moveMask);
-		}
-		else
-		{
-			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[visitIndex], ray, tMin, out_primitiveId, out_tMax, out_u, out_v, moveMask);
-		}
-
-		if constexpr (T_acceptAnyHit)
-		{
-			if (moveMask)
-			{
-				return;
-			}
-		}
-	}
-#endif
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-HitResult Renderer::TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const float tMin)
-{
-	(void)rayIndex;
-
-	HitResult hitResult;
-
-	__m128i outTri4Indices = _mm_set_epi32(INT_MAX, INT_MAX, INT_MAX, INT_MAX);
-	__m128 outTMax = _mm_set1_ps(INFINITY);
-	__m128 outU = _mm_set1_ps(FLT_MAX);
-	__m128 outV = _mm_set1_ps(FLT_MAX);
-	int moveMask = 0;
-
-	BVH4DFSTraversal<T_acceptAnyHit>(0u, ray, tMin, outTri4Indices, outTMax, outU, outV, moveMask);
-
-	// Get the closest t value out of the four
-	const __m128 tShuffle23to01 = _mm_shuffle_ps(outTMax, outTMax, _MM_SHUFFLE(0, 0, 2, 3));
-	const __m128 closestTwoTs = _mm_min_ps(outTMax, tShuffle23to01);
-	const __m128i firstMinMask = _mm_castps_si128(_mm_cmplt_ps(outTMax, tShuffle23to01));
-
-	const __m128 tShuffle1to0 = _mm_shuffle_ps(closestTwoTs, closestTwoTs, _MM_SHUFFLE(0, 0, 0, 1));
-	const __m128 closestT = _mm_min_ps(closestTwoTs, tShuffle1to0);
-	const __m128i closestMask = _mm_castps_si128(_mm_cmplt_ps(closestTwoTs, tShuffle1to0));
-
-	// Shuffle to obtain the sub index of the closest t, within the original arrays
-	const __m128i orderedIndices = _mm_set_epi32(3, 2, 1, 0);
-	const __m128i indexShuffle23to01 = _mm_shuffle_epi32(orderedIndices, _MM_SHUFFLE(0, 0, 2, 3));
-	const __m128i closestTwoIndices = _mm_or_epi32(_mm_and_epi32(firstMinMask, orderedIndices),
-		_mm_andnot_epi32(firstMinMask, indexShuffle23to01));
-
-	const __m128i indexShuffle1to0 = _mm_shuffle_epi32(closestTwoIndices, _MM_SHUFFLE(0, 0, 0, 1));
-	const __m128i closestSubIndex = _mm_or_epi32(_mm_and_epi32(closestMask, closestTwoIndices),
-		_mm_andnot_epi32(closestMask, indexShuffle1to0));
-
-	const int subIndex = _mm_cvtsi128_si32(closestSubIndex);
-
-	int tri4Indices[4u];
-	_mm_storeu_epi32(tri4Indices, outTri4Indices);
-	int tri4Index = tri4Indices[subIndex];
-	if (tri4Index != INT_MAX)
-	{
-		float tMaxes[4u];
-		_mm_storeu_ps(tMaxes, outTMax);
-		float tMax = tMaxes[subIndex];
-
-		float us[4u];
-		_mm_storeu_ps(us, outU);
-		float u = us[subIndex];
-
-		float vs[4u];
-		_mm_storeu_ps(vs, outV);
-		float v = vs[subIndex];
-
-		hitResult.m_t = tMax;
-
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
-
-		const TriangleTexCoords4& triangleTexCoords4 = m_traversalDataManager->GetBVH4TriangleTexCoords4(tri4Index);
-		hitResult.m_texCoords.SetX((1.0f - u - v) * triangleTexCoords4.m_v0U[subIndex] + u * triangleTexCoords4.m_v1U[subIndex] + v * triangleTexCoords4.m_v2U[subIndex]);
-		hitResult.m_texCoords.SetY((1.0f - u - v) * triangleTexCoords4.m_v0V[subIndex] + u * triangleTexCoords4.m_v1V[subIndex] + v * triangleTexCoords4.m_v2V[subIndex]);
-
-		hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-
-		const TraversalTriangle4& traversalTriangle4 = m_traversalDataManager->GetBVH4TraversalTriangle4(tri4Index);
-		const Vector3 edge1(traversalTriangle4.m_edge1X[subIndex], traversalTriangle4.m_edge1Y[subIndex], traversalTriangle4.m_edge1Z[subIndex]);
-		const Vector3 edge2(traversalTriangle4.m_edge2X[subIndex], traversalTriangle4.m_edge2Y[subIndex], traversalTriangle4.m_edge2Z[subIndex]);
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-
-		const TriangleIndices& triangleIndices = m_traversalDataManager->GetBVH4TriangleIndices(tri4Index);
-		hitResult.m_primitiveId = triangleIndices.m_triangleIndices[subIndex];
-
-		const Material4Index& material4Index = m_traversalDataManager->GetBVH4Material4Index(tri4Index);
-		hitResult.m_materialId = material4Index.m_indices[subIndex];
-	}
-
-	return hitResult;
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const float tMin, uint32_t& out_primitiveId,
-	float& out_tMax, float& out_u, float& out_v, bool& out_hasHit)
-{
-	if (!T_acceptAnyHit)
-	{
-		ray.m_primaryNodeVisits++;
-	}
-
-	const BVH2InnerNode& node = m_traversalDataManager->GetBVH2InnerNode(innerNodeStartIndex);
-
-	float tNears[2u] = { INFINITY, INFINITY };
-	float hit[2u] = { false, false };
-	hit[0u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_leftAABB.m_min.X(), node.m_leftAABB.m_min.Y(), node.m_leftAABB.m_min.Z(),
-		node.m_leftAABB.m_max.X(), node.m_leftAABB.m_max.Y(), node.m_leftAABB.m_max.Z(), out_tMax, &tNears[0u]);
-	hit[1u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_rightAABB.m_min.X(), node.m_rightAABB.m_min.Y(), node.m_rightAABB.m_min.Z(),
-		node.m_rightAABB.m_max.X(), node.m_rightAABB.m_max.Y(), node.m_rightAABB.m_max.Z(), out_tMax, &tNears[0u]);
-
-	if (!hit[0u] && !hit[1u])
-	{
-		return;
-	}
-
-	// Reorder if needed
-	uint32_t visitOrder[2u] = { node.m_leftChild, node.m_rightChild };
-	AABB aabbs[2u] = { node.m_leftAABB, node.m_rightAABB };
-	if (tNears[0u] > tNears[1u])
-	{
-		std::swap(visitOrder[0u], visitOrder[1u]);
-		std::swap(hit[0u], hit[1u]);
-
-		const AABB tempAABB = aabbs[0u];
-		aabbs[0u] = aabbs[1u];
-		aabbs[1u] = tempAABB;
-	}
-
-	// Traversal
-	for (uint32_t child = 0u; child < 2u; child++)
-	{
-		if (!hit[child])
-		{
-			continue;
-		}
-
-		if (visitOrder[child] >> 31u)
-		{
-			const uint32_t triangleIndex = visitOrder[child] & ~(1u << 31u);
-			const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(triangleIndex);
-			HitTriangle(ray, traversalTriangle, triangleIndex, tMin, out_primitiveId, out_tMax, out_u, out_v, out_hasHit);
-		}
-		else if (RayAABBIntersection(ray, T_acceptAnyHit, aabbs[child].m_min.X(), aabbs[child].m_min.Y(), aabbs[child].m_min.Z(),
-			aabbs[child].m_max.X(), aabbs[child].m_max.Y(), aabbs[child].m_max.Z(), out_tMax, nullptr))
-		{
-			BVH2DFSTraversal<T_acceptAnyHit>(visitOrder[child], ray, tMin, out_primitiveId, out_tMax, out_u, out_v, out_hasHit);
-		}
-
-		if constexpr (T_acceptAnyHit)
-		{
-			if (out_hasHit)
-			{
-				return;
-			}
-		}
-	}
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-HitResult Renderer::TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const float tMin)
-{
-	(void)rayIndex;
-
-	HitResult hitResult;
-	bool hasHit = false;
-	float tMax = INFINITY;
-	float tu = FLT_MAX;
-	float tv = FLT_MAX;
-	uint32_t primitiveId = UINT32_MAX;
-
-	BVH2DFSTraversal<T_acceptAnyHit>(0u, ray, tMin, primitiveId, tMax, tu, tv, hasHit);
-	
-	if (hasHit)
-	{
-		hitResult.m_t = tMax;
-
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
-
-
-		const TriangleTexCoords& texCoords = m_traversalDataManager->GetBVH2TriangleTexCoords(primitiveId);
-		hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
-		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
-
-		hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
-
-		const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(primitiveId);
-		const Vector3 edge1(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]);
-		const Vector3 edge2(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]);
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-
-		hitResult.m_primitiveId = primitiveId;
-
-		hitResult.m_materialId = m_traversalDataManager->GetBVH2MaterialIndex(primitiveId);
-	}
-
-	return hitResult;
-}
-
-// --------------------------------------------------------------------------------
-__forceinline void Renderer::HitTriangle(Ray& ray, const TraversalTriangle& traversalTriangle, const uint32_t primitiveId, const float tMin, uint32_t& out_primitiveId,
-	float& out_tMax, float& out_u, float& out_v, bool& out_hasHit)
-{
-	const Vector3 edge1 = Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]);
-	const Vector3 edge2 = Vector3(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]);
-
-	// Cross product will approach 0s as the directions start facing the same way, or opposite (so parallel)
-	const Vector3 pVec = Cross(ray.Direction(), edge2);
-	const float det = Dot(pVec, edge1);
-
-	if (std::fabs(det) >= 1e-8f)
-	{
-		const float invDet = 1.0f / det;
-
-		const Vector3 tVec = ray.Origin() - Vector3(traversalTriangle.m_v0[0u],
-			traversalTriangle.m_v0[1u],
-			traversalTriangle.m_v0[2u]);
-
-		const float u = Dot(tVec, pVec) * invDet;
-
-		if ((u >= 0.0f) && (u <= 1.0f))
-		{
-			const Vector3 qVec = Cross(tVec, edge1);
-			const float v = Dot(ray.Direction(), qVec) * invDet;
-
-			if ((v >= 0.0f) && ((u + v) <= 1.0f))
-			{
-				const float t = Dot(edge2, qVec) * invDet;
-
-				if ((t >= tMin) && (t <= out_tMax))
-				{
-					out_primitiveId = primitiveId;
-					out_tMax = t;
-					out_u = u;
-					out_v = v;
-					out_hasHit = true;
-				}
-			}
-		}
-	}
-}
-
-// --------------------------------------------------------------------------------
-void Renderer::HitTriangle4(Ray& ray, const TraversalTriangle4& traversalTriangle4, const int triangle4, const float tMin, 
-	__m128i& out_triangle4, __m128& out_tMax, __m128& out_u, __m128& out_v, int& moveMask)
-{
-	// Constants
-	const __m128 epsilon = _mm_set1_ps(1e-8f);
-	const __m128 zeros = _mm_set1_ps(0.0f);
-	const __m128 ones = _mm_set1_ps(1.0f);
-
-	// Ray data
-	const __m128 rayOriginX = _mm_set1_ps(ray.Origin().X());
-	const __m128 rayOriginY = _mm_set1_ps(ray.Origin().Y());
-	const __m128 rayOriginZ = _mm_set1_ps(ray.Origin().Z());
-
-	const __m128 rayDirectionX = _mm_set1_ps(ray.Direction().X());
-	const __m128 rayDirectionY = _mm_set1_ps(ray.Direction().Y());
-	const __m128 rayDirectionZ = _mm_set1_ps(ray.Direction().Z());
-
-	// tMin
-	const __m128 tMinimum = _mm_set1_ps(tMin);
-
-	// Triangle4 data
-	const __m128 edge1X = _mm_loadu_ps(traversalTriangle4.m_edge1X);
-	const __m128 edge1Y = _mm_loadu_ps(traversalTriangle4.m_edge1Y);
-	const __m128 edge1Z = _mm_loadu_ps(traversalTriangle4.m_edge1Z);
-
-	const __m128 edge2X = _mm_loadu_ps(traversalTriangle4.m_edge2X);
-	const __m128 edge2Y = _mm_loadu_ps(traversalTriangle4.m_edge2Y);
-	const __m128 edge2Z = _mm_loadu_ps(traversalTriangle4.m_edge2Z);
-
-	const __m128 v0X = _mm_loadu_ps(traversalTriangle4.m_v0X);
-	const __m128 v0Y = _mm_loadu_ps(traversalTriangle4.m_v0Y);
-	const __m128 v0Z = _mm_loadu_ps(traversalTriangle4.m_v0Z);
-
-	// TRY TO USE FUSED MULTIPLY SUBTRACT IF IT EXISTS HERE
-
-	// Calculate pVec
-	const __m128 pvecXLHS = _mm_mul_ps(rayDirectionY, edge2Z);
-	const __m128 pvecXRHS = _mm_mul_ps(rayDirectionZ, edge2Y);
-	const __m128 pvecX = _mm_sub_ps(pvecXLHS, pvecXRHS);
-
-	const __m128 pvecYLHS = _mm_mul_ps(rayDirectionZ, edge2X);
-	const __m128 pvecYRHS = _mm_mul_ps(rayDirectionX, edge2Z);
-	const __m128 pvecY = _mm_sub_ps(pvecYLHS, pvecYRHS);
-
-	const __m128 pvecZLHS = _mm_mul_ps(rayDirectionX, edge2Y);
-	const __m128 pvecZRHS = _mm_mul_ps(rayDirectionY, edge2X);
-	const __m128 pvecZ = _mm_sub_ps(pvecZLHS, pvecZRHS);
-
-	// Calculate determinants
-	const __m128 detDotX = _mm_mul_ps(pvecX, edge1X); // fmadd: _mm_fmadd_ps(), header is already added
-	const __m128 detDotY = _mm_mul_ps(pvecY, edge1Y);
-	const __m128 detDotZ = _mm_mul_ps(pvecZ, edge1Z);
-
-	const __m128 detAddXY = _mm_add_ps(detDotX, detDotY);
-	const __m128 determinants = _mm_add_ps(detAddXY, detDotZ);
-
-	const __m128 signMask = _mm_set1_ps(-0.0f);
-	const __m128 absDeterminants = _mm_andnot_ps(signMask, determinants);
-
-	// Calculate intersection mask
-	const __m128 hasIntersectedMask = _mm_cmpge_ps(absDeterminants, epsilon); // mask
-
-	// Calculate inverse determinant
-	const __m128 invDeterminant = _mm_div_ps(ones, determinants);
-
-	// Calculate tvec
-	const __m128 tvecX = _mm_sub_ps(rayOriginX, v0X);
-	const __m128 tvecY = _mm_sub_ps(rayOriginY, v0Y);
-	const __m128 tvecZ = _mm_sub_ps(rayOriginZ, v0Z);
-
-	// Calculate u
-	const __m128 uDotX = _mm_mul_ps(tvecX, pvecX);
-	const __m128 uDotY = _mm_mul_ps(tvecY, pvecY);
-	const __m128 uDotZ = _mm_mul_ps(tvecZ, pvecZ);
-
-	const __m128 uAddXY = _mm_add_ps(uDotX, uDotY);
-	const __m128 uAddFinal = _mm_add_ps(uAddXY, uDotZ);
-	const __m128 u = _mm_mul_ps(uAddFinal, invDeterminant);
-
-	// Calculate u mask
-	const __m128 uIsGreaterEqual0 = _mm_cmpge_ps(u, zeros);
-	const __m128 uIsLessEqual1 = _mm_cmple_ps(u, ones);
-	const __m128 isUValidMask = _mm_and_ps(uIsGreaterEqual0, uIsLessEqual1); // mask
-
-	// Calculate qvec
-	const __m128 qvecXLHS = _mm_mul_ps(tvecY, edge1Z);
-	const __m128 qvecXRHS = _mm_mul_ps(tvecZ, edge1Y);
-	const __m128 qvecX = _mm_sub_ps(qvecXLHS, qvecXRHS);
-
-	const __m128 qvecYLHS = _mm_mul_ps(tvecZ, edge1X);
-	const __m128 qvecYRHS = _mm_mul_ps(tvecX, edge1Z);
-	const __m128 qvecY = _mm_sub_ps(qvecYLHS, qvecYRHS);
-
-	const __m128 qvecZLHS = _mm_mul_ps(tvecX, edge1Y);
-	const __m128 qvecZRHS = _mm_mul_ps(tvecY, edge1X);
-	const __m128 qvecZ = _mm_sub_ps(qvecZLHS, qvecZRHS);
-
-	// Calculate v
-	const __m128 vDotX = _mm_mul_ps(rayDirectionX, qvecX);
-	const __m128 vDotY = _mm_mul_ps(rayDirectionY, qvecY);
-	const __m128 vDotZ = _mm_mul_ps(rayDirectionZ, qvecZ);
-
-	const __m128 vAddXY = _mm_add_ps(vDotX, vDotY);
-	const __m128 vAddFinal = _mm_add_ps(vAddXY, vDotZ);
-	const __m128 v = _mm_mul_ps(vAddFinal, invDeterminant);
-
-	// Calculate v masks
-	const __m128 vIsGreaterEqual0 = _mm_cmpge_ps(v, zeros);
-
-	const __m128 uAddV = _mm_add_ps(u, v);
-	const __m128 uAddVLessEqual1 = _mm_cmple_ps(uAddV, ones);
-
-	const __m128 isInsideTriangleMask = _mm_and_ps(vIsGreaterEqual0, uAddVLessEqual1); // mask
-
-	// Calculate t
-	const __m128 tDotX = _mm_mul_ps(edge2X, qvecX);
-	const __m128 tDotY = _mm_mul_ps(edge2Y, qvecY);
-	const __m128 tDotZ = _mm_mul_ps(edge2Z, qvecZ);
-
-	const __m128 tAddXY = _mm_add_ps(tDotX, tDotY);
-	const __m128 tAddFinal = _mm_add_ps(tAddXY, tDotZ);
-	const __m128 t = _mm_mul_ps(tAddFinal, invDeterminant);
-
-	// Between tMin and tMax masks
-	const __m128 tMoreThanTMin = _mm_cmpge_ps(t, tMinimum);
-	const __m128 tLessThanTMax = _mm_cmple_ps(t, out_tMax);
-	const __m128 tCheckMask = _mm_and_ps(tMoreThanTMin, tLessThanTMax);
-
-	// Validity mask
-	const __m128 tValidityMask = _mm_and_ps(_mm_and_ps(_mm_and_ps(hasIntersectedMask, isUValidMask),
-		isInsideTriangleMask), tCheckMask);
-
-	// Valid t values
-	out_tMax = _mm_or_ps(_mm_and_ps(tValidityMask, t),
-		_mm_andnot_ps(tValidityMask, out_tMax));
-
-	// Triangle4 index
-	const __m128i tri4Index = _mm_set_epi32(triangle4, triangle4, triangle4, triangle4);
-	out_triangle4 = _mm_or_epi32(_mm_and_epi32(_mm_castps_si128(tValidityMask), tri4Index),
-		_mm_andnot_epi32(_mm_castps_si128(tValidityMask), out_triangle4));
-
-	// Triangle u values
-	out_u = _mm_or_ps(_mm_and_ps(tValidityMask, u),
-		_mm_andnot_ps(tValidityMask, out_u));
-
-	// Triangle v values
-	out_v = _mm_or_ps(_mm_and_ps(tValidityMask, v),
-		_mm_andnot_ps(tValidityMask, out_v));
-
-	moveMask = _mm_movemask_ps(tValidityMask);
-}
-
 // --------------------------------------------------------------------------------
 template<bool T_acceptAnyHit>
 HitResult Renderer::TraceRayNonBVH(Ray& ray, const uint32_t rayIndex, const float tMin)
@@ -1288,11 +669,11 @@ HitResult Renderer::TraceRay4NonBVH(Ray& ray, const uint32_t rayIndex, const flo
 	// Shuffle to obtain the sub index of the closest t, within the original arrays
 	const __m128i orderedIndices = _mm_set_epi32(3, 2, 1, 0);
 	const __m128i indexShuffle23to01 = _mm_shuffle_epi32(orderedIndices, _MM_SHUFFLE(0, 0, 2, 3));
-	const __m128i closestTwoIndices = _mm_or_epi32(_mm_and_epi32(firstMinMask, orderedIndices), 
+	const __m128i closestTwoIndices = _mm_or_epi32(_mm_and_epi32(firstMinMask, orderedIndices),
 		_mm_andnot_epi32(firstMinMask, indexShuffle23to01));
 
 	const __m128i indexShuffle1to0 = _mm_shuffle_epi32(closestTwoIndices, _MM_SHUFFLE(0, 0, 0, 1));
-	const __m128i closestSubIndex = _mm_or_epi32(_mm_and_epi32(closestMask, closestTwoIndices), 
+	const __m128i closestSubIndex = _mm_or_epi32(_mm_and_epi32(closestMask, closestTwoIndices),
 		_mm_andnot_epi32(closestMask, indexShuffle1to0));
 
 	const int subIndex = _mm_cvtsi128_si32(closestSubIndex);
@@ -1336,4 +717,346 @@ HitResult Renderer::TraceRay4NonBVH(Ray& ray, const uint32_t rayIndex, const flo
 	}
 
 	return hitResult;
+}
+
+// --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
+HitResult Renderer::TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const float tMin)
+{
+	(void)rayIndex;
+
+	HitResult hitResult;
+	bool hasHit = false;
+	float tMax = INFINITY;
+	float tu = FLT_MAX;
+	float tv = FLT_MAX;
+	uint32_t primitiveId = UINT32_MAX;
+
+	BVH2DFSTraversal<T_acceptAnyHit>(0u, ray, tMin, primitiveId, tMax, tu, tv, hasHit);
+	
+	if (hasHit)
+	{
+		hitResult.m_t = tMax;
+
+		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+
+
+		const TriangleTexCoords& texCoords = m_traversalDataManager->GetBVH2TriangleTexCoords(primitiveId);
+		hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
+		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
+
+		hitResult.m_colour = Vector3(1.0f, 0.55f, 0.0f);
+
+		const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(primitiveId);
+		const Vector3 edge1(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]);
+		const Vector3 edge2(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]);
+		const Vector3 normal = Normalize(Cross(edge1, edge2));
+		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+
+		hitResult.m_primitiveId = primitiveId;
+
+		hitResult.m_materialId = m_traversalDataManager->GetBVH2MaterialIndex(primitiveId);
+	}
+
+	return hitResult;
+}
+
+// --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
+void Renderer::BVH2DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const float tMin, uint32_t& out_primitiveId,
+	float& out_tMax, float& out_u, float& out_v, bool& out_hasHit)
+{
+	if (!T_acceptAnyHit)
+	{
+		ray.m_primaryNodeVisits++;
+	}
+
+	const BVH2InnerNode& node = m_traversalDataManager->GetBVH2InnerNode(innerNodeStartIndex);
+
+	float tNears[2u] = { INFINITY, INFINITY };
+	float hit[2u] = { false, false };
+	hit[0u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_leftAABB.m_min.X(), node.m_leftAABB.m_min.Y(), node.m_leftAABB.m_min.Z(),
+		node.m_leftAABB.m_max.X(), node.m_leftAABB.m_max.Y(), node.m_leftAABB.m_max.Z(), out_tMax, &tNears[0u]);
+	hit[1u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_rightAABB.m_min.X(), node.m_rightAABB.m_min.Y(), node.m_rightAABB.m_min.Z(),
+		node.m_rightAABB.m_max.X(), node.m_rightAABB.m_max.Y(), node.m_rightAABB.m_max.Z(), out_tMax, &tNears[0u]);
+
+	if (!hit[0u] && !hit[1u])
+	{
+		return;
+	}
+
+	// Reorder if needed
+	uint32_t visitOrder[2u] = { node.m_leftChild, node.m_rightChild };
+	AABB aabbs[2u] = { node.m_leftAABB, node.m_rightAABB };
+	if (tNears[0u] > tNears[1u])
+	{
+		std::swap(visitOrder[0u], visitOrder[1u]);
+		std::swap(hit[0u], hit[1u]);
+
+		const AABB tempAABB = aabbs[0u];
+		aabbs[0u] = aabbs[1u];
+		aabbs[1u] = tempAABB;
+	}
+
+	// Traversal
+	for (uint32_t child = 0u; child < 2u; child++)
+	{
+		if (!hit[child])
+		{
+			continue;
+		}
+
+		if (visitOrder[child] >> 31u)
+		{
+			const uint32_t triangleIndex = visitOrder[child] & ~(1u << 31u);
+			const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(triangleIndex);
+			HitTriangle(ray, traversalTriangle, triangleIndex, tMin, out_primitiveId, out_tMax, out_u, out_v, out_hasHit);
+		}
+		else if (RayAABBIntersection(ray, T_acceptAnyHit, aabbs[child].m_min.X(), aabbs[child].m_min.Y(), aabbs[child].m_min.Z(),
+			aabbs[child].m_max.X(), aabbs[child].m_max.Y(), aabbs[child].m_max.Z(), out_tMax, nullptr))
+		{
+			BVH2DFSTraversal<T_acceptAnyHit>(visitOrder[child], ray, tMin, out_primitiveId, out_tMax, out_u, out_v, out_hasHit);
+		}
+
+		if constexpr (T_acceptAnyHit)
+		{
+			if (out_hasHit)
+			{
+				return;
+			}
+		}
+	}
+}
+
+//#define SORTED_BVH4
+// --------------------------------------------------------------------------------
+template<bool T_acceptAnyHit>
+void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, const float tMin, __m128i& out_primitiveId, __m128& out_tMax, __m128& out_u, __m128& out_v, int& moveMask)
+{
+	if (!T_acceptAnyHit)
+	{
+		ray.m_primaryNodeVisits++;
+		ray.m_primaryAABBIntersectionTests += 4u;
+	}
+
+	const BVH4InnerNode& node = m_traversalDataManager->GetBVH4InnerNode(innerNodeStartIndex);
+
+#ifdef SORTED_BVH4
+
+#if _DEBUG
+	float theTNears[4u] = { INFINITY, INFINITY, INFINITY, INFINITY };
+	int32_t theTNearsAsInts[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+	int32_t theTNearsAfterMask[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+	int32_t theTNearsAfterShiftLeft[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+	int32_t theCombinedTNearAndChildIndex[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+#endif
+
+	uint32_t hitCount = 0u;
+	int32_t nearPlaneAndChildIndex[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+	for (uint32_t child = 0u; child < 4u; child++)
+	{
+		theTNearsAfterMask[child] = theTNearsAsInts[child] & 0x3FFFFFFE;
+		theTNearsAfterShiftLeft[child] = theTNearsAfterMask[child] << 1;
+		theCombinedTNearAndChildIndex[child] = theTNearsAfterShiftLeft[child] | child;
+
+		float tNear = INFINITY;
+		if (RayAABBIntersection(ray, T_acceptAnyHit, node.m_aabbMinX[child], node.m_aabbMinY[child], node.m_aabbMinZ[child], node.m_aabbMaxX[child],
+			node.m_aabbMaxY[child], node.m_aabbMaxZ[child], tMax, &tNear))
+		{
+#if _DEBUG
+			theTNears[child] = tNear;
+			theTNearsAsInts[child] = *((int32_t*)&tNear);
+			theTNearsAfterMask[child] = theTNearsAsInts[child] & 0x3FFFFFFE;
+			theTNearsAfterShiftLeft[child] = theTNearsAfterMask[child] << 1;
+			theCombinedTNearAndChildIndex[child] = theTNearsAfterShiftLeft[child] | child;
+#endif
+			nearPlaneAndChildIndex[child] = ((*(int32_t*)&tNear & 0x3FFFFFFE) << 1) | child;
+			hitCount++;
+		}
+	}
+
+	// Early out if no hit
+	if (!hitCount)
+	{
+		return;
+	}
+
+	// Sort in ascending order
+#if 1
+	const int32_t a = std::min(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]);
+	const int32_t b = std::max(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]);
+	const int32_t c = std::min(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]);
+	const int32_t d = std::max(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]);
+
+	int32_t visitOrder[4u] = { INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX };
+	visitOrder[0u] = std::min(a, c);
+	visitOrder[2u] = std::max(a, c);
+	visitOrder[1u] = std::min(b, d);
+	visitOrder[3u] = std::max(b, d);
+
+	const int32_t e = std::min(visitOrder[1u], visitOrder[2u]);
+	const int32_t f = std::max(visitOrder[1u], visitOrder[2u]);
+
+	visitOrder[1u] = e;
+	visitOrder[2u] = f;
+
+#else
+	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[1u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[1u]); }
+	if (nearPlaneAndChildIndex[2u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[2u], nearPlaneAndChildIndex[3u]); }
+	if (nearPlaneAndChildIndex[0u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[0u], nearPlaneAndChildIndex[2u]); }
+	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[3u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[3u]); }
+	if (nearPlaneAndChildIndex[1u] > nearPlaneAndChildIndex[2u]) { std::swap(nearPlaneAndChildIndex[1u], nearPlaneAndChildIndex[2u]); }
+#endif
+
+#ifdef _DEBUG
+	//for (uint32_t visitNode = 0u; visitNode < 3u; visitNode++)
+	//{
+	//	assert(nearPlaneAndChildIndex[visitNode] <= nearPlaneAndChildIndex[visitNode + 1u]);
+	//}
+#endif
+
+	//Traversal
+	for (uint32_t child = 0u; child < hitCount; child++)
+	{
+#if 1
+		const uint32_t visitIndex = (uint32_t)(visitOrder[child] & 0x00000003);
+#else
+		const uint32_t visitIndex = (uint32_t)nearPlaneAndChildIndex[child] & 0x00000003;
+#endif
+		if (node.m_child[visitIndex] >> 31u)
+		{
+			const uint32_t triangleIndex = node.m_child[visitIndex] & ~(1u << 31u);
+			HitTriangle<T_acceptAnyHit>(ray, rayIndex, tMin, tMax, triangleIndex, out_hitResult, out_hasHit);
+		}
+		else
+		{
+			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[visitIndex], ray, rayIndex, tMin, tMax, out_hitResult, out_hasHit);
+		}
+
+		if constexpr (T_acceptAnyHit)
+		{
+			if (out_hasHit)
+			{
+				return;
+			}
+		}
+	}
+#endif
+
+	// 0 and tMAx
+	const __m128 zeroReg = _mm_set1_ps(0.0f);
+
+	// AABB paramaters
+	const __m128 minXs = _mm_loadu_ps(node.m_aabbMinX);
+	const __m128 minYs = _mm_loadu_ps(node.m_aabbMinY);
+	const __m128 minZs = _mm_loadu_ps(node.m_aabbMinZ);
+	const __m128 maxXs = _mm_loadu_ps(node.m_aabbMaxX);
+	const __m128 maxYs = _mm_loadu_ps(node.m_aabbMaxY);
+	const __m128 maxZs = _mm_loadu_ps(node.m_aabbMaxZ);
+
+	//Ray data
+	const __m128 rayInverseX = _mm_set1_ps(ray.InverseDirection().X());
+	const __m128 rayInverseY = _mm_set1_ps(ray.InverseDirection().Y());
+	const __m128 rayInverseZ = _mm_set1_ps(ray.InverseDirection().Z());
+
+	const __m128 rayNegativeOriginTimesInvDirX = _mm_set1_ps(ray.NegativeOriginTimesInvDir().X());
+	const __m128 rayNegativeOriginTimesInvDirY = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Y());
+	const __m128 rayNegativeOriginTimesInvDirZ = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Z());
+
+	// TNears
+	const __m128 t0X = _mm_fmadd_ps(minXs, rayInverseX, rayNegativeOriginTimesInvDirX);
+	const __m128 t0Y = _mm_fmadd_ps(minYs, rayInverseY, rayNegativeOriginTimesInvDirY);
+	const __m128 t0Z = _mm_fmadd_ps(minZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
+
+	// TFars
+	const __m128 t1X = _mm_fmadd_ps(maxXs, rayInverseX, rayNegativeOriginTimesInvDirX);
+	const __m128 t1Y = _mm_fmadd_ps(maxYs, rayInverseY, rayNegativeOriginTimesInvDirY);
+	const __m128 t1Z = _mm_fmadd_ps(maxZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
+
+	// Entries and exits
+	const __m128 enterX = _mm_min_ps(t0X, t1X);
+	const __m128 enterY = _mm_min_ps(t0Y, t1Y);
+	const __m128 enterZ = _mm_min_ps(t0Z, t1Z);
+
+	const __m128 exitX = _mm_max_ps(t0X, t1X);
+	const __m128 exitY = _mm_max_ps(t0Y, t1Y);
+	const __m128 exitZ = _mm_max_ps(t0Z, t1Z);
+
+	// t0 and t1
+	const __m128 t0 = _mm_max_ps(_mm_max_ps(enterX, enterY), _mm_max_ps(zeroReg, enterZ));
+	const __m128 t1 = _mm_min_ps(_mm_min_ps(exitX, exitY), _mm_min_ps(out_tMax, exitZ));
+
+	// hasIntersected
+	const __m128 hasIntersected = _mm_cmpge_ps(t1, t0);
+	const int intersectionMask = _mm_movemask_ps(hasIntersected);
+
+	if (!intersectionMask)
+	{
+		return;
+	}
+
+	// Packing
+	const __m128i int32Max = _mm_set1_epi32(INT32_MAX);
+	const __m128i t0AsInts = _mm_castps_si128(_mm_or_ps(_mm_and_ps(hasIntersected, t0), _mm_andnot_ps(hasIntersected, _mm_castsi128_ps(int32Max))));
+	const __m128i postChopBits = _mm_and_si128(t0AsInts, _mm_set1_epi32(0x3FFFFFFE));
+	const __m128i shiftedLeft = _mm_slli_epi32(postChopBits, 1);
+
+	const __m128i childIndicesInOrder = _mm_set_epi32(3, 2, 1, 0);
+	const __m128i combinedT0AndIndex = _mm_or_epi32(shiftedLeft, childIndicesInOrder);
+
+	// Sort
+	const __m128i shuffle0 = _mm_shuffle_epi32(combinedT0AndIndex, _MM_SHUFFLE(1, 0, 1, 0));
+	const __m128i min0 = _mm_min_epi32(combinedT0AndIndex, shuffle0);
+	const __m128i max0 = _mm_max_epi32(combinedT0AndIndex, shuffle0);
+
+	const __m128i shuffle1 = _mm_shuffle_epi32(max0, _MM_SHUFFLE(2, 3, 1, 0));;
+	const __m128i min1 = _mm_min_epi32(min0, shuffle1);
+	const __m128i max1 = _mm_max_epi32(min0, shuffle1);
+
+	const __m128i shuffle2 = _mm_shuffle_epi32(max1, _MM_SHUFFLE(2, 3, 1, 0));
+	const __m128i l3 = _mm_max_epi32(max1, shuffle2);
+	const __m128i l2 = _mm_min_epi32(max1, shuffle2);
+
+	const __m128i shuffle3 = _mm_shuffle_epi32(min1, _MM_SHUFFLE(2, 3, 1, 0));
+	const __m128i l1 = _mm_max_epi32(min1, shuffle3);
+	const __m128i l0 = _mm_min_epi32(min1, shuffle3);
+
+	// Figure this out
+	const __m128i unpack0 = _mm_unpackhi_epi32(l1, l3);
+	const __m128i unpack1 = _mm_unpackhi_epi32(l0, l2);
+	const __m128i result = _mm_unpackhi_epi32(unpack1, unpack0);
+
+	const int visitOrderIndices[4u] =
+	{
+		_mm_cvtsi128_si32(result),
+		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(1, 1, 1, 1))),
+		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(2, 2, 2, 2))),
+		_mm_cvtsi128_si32(_mm_shuffle_epi32(result, _MM_SHUFFLE(3, 3, 3, 3)))
+	};
+
+	const uint32_t intersectionCount = __popcnt(*((uint32_t*)&intersectionMask));
+	for (uint32_t i = 0u; i < intersectionCount; i++)
+	{
+		const uint32_t visitIndex = (uint32_t)(visitOrderIndices[i] & 0x00000003);
+
+		if (node.m_child[visitIndex] >> 31u)
+		{
+			const uint32_t triangle4Index = node.m_child[visitIndex] & ~(1u << 31u);
+			const TraversalTriangle4& triangle4 = m_traversalDataManager->GetBVH4TraversalTriangle4(triangle4Index);
+
+			HitTriangle4(ray, triangle4, triangle4Index, tMin, out_primitiveId, out_tMax, out_u, out_v, moveMask);
+		}
+		else
+		{
+			BVH4DFSTraversal<T_acceptAnyHit>(node.m_child[visitIndex], ray, tMin, out_primitiveId, out_tMax, out_u, out_v, moveMask);
+		}
+
+		if constexpr (T_acceptAnyHit)
+		{
+			if (moveMask)
+			{
+				return;
+			}
+		}
+	}
 }

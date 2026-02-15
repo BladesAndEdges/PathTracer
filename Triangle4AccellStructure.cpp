@@ -23,7 +23,6 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 			traversalTriangles.push_back(traversalTriangle);
 			perTriangleMaterials.push_back(UINT32_MAX);
 			triangleTexCoords.push_back(triTexCoords);
-
 		}
 	}
 
@@ -102,17 +101,45 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 	TriangleTexCoords4 triangleTexCoords4;
 	for (uint32_t index = 0u; index < triangleTexCoords.size(); index += 4u)
 	{
+		// Tex coord 0
 		triangleTexCoords4.m_v0U[0u] = triangleTexCoords[index].m_v0uv[0u];
 		triangleTexCoords4.m_v0V[0u] = triangleTexCoords[index].m_v0uv[1u];
 
+		triangleTexCoords4.m_v1U[0u] = triangleTexCoords[index].m_v1uv[0u];
+		triangleTexCoords4.m_v1V[0u] = triangleTexCoords[index].m_v1uv[1u];
+
+		triangleTexCoords4.m_v2U[0u] = triangleTexCoords[index].m_v2uv[0u];
+		triangleTexCoords4.m_v2V[0u] = triangleTexCoords[index].m_v2uv[1u];
+
+		// Tex coord 1
 		triangleTexCoords4.m_v0U[1u] = triangleTexCoords[index + 1u].m_v0uv[0u];
 		triangleTexCoords4.m_v0V[1u] = triangleTexCoords[index + 1u].m_v0uv[1u];
 
+		triangleTexCoords4.m_v1U[1u] = triangleTexCoords[index + 1u].m_v1uv[0u];
+		triangleTexCoords4.m_v1V[1u] = triangleTexCoords[index + 1u].m_v1uv[1u];
+
+		triangleTexCoords4.m_v2U[1u] = triangleTexCoords[index + 1u].m_v2uv[0u];
+		triangleTexCoords4.m_v2V[1u] = triangleTexCoords[index + 1u].m_v2uv[1u];
+
+		// Tex coord 2
 		triangleTexCoords4.m_v0U[2u] = triangleTexCoords[index + 2u].m_v0uv[0u];
 		triangleTexCoords4.m_v0V[2u] = triangleTexCoords[index + 2u].m_v0uv[1u];
 
-		triangleTexCoords4.m_v0U[3u] = triangleTexCoords[index + 2u].m_v0uv[0u];
-		triangleTexCoords4.m_v0V[3u] = triangleTexCoords[index + 2u].m_v0uv[1u];
+		triangleTexCoords4.m_v1U[2u] = triangleTexCoords[index + 2u].m_v1uv[0u];
+		triangleTexCoords4.m_v1V[2u] = triangleTexCoords[index + 2u].m_v1uv[1u];
+
+		triangleTexCoords4.m_v2U[2u] = triangleTexCoords[index + 2u].m_v2uv[0u];
+		triangleTexCoords4.m_v2V[2u] = triangleTexCoords[index + 2u].m_v2uv[1u];
+
+		// Tex coord 3
+		triangleTexCoords4.m_v0U[3u] = triangleTexCoords[index + 3u].m_v0uv[0u];
+		triangleTexCoords4.m_v0V[3u] = triangleTexCoords[index + 3u].m_v0uv[1u];
+
+		triangleTexCoords4.m_v1U[3u] = triangleTexCoords[index + 3u].m_v1uv[0u];
+		triangleTexCoords4.m_v1V[3u] = triangleTexCoords[index + 3u].m_v1uv[1u];
+
+		triangleTexCoords4.m_v2U[3u] = triangleTexCoords[index + 3u].m_v2uv[0u];
+		triangleTexCoords4.m_v2V[3u] = triangleTexCoords[index + 3u].m_v2uv[1u];
 
 		m_triangleTexCoords4.push_back(triangleTexCoords4);
 	}

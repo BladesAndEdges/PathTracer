@@ -710,10 +710,10 @@ HitResult Renderer::TraceRay4NonBVH(Ray& ray, const uint32_t rayIndex, const flo
 		const Vector3 normal = Normalize(Cross(edge1, edge2));
 		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
-		// Try and get the indices for this too
-		hitResult.m_primitiveId = 0u;
+		hitResult.m_primitiveId = (tri4Index * 4u) + subIndex;
 
-		hitResult.m_materialId = 0u;
+		const std::vector<Material4Index>& material4Indices = m_traversalDataManager->GetMaterial4Indices();
+		hitResult.m_materialId = material4Indices[tri4Index].m_indices[subIndex];
 	}
 
 	return hitResult;

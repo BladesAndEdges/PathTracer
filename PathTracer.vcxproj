@@ -148,7 +148,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
@@ -170,7 +170,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -211,45 +211,50 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
-    <ClCompile Include="BVH2AccellStructure.cpp" />
-    <ClCompile Include="BVHNode.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
     <ClCompile Include="GLContext.cpp" />
     <ClCompile Include="HitResult.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Material4Index.cpp" />
     <ClCompile Include="MaterialManager.cpp" />
     <ClCompile Include="PerformanceCounter.cpp" />
-    <ClCompile Include="BVH4AccellStructure.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Source\Acceleration\BVH2AccellStructure.cpp" />
+    <ClCompile Include="Source\Acceleration\BVH4AccellStructure.cpp" />
+    <ClCompile Include="Source\Acceleration\BVHNode.cpp" />
+    <ClCompile Include="Source\Acceleration\Material4Index.cpp" />
+    <ClCompile Include="Source\Acceleration\TraversalTriangle.cpp" />
+    <ClCompile Include="Source\Acceleration\TraversalTriangle4.cpp" />
+    <ClCompile Include="Source\Acceleration\Triangle4AccellStructure.cpp" />
+    <ClCompile Include="Source\Acceleration\TriangleAccellStructure.cpp" />
+    <ClCompile Include="Source\Acceleration\TriangleTexCoords.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TraversalDataManager.cpp" />
-    <ClCompile Include="TraversalTriangle.cpp" />
-    <ClCompile Include="TraversalTriangle4.cpp" />
     <ClCompile Include="Triangle.cpp" />
-    <ClCompile Include="Triangle4AccellStructure.cpp" />
-    <ClCompile Include="TriangleAccellStructure.cpp" />
-    <ClCompile Include="TriangleTexCoords.cpp" />
     <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
-    <ClInclude Include="BVH2AccellStructure.h" />
-    <ClInclude Include="BVHNode.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="BVH4AccellStructure.h" />
     <ClInclude Include="Intersections.h" />
-    <ClInclude Include="Material4Index.h" />
     <ClInclude Include="MaterialManager.h" />
     <ClInclude Include="SceneManager.h" />
+    <ClInclude Include="Source\Acceleration\BVH2AccellStructure.h" />
+    <ClInclude Include="Source\Acceleration\BVH4AccellStructure.h" />
+    <ClInclude Include="Source\Acceleration\BVHNode.h" />
+    <ClInclude Include="Source\Acceleration\Material4Index.h" />
+    <ClInclude Include="Source\Acceleration\TraversalTriangle.h" />
+    <ClInclude Include="Source\Acceleration\TraversalTriangle4.h" />
+    <ClInclude Include="Source\Acceleration\Triangle4AccellStructure.h" />
+    <ClInclude Include="Source\Acceleration\TriangleAccellStructure.h" />
+    <ClInclude Include="Source\Acceleration\TriangleTexCoords.h" />
+    <ClInclude Include="Source\Acceleration\TriangleTexCoords4.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TraversalDataManager.h" />
-    <ClInclude Include="TraversalTriangle.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="GLContext.h" />
@@ -259,11 +264,6 @@
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="TraversalTriangle4.h" />
-    <ClInclude Include="Triangle4AccellStructure.h" />
-    <ClInclude Include="TriangleAccellStructure.h" />
-    <ClInclude Include="TriangleTexCoords.h" />
-    <ClInclude Include="TriangleTexCoords4.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="ViewportDesc.h" />
   </ItemGroup>

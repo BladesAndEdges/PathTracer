@@ -148,7 +148,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
@@ -170,7 +170,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -216,11 +216,9 @@
     <ClCompile Include="GLContext.cpp" />
     <ClCompile Include="HitResult.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MaterialManager.cpp" />
     <ClCompile Include="PerformanceCounter.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Source\Acceleration\BVH2AccellStructure.cpp" />
     <ClCompile Include="Source\Acceleration\BVH4AccellStructure.cpp" />
@@ -231,8 +229,10 @@
     <ClCompile Include="Source\Acceleration\Triangle4AccellStructure.cpp" />
     <ClCompile Include="Source\Acceleration\TriangleAccellStructure.cpp" />
     <ClCompile Include="Source\Acceleration\TriangleTexCoords.cpp" />
-    <ClCompile Include="TextureManager.cpp" />
-    <ClCompile Include="TraversalDataManager.cpp" />
+    <ClCompile Include="Source\ResourceManagers\MaterialManager.cpp" />
+    <ClCompile Include="Source\ResourceManagers\SceneManager.cpp" />
+    <ClCompile Include="Source\ResourceManagers\TextureManager.cpp" />
+    <ClCompile Include="Source\ResourceManagers\TraversalDataManager.cpp" />
     <ClCompile Include="Triangle.cpp" />
     <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
@@ -240,8 +240,6 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Intersections.h" />
-    <ClInclude Include="MaterialManager.h" />
-    <ClInclude Include="SceneManager.h" />
     <ClInclude Include="Source\Acceleration\BVH2AccellStructure.h" />
     <ClInclude Include="Source\Acceleration\BVH4AccellStructure.h" />
     <ClInclude Include="Source\Acceleration\BVHNode.h" />
@@ -252,9 +250,11 @@
     <ClInclude Include="Source\Acceleration\TriangleAccellStructure.h" />
     <ClInclude Include="Source\Acceleration\TriangleTexCoords.h" />
     <ClInclude Include="Source\Acceleration\TriangleTexCoords4.h" />
+    <ClInclude Include="Source\ResourceManagers\MaterialManager.h" />
+    <ClInclude Include="Source\ResourceManagers\SceneManager.h" />
+    <ClInclude Include="Source\ResourceManagers\TextureManager.h" />
+    <ClInclude Include="Source\ResourceManagers\TraversalDataManager.h" />
     <ClInclude Include="stb_image.h" />
-    <ClInclude Include="TextureManager.h" />
-    <ClInclude Include="TraversalDataManager.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="GLContext.h" />

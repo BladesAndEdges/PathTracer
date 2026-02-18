@@ -148,7 +148,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;$(ProjectDir)Source\Raytracing;$(ProjectDir)Source\Core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;$(ProjectDir)Source\Raytracing;$(ProjectDir)Source\Core;$(ProjectDir)Dependencies;$(ProjectDir)Dependencies\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
@@ -170,7 +170,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;$(ProjectDir)Source\Raytracing;$(ProjectDir)Source\Core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;$(ProjectDir)Source\Raytracing;$(ProjectDir)Source\Core;$(ProjectDir)Dependencies;$(ProjectDir)Dependencies\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -237,6 +237,7 @@
     <ClCompile Include="Source\ResourceManagers\Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Dependencies\stb\stb_image.h" />
     <ClInclude Include="Source\Acceleration\BVH2AccellStructure.h" />
     <ClInclude Include="Source\Acceleration\BVH4AccellStructure.h" />
     <ClInclude Include="Source\Acceleration\BVHNode.h" />
@@ -264,7 +265,6 @@
     <ClInclude Include="Source\ResourceManagers\TraversalDataManager.h" />
     <ClInclude Include="Source\ResourceManagers\Triangle.h" />
     <ClInclude Include="Source\ResourceManagers\Vertex.h" />
-    <ClInclude Include="stb_image.h" />
     <ClInclude Include="Mesh.h" />
   </ItemGroup>
   <ItemGroup>

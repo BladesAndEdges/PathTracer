@@ -148,7 +148,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
@@ -170,7 +170,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -239,7 +239,6 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="Intersections.h" />
     <ClInclude Include="Source\Acceleration\BVH2AccellStructure.h" />
     <ClInclude Include="Source\Acceleration\BVH4AccellStructure.h" />
     <ClInclude Include="Source\Acceleration\BVHNode.h" />
@@ -250,6 +249,7 @@
     <ClInclude Include="Source\Acceleration\TriangleAccellStructure.h" />
     <ClInclude Include="Source\Acceleration\TriangleTexCoords.h" />
     <ClInclude Include="Source\Acceleration\TriangleTexCoords4.h" />
+    <ClInclude Include="Source\Intersections\Intersections.h" />
     <ClInclude Include="Source\ResourceManagers\MaterialManager.h" />
     <ClInclude Include="Source\ResourceManagers\SceneManager.h" />
     <ClInclude Include="Source\ResourceManagers\TextureManager.h" />
@@ -268,8 +268,8 @@
     <ClInclude Include="ViewportDesc.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Intersections.inl" />
     <None Include="Ray.inl" />
+    <None Include="Source\Intersections\Intersections.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

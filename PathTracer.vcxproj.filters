@@ -137,9 +137,6 @@
     <ClInclude Include="stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Intersections.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Acceleration\BVH2AccellStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -182,12 +179,15 @@
     <ClInclude Include="Source\ResourceManagers\TraversalDataManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Intersections\Intersections.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Ray.inl">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="Intersections.inl">
+    <None Include="Source\Intersections\Intersections.inl">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>

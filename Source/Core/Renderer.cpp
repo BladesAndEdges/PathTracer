@@ -21,9 +21,9 @@
 
 # define M_PI 3.14159265358979323846
 //#define TRACE_AGAINST_NON_BVH
-#define TRACE_AGAINST_NON_BVH_SSE
+//#define TRACE_AGAINST_NON_BVH_SSE
 //#define TRACE_AGAINST_BVH2
-//#define TRACE_AGAINST_BVH4
+#define TRACE_AGAINST_BVH4 
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()

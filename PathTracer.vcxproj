@@ -148,7 +148,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;$(ProjectDir)Source\Raytracing;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
@@ -170,7 +170,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Subprojects\MathLibrary;$(ProjectDir)Submodules\imgui;$(ProjectDir)Submodules\glfw\include\GLFW;$(ProjectDir)Dependencies;$(ProjectDir)Source\Acceleration;$(ProjectDir)Source\ResourceManagers;$(ProjectDir)Source\Intersections;$(ProjectDir)Source\Raytracing;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -214,10 +214,8 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
     <ClCompile Include="GLContext.cpp" />
-    <ClCompile Include="HitResult.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PerformanceCounter.cpp" />
-    <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Source\Acceleration\BVH2AccellStructure.cpp" />
@@ -229,6 +227,8 @@
     <ClCompile Include="Source\Acceleration\Triangle4AccellStructure.cpp" />
     <ClCompile Include="Source\Acceleration\TriangleAccellStructure.cpp" />
     <ClCompile Include="Source\Acceleration\TriangleTexCoords.cpp" />
+    <ClCompile Include="Source\Raytracing\HitResult.cpp" />
+    <ClCompile Include="Source\Raytracing\Ray.cpp" />
     <ClCompile Include="Source\ResourceManagers\MaterialManager.cpp" />
     <ClCompile Include="Source\ResourceManagers\SceneManager.cpp" />
     <ClCompile Include="Source\ResourceManagers\TextureManager.cpp" />
@@ -250,6 +250,8 @@
     <ClInclude Include="Source\Acceleration\TriangleTexCoords.h" />
     <ClInclude Include="Source\Acceleration\TriangleTexCoords4.h" />
     <ClInclude Include="Source\Intersections\Intersections.h" />
+    <ClInclude Include="Source\Raytracing\HitResult.h" />
+    <ClInclude Include="Source\Raytracing\Ray.h" />
     <ClInclude Include="Source\ResourceManagers\MaterialManager.h" />
     <ClInclude Include="Source\ResourceManagers\SceneManager.h" />
     <ClInclude Include="Source\ResourceManagers\TextureManager.h" />
@@ -259,17 +261,15 @@
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="GLContext.h" />
-    <ClInclude Include="HitResult.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="PerformanceCounter.h" />
-    <ClInclude Include="Ray.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ViewportDesc.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Ray.inl" />
     <None Include="Source\Intersections\Intersections.inl" />
+    <None Include="Source\Raytracing\Ray.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

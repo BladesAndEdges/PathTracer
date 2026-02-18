@@ -6,7 +6,7 @@
 #include <cmath>
 
 #include "TraversalTriangle.h"
-#include "../Triangle.h"
+#include "Triangle.h"
 #include "TriangleTexCoords.h"
 
 #define EPSILON 0.00001f

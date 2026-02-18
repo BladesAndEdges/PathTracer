@@ -7,9 +7,9 @@
 #include <string>
 
 #include "MaterialManager.h"
-#include "../Triangle.h"
+#include "Triangle.h"
 #include "Vector2.h"
-#include "../Vertex.h"
+#include "Vertex.h"
 
 
 // --------------------------------------------------------------------------------

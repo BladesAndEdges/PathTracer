@@ -1,7 +1,7 @@
 #include "TriangleAccellStructure.h"
 
 #include "TraversalTriangle.h"
-#include "../Triangle.h"
+#include "Triangle.h"
 #include "TriangleTexCoords.h"
 
 // --------------------------------------------------------------------------------

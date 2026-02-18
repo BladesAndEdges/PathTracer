@@ -233,8 +233,8 @@
     <ClCompile Include="Source\ResourceManagers\SceneManager.cpp" />
     <ClCompile Include="Source\ResourceManagers\TextureManager.cpp" />
     <ClCompile Include="Source\ResourceManagers\TraversalDataManager.cpp" />
-    <ClCompile Include="Triangle.cpp" />
-    <ClCompile Include="Vertex.cpp" />
+    <ClCompile Include="Source\ResourceManagers\Triangle.cpp" />
+    <ClCompile Include="Source\ResourceManagers\Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -254,8 +254,9 @@
     <ClInclude Include="Source\ResourceManagers\SceneManager.h" />
     <ClInclude Include="Source\ResourceManagers\TextureManager.h" />
     <ClInclude Include="Source\ResourceManagers\TraversalDataManager.h" />
+    <ClInclude Include="Source\ResourceManagers\Triangle.h" />
+    <ClInclude Include="Source\ResourceManagers\Vertex.h" />
     <ClInclude Include="stb_image.h" />
-    <ClInclude Include="Triangle.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="GLContext.h" />
     <ClInclude Include="HitResult.h" />
@@ -264,7 +265,6 @@
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="Vertex.h" />
     <ClInclude Include="ViewportDesc.h" />
   </ItemGroup>
   <ItemGroup>

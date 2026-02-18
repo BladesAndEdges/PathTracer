@@ -210,7 +210,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="Source\Acceleration\BVH2AccellStructure.cpp" />
     <ClCompile Include="Source\Acceleration\BVH4AccellStructure.cpp" />
     <ClCompile Include="Source\Acceleration\BVHNode.cpp" />
@@ -227,6 +226,7 @@
     <ClCompile Include="Source\Core\PerformanceCounter.cpp" />
     <ClCompile Include="Source\Core\Renderer.cpp" />
     <ClCompile Include="Source\Core\Shader.cpp" />
+    <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Raytracing\HitResult.cpp" />
     <ClCompile Include="Source\Raytracing\Ray.cpp" />
     <ClCompile Include="Source\ResourceManagers\MaterialManager.cpp" />

@@ -23,7 +23,7 @@
 //#define TRACE_AGAINST_NON_BVH
 //#define TRACE_AGAINST_NON_BVH_SSE
 //#define TRACE_AGAINST_BVH2
-#define TRACE_AGAINST_BVH4 
+#define TRACE_AGAINST_BVH4
 
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
@@ -31,12 +31,12 @@ Renderer::Renderer()
 	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc));
 	m_isFirstFrame = true;
 
-	m_sceneManager = new SceneManager("sponza.obj", "sponza.mtl");
+	m_sceneManager = new SceneManager("sponza.obj", 0.01f, "sponza.mtl");
 
 	m_traversalDataManager = new TraversalDataManager(m_sceneManager->GetTriangles(), m_sceneManager->GetPerTriangleMaterials());
 
 	m_camera.SetCameraLocation(m_sceneManager->GetInitialCameraPosition());
-	m_lightDirection = Normalize(Vector3(1.0f, 1.0f, 1.0f));
+	m_lightDirection = Normalize(Vector3(1.0f, 0.3f, 0.0f));
 }
 
 // --------------------------------------------------------------------------------

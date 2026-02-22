@@ -15,7 +15,7 @@ class SceneManager
 {
 public:
 
-	SceneManager(const std::string& objFile, const std::string& mtlFile);
+	SceneManager(const std::string& objFile, const float scale,  const std::string& mtlFile);
 
 	SceneManager(const SceneManager&) = delete;
 	SceneManager& operator=(const SceneManager&) = delete;
@@ -29,9 +29,9 @@ public:
 
 private:
 
-	void Load(const std::string& objFile);
+	void Load(const std::string& objFile, const float scale);
 
-	void CreateVertices(const std::string& line, const std::vector<Vector3>& positions,
+	void CreateVertices(const std::string& line, const float scale, const std::vector<Vector3>& positions,
 		const std::vector<Vector2>& textureCoordinates, std::vector<Vertex>& out_vertices) const;
 	void Triangulate(const std::vector<Vertex>& vertices, std::vector<Triangle>& out_triangles) const;
 

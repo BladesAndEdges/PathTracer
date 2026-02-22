@@ -78,10 +78,11 @@ Vector3 MaterialManager::BasicSample(const uint32_t materialId, const float u, c
 	const Material& material = m_materials[materialId];
 	return m_textureManager->BasicSample(material, u, v);
 }
+
 // --------------------------------------------------------------------------------
 void MaterialManager::Load(const char* mtlFile)
 {
-	const std::string path = "./Scenes/Sponza/" + std::string(mtlFile);
+	const std::string path = "./Scenes/CrytekSponza/" + std::string(mtlFile);
 
 	std::ifstream ifs(path);
 	if (ifs.fail())
@@ -135,7 +136,17 @@ void MaterialManager::ProcessMaterial(std::ifstream& ifs, Material& material)
 		{
 			std::string diffuseTexture;
 			istream >> diffuseTexture;
-			material.diffuseIndex = m_textureManager->Load(diffuseTexture.data()); // Would load otherwise when texture loading is made
+			
+			const size_t forwardSlashCheck = diffuseTexture.find_last_of('/');
+			const uint32_t forwardSlashPos = (uint32_t)((forwardSlashCheck != std::string::npos) ? forwardSlashCheck : 0);
+
+			const size_t backwardSlashCheck = diffuseTexture.find_last_of('\\');
+			const uint32_t backwardSlashPos = (uint32_t)((backwardSlashCheck != std::string::npos) ? backwardSlashCheck : 0);
+
+			const uint32_t nameStartPos = (forwardSlashPos > backwardSlashPos) ? forwardSlashPos + 1u : backwardSlashPos + 1u;
+			const std::string diffuseTextureSubstr = diffuseTexture.substr(nameStartPos, std::string::npos);
+
+			material.diffuseIndex = m_textureManager->Load(diffuseTextureSubstr.data());
 		}
 	}
 }

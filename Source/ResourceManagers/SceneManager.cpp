@@ -11,9 +11,10 @@
 #include "Vector2.h"
 #include "Vertex.h"
 
+Vector3 DabSponzaLoc = Vector3(2.88791323f, 7.37331104f, -0.183363333f); // Remove this eventually
 
 // --------------------------------------------------------------------------------
-SceneManager::SceneManager(const std::string& objFile, const std::string& mtlFile) : m_materialManager(nullptr),
+SceneManager::SceneManager(const std::string& objFile, const float scale, const std::string& mtlFile) : m_materialManager(nullptr),
 																					m_initialCameraPos(Vector3(2.88791323f, 7.37331104f, -0.183363333f))
 {
 	std::filesystem::path oFile = objFile;
@@ -25,7 +26,7 @@ SceneManager::SceneManager(const std::string& objFile, const std::string& mtlFil
 	if (validObjFile && validMtlFile)
 	{
 		m_materialManager = new MaterialManager(mtlFile.data());
-		Load(objFile);
+		Load(objFile, scale);
 		// assert if the two arrays match
 	}
 	else
@@ -58,14 +59,16 @@ Vector3 SceneManager::GetDebugMaterialColour(const uint32_t index) const
 	return m_materialManager->GetDebugMaterialColour(index);
 }
 
+// --------------------------------------------------------------------------------
 Vector3 SceneManager::BasicSample(const uint32_t materialId, const float u, const float v) const
 {
 	return m_materialManager->BasicSample(materialId, u, v);
 }
+
 // --------------------------------------------------------------------------------
-void SceneManager::Load(const std::string& objFile)
+void SceneManager::Load(const std::string& objFile, const float scale)
 {
-	const std::string path = "./Scenes/Sponza/" + objFile;
+	const std::string path = "./Scenes/CrytekSponza/" + objFile;
 
 	std::ifstream ifs(path);
 
@@ -98,9 +101,10 @@ void SceneManager::Load(const std::string& objFile)
 
 		if (word == "vt")
 		{
-			float x, y;
-			ifs >> x >> y;
-			textureCoordinates.push_back(Vector2(x, y));
+			float u, v;
+			ifs >> u >> v;
+
+			textureCoordinates.push_back(Vector2(u, v));
 		}
 
 		if (word == "f")
@@ -109,7 +113,7 @@ void SceneManager::Load(const std::string& objFile)
 			std::getline(ifs, line);
 
 			std::vector<Vertex> triangleVertices;
-			CreateVertices(line, positions, textureCoordinates, triangleVertices);
+			CreateVertices(line, scale, positions, textureCoordinates, triangleVertices);
 			std::vector<Triangle> triangles;
 			Triangulate(triangleVertices, triangles);
 
@@ -120,7 +124,7 @@ void SceneManager::Load(const std::string& objFile)
 }
 
 // --------------------------------------------------------------------------------
-void SceneManager::CreateVertices(const std::string& line, const std::vector<Vector3>& positions,
+void SceneManager::CreateVertices(const std::string& line, const float scale, const std::vector<Vector3>& positions,
 	const std::vector<Vector2>& textureCoordinate, std::vector<Vertex>& out_vertices) const
 {
 	std::istringstream iss(line);
@@ -152,17 +156,17 @@ void SceneManager::CreateVertices(const std::string& line, const std::vector<Vec
 			{
 				if (vertexPosIndex >= 1)
 				{
-					vertex.m_position[0] = positions[vertexPosIndex - 1].X();
-					vertex.m_position[1] = positions[vertexPosIndex - 1].Y();
-					vertex.m_position[2] = positions[vertexPosIndex - 1].Z();
+					vertex.m_position[0] = scale * positions[vertexPosIndex - 1].X();
+					vertex.m_position[1] = scale * positions[vertexPosIndex - 1].Y();
+					vertex.m_position[2] = scale * positions[vertexPosIndex - 1].Z();
 				}
 				else
 				{
 					const uint32_t arraySize = (uint32_t)positions.size();
 
-					vertex.m_position[0] = positions[arraySize + vertexPosIndex].X();
-					vertex.m_position[1] = positions[arraySize + vertexPosIndex].Y();
-					vertex.m_position[2] = positions[arraySize + vertexPosIndex].Z();
+					vertex.m_position[0] = scale * positions[arraySize + vertexPosIndex].X();
+					vertex.m_position[1] = scale * positions[arraySize + vertexPosIndex].Y();
+					vertex.m_position[2] = scale * positions[arraySize + vertexPosIndex].Z();
 				}
 			}
 

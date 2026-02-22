@@ -58,6 +58,10 @@ Vector3 SceneManager::GetDebugMaterialColour(const uint32_t index) const
 	return m_materialManager->GetDebugMaterialColour(index);
 }
 
+Vector3 SceneManager::BasicSample(const uint32_t materialId, const float u, const float v) const
+{
+	return m_materialManager->BasicSample(materialId, u, v);
+}
 // --------------------------------------------------------------------------------
 void SceneManager::Load(const std::string& objFile)
 {

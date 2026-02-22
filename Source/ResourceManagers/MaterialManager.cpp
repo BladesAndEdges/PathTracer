@@ -73,6 +73,12 @@ Vector3 MaterialManager::GetDebugMaterialColour(const uint32_t index) const
 }
 
 // --------------------------------------------------------------------------------
+Vector3 MaterialManager::BasicSample(const uint32_t materialId, const float u, const float v) const
+{
+	const Material& material = m_materials[materialId];
+	return m_textureManager->BasicSample(material, u, v);
+}
+// --------------------------------------------------------------------------------
 void MaterialManager::Load(const char* mtlFile)
 {
 	const std::string path = "./Scenes/Sponza/" + std::string(mtlFile);

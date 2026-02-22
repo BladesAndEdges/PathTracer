@@ -26,6 +26,8 @@ public:
 	uint32_t GetMaterialIndexByName(const std::string& name) const;
 	Vector3 GetDebugMaterialColour(const uint32_t index) const;
 
+	Vector3 BasicSample(const uint32_t materialId, const float u, const float v) const;
+
 private:
 
 	void Load(const char* mtlFile);

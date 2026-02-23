@@ -36,7 +36,9 @@ Renderer::Renderer()
 	m_traversalDataManager = new TraversalDataManager(m_sceneManager->GetTriangles(), m_sceneManager->GetPerTriangleMaterials());
 
 	m_camera.SetCameraLocation(m_sceneManager->GetInitialCameraPosition());
-	m_lightDirection = Normalize(Vector3(1.0f, 0.3f, 0.0f));
+
+	// How does the light direection affect the performance?
+	m_lightDirection = Normalize(Vector3(0.9f, 1.0f, 0.4f));
 }
 
 // --------------------------------------------------------------------------------
@@ -73,6 +75,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	const SHORT xKeyState = GetAsyncKeyState(0x58);
 	const SHORT lKeyState = GetAsyncKeyState(0x4C);
 	const SHORT kKeyState = GetAsyncKeyState(0x4B);
+	const SHORT jKeyState = GetAsyncKeyState(0x4A);
 
 	const Vector3 primitiveDebugColours[5u] = { Vector3(0.94f, 0.34f, 0.30f), Vector3(0.30f, 0.94f, 0.70f), Vector3(0.51f, 0.70f, 0.96f),
 		Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
@@ -94,11 +97,11 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			float green = 0.0f;
 			float blue = 0.0f;
 
-			if ((cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u) && (xKeyState == 0u) && (lKeyState == 0u) && (kKeyState == 0u))
+			if ((cKeyState == 0u) && (vKeyState == 0u) && (bKeyState == 0u) && (nKeyState == 0u) && (mKeyState == 0u) && (xKeyState == 0u) && (lKeyState == 0u) && (kKeyState == 0u) && (jKeyState == 0u))
 			{
 				Vector3 radiance(0.0f, 0.0f, 0.0f);
-				const uint32_t numSamples = 1u;
-				const uint32_t depth = 1u;
+				const uint32_t numSamples = 4u;
+				const uint32_t depth = 4u;
 
 				for (uint32_t sample = 0u; sample < numSamples; sample++)
 				{
@@ -126,264 +129,187 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				green = std::fmin(1.0f, radiance.Y());
 				blue = std::fmin(1.0f, radiance.Z());
 			}
-
-			if (xKeyState > 0u)
+			else
 			{
-				// Ray values reset here, so no need to do a reset on the vector
 				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
 
-#ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
-				primaryRayAABBIntersectionsCount[rayIndex] = (primaryRay.m_primaryAABBIntersectionTests);
-				primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
-				primaryRayNodeVisits[rayIndex] = primaryRay.m_primaryNodeVisits;
-#endif
-#ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
-				primaryRayAABBIntersectionsCount[rayIndex] = (primaryRay.m_primaryAABBIntersectionTests);
-				primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
-				primaryRayNodeVisits[rayIndex] = primaryRay.m_primaryNodeVisits;
-#endif
+				// Trace based on selected method
 #ifdef TRACE_AGAINST_NON_BVH
 				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
-				primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
 				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
-				primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
 #endif
 
-				if ((row == framebuffer->GetHeight() - 1u) && (column == framebuffer->GetWidth() - 1u))
+				// Check ray traversal/intersection statistics
+				if (xKeyState > 0u)
 				{
-					// Average aabb intersections for primary rays
-					uint32_t averageAABBVisits = 0u;
-					for (uint32_t i = 0u; i < primaryRayAABBIntersectionsCount.size(); i++)
+#ifdef TRACE_AGAINST_NON_BVH
+					primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+					primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+					primaryRayAABBIntersectionsCount[rayIndex] = (primaryRay.m_primaryAABBIntersectionTests);
+					primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
+					primaryRayNodeVisits[rayIndex] = primaryRay.m_primaryNodeVisits;
+#endif
+#ifdef TRACE_AGAINST_BVH4
+					primaryRayAABBIntersectionsCount[rayIndex] = (primaryRay.m_primaryAABBIntersectionTests);
+					primaryRayTriangleIntersectionsCount[rayIndex] = (primaryRay.m_primaryTriangleIntersectionTests);
+					primaryRayNodeVisits[rayIndex] = primaryRay.m_primaryNodeVisits;
+#endif
+
+					if ((row == framebuffer->GetHeight() - 1u) && (column == framebuffer->GetWidth() - 1u))
 					{
-						averageAABBVisits += primaryRayAABBIntersectionsCount[i];
+						// Average aabb intersections for primary rays
+						uint32_t averageAABBVisits = 0u;
+						for (uint32_t i = 0u; i < primaryRayAABBIntersectionsCount.size(); i++)
+						{
+							averageAABBVisits += primaryRayAABBIntersectionsCount[i];
+						}
+
+						averageAABBVisits = averageAABBVisits / (uint32_t)primaryRayAABBIntersectionsCount.size();
+
+						char msgBuffer1[128u];
+						sprintf_s(msgBuffer1, "Average AABB visits: %u \n", averageAABBVisits);
+						OutputDebugStringA(msgBuffer1);
+
+
+						// Average triangle intersections for primary rays
+						uint32_t averageTriangleVisits = 0u;
+						for (uint32_t i = 0u; i < primaryRayTriangleIntersectionsCount.size(); i++)
+						{
+							averageTriangleVisits += primaryRayTriangleIntersectionsCount[i];
+						}
+
+						averageTriangleVisits = averageTriangleVisits / (uint32_t)primaryRayTriangleIntersectionsCount.size();
+
+						char msgBuffer2[128u];
+						sprintf_s(msgBuffer2, "Average Triangle visits: %u \n", averageTriangleVisits);
+						OutputDebugStringA(msgBuffer2);
+
+						// Average node visits
+						uint32_t averageNodeVisits = 0u;
+						for (uint32_t i = 0u; i < primaryRayNodeVisits.size(); i++)
+						{
+							averageNodeVisits += primaryRayNodeVisits[i];
+						}
+
+						averageNodeVisits = averageNodeVisits / (uint32_t)primaryRayNodeVisits.size();
+
+						char msgBuffer3[128u];
+						sprintf_s(msgBuffer3, "Average Node visits: %u \n", averageNodeVisits);
+						OutputDebugStringA(msgBuffer3);
 					}
 
-					averageAABBVisits = averageAABBVisits / (uint32_t)primaryRayAABBIntersectionsCount.size();
-
-					char msgBuffer1[128u];
-					sprintf_s(msgBuffer1, "Average AABB visits: %u \n", averageAABBVisits);
-					OutputDebugStringA(msgBuffer1);
-
-
-					// Average triangle intersections for primary rays
-					uint32_t averageTriangleVisits = 0u;
-					for (uint32_t i = 0u; i < primaryRayTriangleIntersectionsCount.size(); i++)
-					{
-						averageTriangleVisits += primaryRayTriangleIntersectionsCount[i];
-					}
-
-					averageTriangleVisits = averageTriangleVisits / (uint32_t)primaryRayTriangleIntersectionsCount.size();
-
-					char msgBuffer2[128u];
-					sprintf_s(msgBuffer2, "Average Triangle visits: %u \n", averageTriangleVisits);
-					OutputDebugStringA(msgBuffer2);
-
-					// Average node visits
-					uint32_t averageNodeVisits = 0u;
-					for (uint32_t i = 0u; i < primaryRayNodeVisits.size(); i++)
-					{
-						averageNodeVisits += primaryRayNodeVisits[i];
-					}
-
-					averageNodeVisits = averageNodeVisits / (uint32_t)primaryRayNodeVisits.size();
-
-					char msgBuffer3[128u];
-					sprintf_s(msgBuffer3, "Average Node visits: %u \n", averageNodeVisits);
-					OutputDebugStringA(msgBuffer3);
+					red = 0.0f;
+					green = 1.0f;
+					blue = 0.0f;
 				}
 
-				red = 0.0f;
-				green = 1.0f;
-				blue = 0.0f;
-			}
-
-			if (cKeyState > 0u)
-			{
-				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
-
-#ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH_SSE
-				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-
-				//const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, primaryHr.m_normal), 0.0f), 1.0f);
-
-				if (hr.m_t != INFINITY)
+				// In shadow check
+				if (cKeyState > 0u)
 				{
-					Ray shadowRay(hr.m_intersectionPoint, m_lightDirection);
+					if (hr.m_t != INFINITY)
+					{
+						Ray shadowRay(hr.m_intersectionPoint, m_lightDirection);
 
-#ifdef TRACE_AGAINST_BVH2
-					const HitResult shadowHr = TraceAgainstBVH2<true>(shadowRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_BVH4
-					const HitResult shadowHr = TraceAgainstBVH4<true>(shadowRay, rayIndex, 1e-5f);
-#endif
 #ifdef TRACE_AGAINST_NON_BVH
-					const HitResult shadowHr = TraceRayNonBVH<true>(shadowRay, rayIndex, 1e-5f);
+						const HitResult shadowHr = TraceRayNonBVH<true>(shadowRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-					const HitResult shadowHr = TraceRay4NonBVH<true>(shadowRay, rayIndex, 1e-5f);
+						const HitResult shadowHr = TraceRay4NonBVH<true>(shadowRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+						const HitResult shadowHr = TraceAgainstBVH2<true>(shadowRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+						const HitResult shadowHr = TraceAgainstBVH4<true>(shadowRay, rayIndex, 1e-5f);
 #endif
 
-					red = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
-					green = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
-					blue = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
+
+
+						red = (shadowHr.m_t == INFINITY) ? 1.0f : 1.0f;
+						green = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
+						blue = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
+					}
+					else
+					{
+						red = 0.7f;
+						green = 0.7f;
+						blue = 0.7f;
+					}
 				}
-				else
+
+				if (vKeyState > 0u)
 				{
-					red = 0.7f;
-					green = 0.7f;
-					blue = 0.7f;
+					const float maxDepth = 10.0f;
+
+					red = (hr.m_t != INFINITY) ? hr.m_intersectionPoint.X() / maxDepth : 0.0f;
+					green = (hr.m_t != INFINITY) ? hr.m_intersectionPoint.Y() / maxDepth : 0.0f;
+					blue = (hr.m_t != INFINITY) ? hr.m_intersectionPoint.Z() / maxDepth : 0.0f;
 				}
-			}
 
-			if (vKeyState > 0u)
-			{
-				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				if (bKeyState > 0u)
+				{
+					const float maxDepth = 10.0f;
 
-#ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH_SSE
-				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
+					red = (hr.m_t != INFINITY) ? hr.m_t / maxDepth : 0.0f;
+					green = (hr.m_t != INFINITY) ? hr.m_t / maxDepth : 0.0f;
+					blue = (hr.m_t != INFINITY) ? hr.m_t / maxDepth : 0.0f;
+				}
 
-				const float maxDepth = 10.0f;
+				// Normals
+				if (nKeyState > 0u)
+				{
+					red = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.X() + 0.5f : 0.0f;
+					green = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Y() + 0.5f : 0.0f;
+					blue = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Z() + 0.5f : 0.0f;
+				}
 
-				red = (hr.m_t != INFINITY) ? hr.m_intersectionPoint.X() / maxDepth : 0.0f;
-				green = (hr.m_t != INFINITY) ? hr.m_intersectionPoint.Y() / maxDepth : 0.0f;
-				blue = (hr.m_t != INFINITY) ? hr.m_intersectionPoint.Z() / maxDepth : 0.0f;
-			}
+				// Primitive ids
+				if (mKeyState > 0u)
+				{
+					red = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].X() : 0.0f;
+					green = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Y() : 0.0f;
+					blue = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Z() : 0.0f;
+				}
 
-			if (bKeyState > 0u)
-			{
-				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				// Material ids
+				if (lKeyState > 0u)
+				{
+					red = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).X() : 0.0f;
+					green = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).Y() : 0.0f;
+					blue = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).Z() : 0.0f;
+				}
 
-#ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH_SSE
-				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
+				// Texture coordinates
+				if (kKeyState > 0u)
+				{
+					// Possibly do some other comparison due to fp precision
+					const bool uInRange = ((hr.m_texCoords.X() >= 0.0f) && (hr.m_texCoords.X() <= 1.0f));
+					const bool vInRange = ((hr.m_texCoords.Y() >= 0.0f) && (hr.m_texCoords.Y() <= 1.0f));
 
-				const float maxDepth = 10.0f;
+					red = (uInRange && vInRange) ? hr.m_texCoords.X() : 1.0f;
+					green = (uInRange && vInRange) ? hr.m_texCoords.Y() : 0.75f;
+					blue = (uInRange && vInRange) ? 0.0f : 0.8f;
+				}
 
-				red = (hr.m_t != INFINITY) ? hr.m_t / maxDepth : 0.0f;
-				green = (hr.m_t != INFINITY) ? hr.m_t / maxDepth : 0.0f;
-				blue = (hr.m_t != INFINITY) ? hr.m_t / maxDepth : 0.0f;
-			}
-
-			if (nKeyState > 0u)
-			{
-				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
-
-#ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH_SSE
-				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-
-				red = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.X() + 0.5f : 0.0f;
-				green = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Y() + 0.5f : 0.0f;
-				blue = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Z() + 0.5f : 0.0f;
-			}
-
-			if (mKeyState > 0u)
-			{
-				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
-
-#ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH_SSE
-				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-
-				red = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].X() : 0.0f;
-				green = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Y() : 0.0f;
-				blue = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Z() : 0.0f;
-			}
-
-			if (lKeyState > 0u)
-			{
-				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
-
-#ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH_SSE
-				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-
-				red = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).X() : 0.0f;
-				green = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).Y() : 0.0f;
-				blue = (hr.m_materialId != UINT32_MAX) ? m_sceneManager->GetDebugMaterialColour(hr.m_materialId).Z() : 0.0f;
-			}
-
-			// Texture coordinates
-			if (kKeyState > 0u)
-			{
-				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
-
-#ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_NON_BVH_SSE
-				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
-#endif
-
-				red = (hr.m_primitiveId != UINT32_MAX) ? hr.m_texCoords.X() : 0.0f;
-				green = (hr.m_primitiveId != UINT32_MAX) ? hr.m_texCoords.Y() : 0.0f;
-				blue = 0.0f;
+				// Surface colour
+				if (jKeyState > 0u)
+				{
+					red = hr.m_colour.X();
+					green = hr.m_colour.Y();
+					blue = hr.m_colour.Z();
+				}
 			}
 
 			bytes[texelByteIndex] = uint8_t(red * 255.0f);

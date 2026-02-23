@@ -29,14 +29,14 @@ uint32_t TextureManager::Load(const char* textureName)
 
 	if (!found)
 	{
+		// Enforce bottom left to be the first texel
+		stbi_set_flip_vertically_on_load(true);
+
 		int x = INT_MAX;
 		int y = INT_MAX;
 		int channels = INT_MAX;
 		const std::string path = std::string("Scenes/CrytekSponza/textures/") + textureStr;
 		const uint8_t* data = stbi_load(path.data(), &x, &y, &channels, 3);
-
-		//assert(channels == 3u);
-		//assert(((x * y * channels) % sizeof(RGB)) == 0);
 
 		if (!data)
 		{

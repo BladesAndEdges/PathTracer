@@ -105,22 +105,21 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 				for (uint32_t sample = 0u; sample < numSamples; sample++)
 				{
-					//Vector3 texelTopLeft;
-					//Vector3 texelBottomRight;
-					//
-					//texelTopLeft.SetX(m_texelCenters[rayIndex].X() - m_viewportDesc.m_texelWidth / 2.0f);
-					//texelTopLeft.SetY(m_texelCenters[rayIndex].Y() + m_viewportDesc.m_texelHeight / 2.0f);
-					//
-					//texelBottomRight.SetX(m_texelCenters[rayIndex].X() + m_viewportDesc.m_texelWidth / 2.0f);
-					//texelBottomRight.SetY(m_texelCenters[rayIndex].Y() - m_viewportDesc.m_texelHeight / 2.0f);
-					//
-					//const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
-					//const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
-					//
-					//const Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, -1.0f));
-					Ray c_primaryRay(m_camera.GetCameraLocation(), Vector3(m_texelCenters[rayIndex]));
+					Vector3 texelTopLeft;
+					Vector3 texelBottomRight;
+					
+					texelTopLeft.SetX(m_texelCenters[rayIndex].X() - m_viewportDesc.m_texelWidth / 2.0f);
+					texelTopLeft.SetY(m_texelCenters[rayIndex].Y() + m_viewportDesc.m_texelHeight / 2.0f);
+					
+					texelBottomRight.SetX(m_texelCenters[rayIndex].X() + m_viewportDesc.m_texelWidth / 2.0f);
+					texelBottomRight.SetY(m_texelCenters[rayIndex].Y() - m_viewportDesc.m_texelHeight / 2.0f);
+					
+					const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
+					const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
+					
+					Ray primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, m_texelCenters[rayIndex].Z()));
 
-					radiance = radiance + PathTrace(c_primaryRay, rayIndex, depth);
+					radiance = radiance + PathTrace(primaryRay, rayIndex, depth);
 				}
 
 				radiance = Vector3(radiance.X() / (float)numSamples, radiance.Y() / (float)numSamples, radiance.Z() / (float)numSamples);

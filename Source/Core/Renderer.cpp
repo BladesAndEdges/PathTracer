@@ -517,8 +517,8 @@ HitResult Renderer::TraceRayNonBVH(Ray& ray, const uint32_t rayIndex, const floa
 		hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
 		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
 
-		const Vector3 edge1(traversalTriangles[primitiveId].m_edge1[0u], traversalTriangles[primitiveId].m_edge1[1u], traversalTriangles[primitiveId].m_edge1[2u]);
-		const Vector3 edge2(traversalTriangles[primitiveId].m_edge2[0u], traversalTriangles[primitiveId].m_edge2[1u], traversalTriangles[primitiveId].m_edge2[2u]);
+		const Vector3 edge1 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge1[0u], traversalTriangles[primitiveId].m_edge1[1u], traversalTriangles[primitiveId].m_edge1[2u]));
+		const Vector3 edge2 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge2[0u], traversalTriangles[primitiveId].m_edge2[1u], traversalTriangles[primitiveId].m_edge2[2u]));
 		const Vector3 normal = Normalize(Cross(edge1, edge2));
 		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
@@ -629,8 +629,14 @@ HitResult Renderer::TraceRay4NonBVH(Ray& ray, const uint32_t rayIndex, const flo
 		hitResult.m_texCoords.SetX((1.0f - u - v) * texCoords4[tri4Index].m_v0U[subIndex] + u * texCoords4[tri4Index].m_v1U[subIndex] + v * texCoords4[tri4Index].m_v2U[subIndex]);
 		hitResult.m_texCoords.SetY((1.0f - u - v) * texCoords4[tri4Index].m_v0V[subIndex] + u * texCoords4[tri4Index].m_v1V[subIndex] + v * texCoords4[tri4Index].m_v2V[subIndex]);
 
-		const Vector3 edge1(traversalTriangle4s[tri4Index].m_edge1X[subIndex], traversalTriangle4s[tri4Index].m_edge1Y[subIndex], traversalTriangle4s[tri4Index].m_edge1Z[subIndex]);
-		const Vector3 edge2(traversalTriangle4s[tri4Index].m_edge2X[subIndex], traversalTriangle4s[tri4Index].m_edge2Y[subIndex], traversalTriangle4s[tri4Index].m_edge2Z[subIndex]);
+		const Vector3 edge1 = Normalize(Vector3(traversalTriangle4s[tri4Index].m_edge1X[subIndex], 
+			traversalTriangle4s[tri4Index].m_edge1Y[subIndex], 
+			traversalTriangle4s[tri4Index].m_edge1Z[subIndex]));
+
+		const Vector3 edge2 = Normalize(Vector3(traversalTriangle4s[tri4Index].m_edge2X[subIndex], 
+			traversalTriangle4s[tri4Index].m_edge2Y[subIndex], 
+			traversalTriangle4s[tri4Index].m_edge2Z[subIndex]));
+
 		const Vector3 normal = Normalize(Cross(edge1, edge2));
 		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
@@ -672,8 +678,8 @@ HitResult Renderer::TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const fl
 		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
 
 		const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(primitiveId);
-		const Vector3 edge1(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]);
-		const Vector3 edge2(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]);
+		const Vector3 edge1 = Normalize(Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]));
+		const Vector3 edge2 = Normalize(Vector3(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]));
 		const Vector3 normal = Normalize(Cross(edge1, edge2));
 		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
@@ -817,8 +823,8 @@ HitResult Renderer::TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const fl
 		hitResult.m_texCoords.SetY((1.0f - u - v) * triangleTexCoords4.m_v0V[subIndex] + u * triangleTexCoords4.m_v1V[subIndex] + v * triangleTexCoords4.m_v2V[subIndex]);
 
 		const TraversalTriangle4& traversalTriangle4 = m_traversalDataManager->GetBVH4TraversalTriangle4(tri4Index);
-		const Vector3 edge1(traversalTriangle4.m_edge1X[subIndex], traversalTriangle4.m_edge1Y[subIndex], traversalTriangle4.m_edge1Z[subIndex]);
-		const Vector3 edge2(traversalTriangle4.m_edge2X[subIndex], traversalTriangle4.m_edge2Y[subIndex], traversalTriangle4.m_edge2Z[subIndex]);
+		const Vector3 edge1 = Normalize(Vector3(traversalTriangle4.m_edge1X[subIndex], traversalTriangle4.m_edge1Y[subIndex], traversalTriangle4.m_edge1Z[subIndex]));
+		const Vector3 edge2 = Normalize(Vector3(traversalTriangle4.m_edge2X[subIndex], traversalTriangle4.m_edge2Y[subIndex], traversalTriangle4.m_edge2Z[subIndex]));
 		const Vector3 normal = Normalize(Cross(edge1, edge2));
 		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 

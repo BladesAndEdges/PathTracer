@@ -22,6 +22,9 @@ GLContext::GLContext()
 
 	InitializeGlad();
 
+	// Enables the linear-to-srgb conversion post fragment shader
+	glEnable(GL_FRAMEBUFFER_SRGB);
+
 	RegisterDebugCallback();
 
 	glCreateVertexArrays(1, &m_vao);
@@ -187,9 +190,9 @@ void GLContext::CreateGLFWWindow()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 
 	m_glfwWindow = glfwCreateWindow(640, 480, "Path Tracer", nullptr, nullptr);
-
 	glfwMakeContextCurrent(m_glfwWindow);
 }
 

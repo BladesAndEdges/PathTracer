@@ -62,8 +62,24 @@ uint32_t TextureManager::Load(const char* textureName)
 }
 
 // --------------------------------------------------------------------------------
-Vector3 TextureManager::BasicSample(const Material& material, const float u, const float v) const
+float SrgbToLinear(const float unormSrgb)
 {
+	float unormLinear;
+	if (unormSrgb <= 0.04045f)
+	{
+		unormLinear = unormSrgb / 12.92f;
+	}
+	else
+	{
+		unormLinear = std::powf((unormSrgb + 0.055f) / 1.055f, 2.4f);
+	}
+
+	return unormLinear;
+}
+
+// --------------------------------------------------------------------------------
+Vector3 TextureManager::BasicSample(const Material& material, const float u, const float v) const
+{	
 	const uint32_t diffuseTexture = material.diffuseIndex;
 	const Texture& texture = m_textures[diffuseTexture];
 
@@ -85,9 +101,16 @@ Vector3 TextureManager::BasicSample(const Material& material, const float u, con
 
 	const RGB start = texture.m_data[(texelYStart * texture.m_width) + texelXStart];
 
-	const float r = (float)start.red / 255.0f;
-	const float g = (float)start.green / 255.0f;
-	const float b = (float)start.blue / 255.0f;
+	const float unormRedSrgb = (float)start.red / 255.0f;
+	const float unormGreenSrgb = (float)start.green / 255.0f;
+	const float unormBlueSrgb = (float)start.blue / 255.0f;
 
-	return Vector3(r, g, b);
+	// Unorm Linear conversion
+	const float unormRedLinear = SrgbToLinear(unormRedSrgb);
+	const float unormGreenLinear = SrgbToLinear(unormGreenSrgb);
+	const float unormBlueLinear = SrgbToLinear(unormBlueSrgb);
+
+	// Bilineer comes after conversion if I ever do this.
+
+	return Vector3(unormRedLinear, unormGreenLinear, unormBlueLinear);
 }

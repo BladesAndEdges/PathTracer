@@ -311,10 +311,10 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 				}
 			}
 
-			bytes[texelByteIndex] = uint8_t(red * 255.0f);
-			bytes[texelByteIndex + 1u] = uint8_t(green * 255.0f);
-			bytes[texelByteIndex + 2u] = uint8_t(blue * 255.0f);
-			bytes[texelByteIndex + 3u] = 1u;
+			bytes[texelByteIndex] = uint8_t((red * 255.0f) + 0.5f);
+			bytes[texelByteIndex + 1u] = uint8_t((green * 255.0f) + 0.5f);
+			bytes[texelByteIndex + 2u] = uint8_t((blue * 255.0f) + 0.5f);
+			bytes[texelByteIndex + 3u] = 255u;
 		}
 	}
 

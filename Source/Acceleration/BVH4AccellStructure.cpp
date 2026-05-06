@@ -185,6 +185,8 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 		m_innerNodesTri4[bvh4Node].m_aabbMaxY[subNode] = trianglesAABB.m_max.Y();
 		m_innerNodesTri4[bvh4Node].m_aabbMaxZ[subNode] = trianglesAABB.m_max.Z();
 
+		m_innerNodesTri4[bvh4Node].m_validity[subNode] = 0xffffffff;
+
 		subNode++;
 	}
 
@@ -204,6 +206,8 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 			m_innerNodesTri4[bvh4Node].m_aabbMaxY[subNode] = boxes[child].m_max.Y();
 			m_innerNodesTri4[bvh4Node].m_aabbMaxZ[subNode] = boxes[child].m_max.Z();
 
+			m_innerNodesTri4[bvh4Node].m_validity[subNode] = 0xffffffff;
+
 			subNode++;
 		}
 	}
@@ -220,6 +224,8 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 		m_innerNodesTri4[bvh4Node].m_aabbMaxX[subNode] = std::nanf("");
 		m_innerNodesTri4[bvh4Node].m_aabbMaxY[subNode] = std::nanf("");
 		m_innerNodesTri4[bvh4Node].m_aabbMaxZ[subNode] = std::nanf("");
+
+		m_innerNodesTri4[bvh4Node].m_validity[subNode] = 0;
 	}
 
 	return bvh4Node;

@@ -38,7 +38,11 @@ Renderer::Renderer()
 	m_camera.SetCameraLocation(m_sceneManager->GetInitialCameraPosition());
 
 	// How does the light direection affect the performance?
+	// Why does it take longer to render with direction (1, 0, 0)
 	m_lightDirection = Normalize(Vector3(0.9f, 1.0f, 0.4f));
+	//m_lightDirection = Normalize(Vector3(0.000000001f, 1.0f, 0.0f)); // super small x
+	//m_lightDirection = Normalize(Vector3(1.0f, 0.8f, 1.0f));
+	//m_lightDirection = Normalize(Vector3(0.6f, 10.0f, 0.5f));
 }
 
 // --------------------------------------------------------------------------------
@@ -58,10 +62,6 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	std::vector<uint32_t> primaryRayAABBIntersectionsCount;
 	std::vector<uint32_t> primaryRayTriangleIntersectionsCount;
 	std::vector<uint32_t> primaryRayNodeVisits;
-
-	//std::vector<uint32_t> primaryRayAABBIntersectionsCount;
-	//std::vector<uint32_t> primaryRayTriangleIntersectionsCount;
-	//std::vector<uint32_t> primaryRayNodeVisits;
 
 	primaryRayAABBIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
 	primaryRayTriangleIntersectionsCount.resize(framebuffer->GetWidth() * framebuffer->GetHeight());
@@ -83,6 +83,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------
 	pc.BeginTiming();
 	uint8_t* bytes = framebuffer->GetDataPtr();
+
 	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
 	{
 		for (uint32_t column = 0u; column < framebuffer->GetWidth(); column++)
@@ -124,6 +125,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 				radiance = Vector3(radiance.X() / (float)numSamples, radiance.Y() / (float)numSamples, radiance.Z() / (float)numSamples);
 
+				// Clamp prior to the conversion, assume SDR
 				red = std::fmin(1.0f, radiance.X());
 				green = std::fmin(1.0f, radiance.Y());
 				blue = std::fmin(1.0f, radiance.Z());
@@ -234,9 +236,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 						const HitResult shadowHr = TraceAgainstBVH4<true>(shadowRay, rayIndex, 1e-5f);
 #endif
 
-
-
-						red = (shadowHr.m_t == INFINITY) ? 1.0f : 1.0f;
+						red = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
 						green = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
 						blue = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
 					}
@@ -382,18 +382,18 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 
 	Vector3 radiance(0.0f, 0.0f, 0.0f);
 
+#ifdef TRACE_AGAINST_NON_BVH
+	const HitResult c_primaryHitResult = TraceRayNonBVH<false>(ray, rayIndex, 1e-5f);
+#endif 
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+	const HitResult c_primaryHitResult = TraceRay4NonBVH<false>(ray, rayIndex, 1e-5f);
+#endif
 #ifdef TRACE_AGAINST_BVH2
 	const HitResult c_primaryHitResult = TraceAgainstBVH2<false>(ray, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_BVH4
 	const HitResult c_primaryHitResult = TraceAgainstBVH4<false>(ray, rayIndex, 1e-5f);
 #endif
-#ifdef TRACE_AGAINST_NON_BVH
-	const HitResult c_primaryHitResult = TraceRayNonBVH<false>(ray, rayIndex, 1e-5f);
-#endif 
-#ifdef TRACE_AGAINST_NON_BVH_SSE
-	const HitResult c_primaryHitResult = TraceRay4NonBVH<false>(ray, rayIndex, 1e-5f);
-#endif 
 
 	if (c_primaryHitResult.m_t != INFINITY)
 	{
@@ -401,22 +401,22 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 		{
 			// Calculate the random direction of the outward ray
 			Ray rayOnHemisphere(c_primaryHitResult.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(c_primaryHitResult.m_normal));
-
+			
 			// RENDERING EQUATION
-
+			
 			// We need the Li
 			const Vector3 Li = PathTrace(rayOnHemisphere, rayIndex, depth - 1u);
-
+			
 			// Elongation/cosine term, the falloff (Geometric term)
 			// We use the ray direction, instead of -ray.Direction() so that the Dot product produces a positive value
 			const float cosineTerm = std::fmin(std::fmax(Dot(rayOnHemisphere.Direction(), c_primaryHitResult.m_normal), 0.0f), 1.0f);
-
+			
 			// BRDF, in our case just use Lambert which is P/PI, P being the colour of the material, a vector3 [0,1] for each wavelength
 			const Vector3 brdf = (1.0f / (float)M_PI) * c_primaryHitResult.m_colour;
-
+			
 			radiance = cosineTerm * brdf * Li;
-
-			// Divide everything by the probability distribution function, for our case just 1/Pi
+			
+			// Divide everything by the probability distribution function, for our case just 1/ 2 * Pi
 			const float pdf = 1.0f / (2.0f * (float)M_PI);
 			radiance = Vector3(radiance.X() / pdf, radiance.Y() / pdf, radiance.Z() / pdf);
 		}
@@ -426,17 +426,18 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 			const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, c_primaryHitResult.m_normal), 0.0f), 1.0f);
 
 			Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
-#ifdef TRACE_AGAINST_BVH2
-			const HitResult c_secondaryRayHitResult = TraceAgainstBVH2<true>(c_shadowRay, rayIndex, 1e-5f);
-#endif
-#ifdef TRACE_AGAINST_BVH4
-			const HitResult c_secondaryRayHitResult = TraceAgainstBVH4<true>(c_shadowRay, rayIndex, 1e-5f);
-#endif
+
 #ifdef TRACE_AGAINST_NON_BVH
 			const HitResult c_secondaryRayHitResult = TraceRayNonBVH<true>(c_shadowRay, rayIndex, 1e-5f);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
 			const HitResult c_secondaryRayHitResult = TraceRay4NonBVH<true>(c_shadowRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult c_secondaryRayHitResult = TraceAgainstBVH2<true>(c_shadowRay, rayIndex, 1e-5f);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult c_secondaryRayHitResult = TraceAgainstBVH4<true>(c_shadowRay, rayIndex, 1e-5f);
 #endif
 
 			if (c_secondaryRayHitResult.m_t == INFINITY)
@@ -446,15 +447,15 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 				directRadiance.SetY(clampValue * c_primaryHitResult.m_colour.Y());
 				directRadiance.SetZ(clampValue * c_primaryHitResult.m_colour.Z());
 
-				radiance = radiance + directRadiance;
+				radiance = radiance + 2.0 * directRadiance;
 			}
 		}
 	}
 	else
 	{
-		const float val = 0.5f * (ray.Direction().Y() + 1.0f);
-		const Vector3 skyColour = (1.0f - val) * Vector3(1.0f, 1.0f, 1.0f) + val * Vector3(0.5f, 0.7f, 1.0f);
-
+		const float skyIntensity = 1.5f;
+		const Vector3 skyColour = skyIntensity * Vector3(0.98f, 0.68f, 0.37f);
+		
 		radiance.SetX(skyColour.X());
 		radiance.SetY(skyColour.Y());
 		radiance.SetZ(skyColour.Z());
@@ -954,10 +955,21 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 	}
 #endif
 
-	// 0 and tMAx
+	// 0 andd tMax
 	const __m128 zeroReg = _mm_set1_ps(0.0f);
+	const __m128 tMaxReg = _mm_set1_ps(INFINITY); // Might want to add the actual tMax
 
-	// AABB paramaters
+	// Origin
+	const __m128 originX = _mm_set1_ps(ray.Origin().X());
+	const __m128 originY = _mm_set1_ps(ray.Origin().Y());
+	const __m128 originZ = _mm_set1_ps(ray.Origin().Z());
+
+	// Inverse direction
+	const __m128 inverseDirX = _mm_set1_ps(ray.InverseDirection().X());
+	const __m128 inverseDirY = _mm_set1_ps(ray.InverseDirection().Y());
+	const __m128 inverseDirZ = _mm_set1_ps(ray.InverseDirection().Z());
+
+	// AABB
 	const __m128 minXs = _mm_loadu_ps(node.m_aabbMinX);
 	const __m128 minYs = _mm_loadu_ps(node.m_aabbMinY);
 	const __m128 minZs = _mm_loadu_ps(node.m_aabbMinZ);
@@ -965,40 +977,50 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 	const __m128 maxYs = _mm_loadu_ps(node.m_aabbMaxY);
 	const __m128 maxZs = _mm_loadu_ps(node.m_aabbMaxZ);
 
-	//Ray data
-	const __m128 rayInverseX = _mm_set1_ps(ray.InverseDirection().X());
-	const __m128 rayInverseY = _mm_set1_ps(ray.InverseDirection().Y());
-	const __m128 rayInverseZ = _mm_set1_ps(ray.InverseDirection().Z());
+	// Validity mask
+	const __m128i validity = _mm_loadu_epi32(node.m_validity);
 
-	const __m128 rayNegativeOriginTimesInvDirX = _mm_set1_ps(ray.NegativeOriginTimesInvDir().X());
-	const __m128 rayNegativeOriginTimesInvDirY = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Y());
-	const __m128 rayNegativeOriginTimesInvDirZ = _mm_set1_ps(ray.NegativeOriginTimesInvDir().Z());
+	// Calculate t0x and t1x
+	const __m128 minSubOriginX = _mm_sub_ps(minXs, originX);
+	const __m128 nX = _mm_mul_ps(minSubOriginX, inverseDirX);
 
-	// TNears
-	const __m128 t0X = _mm_fmadd_ps(minXs, rayInverseX, rayNegativeOriginTimesInvDirX);
-	const __m128 t0Y = _mm_fmadd_ps(minYs, rayInverseY, rayNegativeOriginTimesInvDirY);
-	const __m128 t0Z = _mm_fmadd_ps(minZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
+	const __m128 maxSubOriginX = _mm_sub_ps(maxXs, originX);
+	const __m128 fX = _mm_mul_ps(maxSubOriginX, inverseDirX);
 
-	// TFars
-	const __m128 t1X = _mm_fmadd_ps(maxXs, rayInverseX, rayNegativeOriginTimesInvDirX);
-	const __m128 t1Y = _mm_fmadd_ps(maxYs, rayInverseY, rayNegativeOriginTimesInvDirY);
-	const __m128 t1Z = _mm_fmadd_ps(maxZs, rayInverseZ, rayNegativeOriginTimesInvDirZ);
+	const __m128 nearX = _mm_min_ps(fX, nX);
+	const __m128 farX = _mm_max_ps(nX, fX);
 
-	// Entries and exits
-	const __m128 enterX = _mm_min_ps(t0X, t1X);
-	const __m128 enterY = _mm_min_ps(t0Y, t1Y);
-	const __m128 enterZ = _mm_min_ps(t0Z, t1Z);
+	const __m128 t0X = _mm_max_ps(nearX, zeroReg);
+	const __m128 t1X = _mm_min_ps(farX, tMaxReg);
 
-	const __m128 exitX = _mm_max_ps(t0X, t1X);
-	const __m128 exitY = _mm_max_ps(t0Y, t1Y);
-	const __m128 exitZ = _mm_max_ps(t0Z, t1Z);
+	// Calculate t0Y and t1Y
+	const __m128 minSubOriginY = _mm_sub_ps(minYs, originY);
+	const __m128 nY = _mm_mul_ps(minSubOriginY, inverseDirY);
 
-	// t0 and t1
-	const __m128 t0 = _mm_max_ps(_mm_max_ps(enterX, enterY), _mm_max_ps(zeroReg, enterZ));
-	const __m128 t1 = _mm_min_ps(_mm_min_ps(exitX, exitY), _mm_min_ps(out_tMax, exitZ));
+	const __m128 maxSubOriginY = _mm_sub_ps(maxYs, originY);
+	const __m128 fY = _mm_mul_ps(maxSubOriginY, inverseDirY);
 
-	// hasIntersected
-	const __m128 hasIntersected = _mm_cmpge_ps(t1, t0);
+	const __m128 nearY = _mm_min_ps(fY, nY);
+	const __m128 farY = _mm_max_ps(nY, fY); 
+
+	const __m128 t0Y = _mm_max_ps(nearY, t0X);
+	const __m128 t1Y = _mm_min_ps(farY, t1X);
+
+	// Calculate t0Z and t1Z
+	const __m128 minSubOriginZ = _mm_sub_ps(minZs, originZ);
+	const __m128 nZ = _mm_mul_ps(minSubOriginZ, inverseDirZ);
+
+	const __m128 maxSubOriginZ = _mm_sub_ps(maxZs, originZ);
+	const __m128 fZ = _mm_mul_ps(maxSubOriginZ, inverseDirZ);
+
+	const __m128 nearZ = _mm_min_ps(fZ, nZ);
+	const __m128 farZ = _mm_max_ps(nZ, fZ);
+
+	const __m128 t0Z = _mm_max_ps(nearZ, t0Y);
+	const __m128 t1Z = _mm_min_ps(farZ, t1Y);
+
+	// Check if an intersection occurred
+	const __m128 hasIntersected = _mm_and_ps(_mm_cmple_ps(t0Z, t1Z), _mm_castsi128_ps(validity));
 	const int intersectionMask = _mm_movemask_ps(hasIntersected);
 
 	if (!intersectionMask)
@@ -1008,7 +1030,7 @@ void Renderer::BVH4DFSTraversal(const uint32_t innerNodeStartIndex, Ray& ray, co
 
 	// Packing
 	const __m128i int32Max = _mm_set1_epi32(INT32_MAX);
-	const __m128i t0AsInts = _mm_castps_si128(_mm_or_ps(_mm_and_ps(hasIntersected, t0), _mm_andnot_ps(hasIntersected, _mm_castsi128_ps(int32Max))));
+	const __m128i t0AsInts = _mm_castps_si128(_mm_or_ps(_mm_and_ps(hasIntersected, t0Z), _mm_andnot_ps(hasIntersected, _mm_castsi128_ps(int32Max))));
 	const __m128i postChopBits = _mm_and_si128(t0AsInts, _mm_set1_epi32(0x3FFFFFFE));
 	const __m128i shiftedLeft = _mm_slli_epi32(postChopBits, 1);
 

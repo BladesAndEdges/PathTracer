@@ -20,6 +20,8 @@ struct alignas(16) BVH4InnerNode
 	float m_aabbMaxZ[4u];
 
 	uint32_t m_child[4u];
+
+	int32_t m_validity[4u];
 };
 
 // --------------------------------------------------------------------------------

@@ -39,34 +39,41 @@ bool RayAABBIntersection(Ray& ray, bool isPrimary, float minX, float minY, float
 		ray.m_primaryAABBIntersectionTests++;
 	}
 
-	// MADD test   ( a   *    b)                       +    c
-	float tNearX = (minX * ray.InverseDirection().X()) + ray.NegativeOriginTimesInvDir().X();
-	float tFarX = (maxX * ray.InverseDirection().X()) + ray.NegativeOriginTimesInvDir().X();
-	
-	// y axis
-	float tNearY = (minY * ray.InverseDirection().Y()) + ray.NegativeOriginTimesInvDir().Y();
-	float tFarY = (maxY * ray.InverseDirection().Y()) + ray.NegativeOriginTimesInvDir().Y();
-	
-	// z axis
-	float tNearZ = (minZ * ray.InverseDirection().Z()) + ray.NegativeOriginTimesInvDir().Z();
-	float tFarZ = (maxZ * ray.InverseDirection().Z()) + ray.NegativeOriginTimesInvDir().Z();
+	// Expand x
+	const float expTNearX = (minX - ray.Origin().X()) * ray.InverseDirection().X();
+	const float expTFarX = (maxX - ray.Origin().X()) * ray.InverseDirection().X();
 
-	// Entries and exits
-	const float enterX = std::min(tNearX, tFarX);
-	const float enterY = std::min(tNearY, tFarY);
-	const float enterZ = std::min(tNearZ, tFarZ);
-	
-	const float exitX = std::max(tNearX, tFarX);
-	const float exitY = std::max(tNearY, tFarY);
-	const float exitZ = std::max(tNearZ, tFarZ);
-	
-	// t0 and t1
-	const float t0 = std::max(std::max(enterX, enterY), std::max(enterZ, 0.0f));
-	const float t1 = std::min(std::min(exitX, exitY), std::min(exitZ, tMax));
-	
-	if (out_hitNear) { *out_hitNear = t0; }
-	
-	return t1 >= t0;
+	const float nearX = std::min(expTNearX, expTFarX);
+	float farX = std::max(expTFarX, expTNearX);
+
+	const float t0X = std::max(0.0f, nearX);
+	const float t1X = std::min(tMax, farX);
+
+	// Expand Y
+	const float expTNearY = (minY - ray.Origin().Y()) * ray.InverseDirection().Y();
+	const float expTFarY = (maxY - ray.Origin().Y()) * ray.InverseDirection().Y();
+
+	const float nearY = std::min(expTNearY, expTFarY);
+	float farY = std::max(expTFarY, expTNearY);
+											
+	const float t0Y = std::max(t0X, nearY);
+	const float t1Y = std::min(t1X, farY);
+
+	// Expand Z
+	const float expTNearZ = (minZ - ray.Origin().Z()) * ray.InverseDirection().Z();
+	const float expTFarZ = (maxZ - ray.Origin().Z()) * ray.InverseDirection().Z();
+
+	const float nearZ = std::min(expTNearZ, expTFarZ);
+	float farZ = std::max(expTFarZ, expTNearZ);
+
+	const float t0Z = std::max(t0Y, nearZ);
+	const float t1Z = std::min(t1Y, farZ);
+
+	const bool expHasHit = (t0Z <= t1Z);
+
+	if (out_hitNear) { *out_hitNear = t0Z; }
+
+	return expHasHit;
 }
 
 // --------------------------------------------------------------------------------

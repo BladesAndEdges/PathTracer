@@ -36,7 +36,7 @@ class BVH4AccellStructure
 public:
 
 	BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellStructure);
-	uint32_t BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStructure * bvhAccellStructure, const uint32_t start);
+	uint32_t MakeBVH4Node(const BVH2AccellStructure * bvhAccellStructure, const uint32_t start);
 
 	const BVH4InnerNode& GetInnerNodeTri4(const uint32_t index) const;
 	const TraversalTriangle4& GetTraversalTriangle4(const uint32_t index) const;

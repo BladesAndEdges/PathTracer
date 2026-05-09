@@ -13,7 +13,7 @@ BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellSt
 {
 	assert(bvh2AccellStructure != nullptr);
 	// Add getter for the size of the internal node vector, and check it is not empty
-	const uint32_t bvhRootIndex = BuildBVH4NodeFromBVH2NodeTri4(bvh2AccellStructure, 0);
+	const uint32_t bvhRootIndex = MakeBVH4Node(bvh2AccellStructure, 0u);
 
 	assert(m_traversalTriangle4s.size() == m_triangleIndices.size());
 	assert(m_traversalTriangle4s.size() == m_material4Indices.size());
@@ -22,7 +22,7 @@ BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellSt
 }
 
 // --------------------------------------------------------------------------------
-void RecursiveGetChildren(const BVH2AccellStructure* bvh2AccellStructure, const uint32_t& root, const AABB& box, const uint32_t depth, uint32_t* children, 
+void RecursiveGetChildren(const BVH2AccellStructure* bvh2AccellStructure, const uint32_t& root, const AABB& box, const uint32_t depth, uint32_t* children,
 	AABB* boxes, uint32_t& addedChildren, uint32_t& triangleMask)
 {
 	assert(bvh2AccellStructure != nullptr);
@@ -56,16 +56,84 @@ void RecursiveGetChildren(const BVH2AccellStructure* bvh2AccellStructure, const 
 }
 
 // --------------------------------------------------------------------------------
-uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStructure* bvh2AccellStructure, const uint32_t bvh2SubtreeRootIndex)
+void GetChildren(const BVH2AccellStructure* bvh2AccellStructure, uint32_t* children,
+	AABB* boxes, uint32_t& addedChildren, uint32_t& triangleMask)
+{
+
+	// assert sizes, addedChildren etc
+
+	while (addedChildren < 4u)
+	{
+		float largestSurfaceArea = 0.0f;
+		uint32_t childIndex = UINT32_MAX; // rename to more appropriate description
+		for (uint32_t child = 0u; child < addedChildren; child++)
+		{
+			if ((children[child] >> 31u) != 1u)
+			{
+				const BVH2InnerNode node = bvh2AccellStructure->GetInnerNode(children[child]);
+
+				AABB childrenAABB;
+				childrenAABB.MergeAABB(node.m_leftAABB);
+				childrenAABB.MergeAABB(node.m_rightAABB);
+
+				if (childrenAABB.GetSurfaceArea() > largestSurfaceArea)
+				{
+					childIndex = child;
+					largestSurfaceArea = childrenAABB.GetSurfaceArea();
+				}
+			}
+		}
+
+		// If no node available, break
+		if (childIndex == UINT32_MAX)
+		{
+			break;
+		}
+		else
+		{
+			const BVH2InnerNode node = bvh2AccellStructure->GetInnerNode(children[childIndex]);
+
+			// Careful with the indexing of the very first entry in a MakeBVH4Node call
+			children[childIndex] = node.m_leftChild;
+			boxes[childIndex] = node.m_leftAABB;
+
+			children[addedChildren] = node.m_rightChild;
+			boxes[addedChildren] = node.m_rightAABB;
+
+			addedChildren++;
+		}
+	}
+
+	// Update the triangle mask if any children are triangles
+	for (uint32_t child = 0u; child < addedChildren; child++)
+	{
+		if ((children[child] >> 31u) == 1u)
+		{
+			triangleMask = triangleMask = triangleMask | (1u << (3u - child));
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccellStructure* bvh2AccellStructure, const uint32_t bvh2SubtreeRootIndex)
 {
 	assert((bvh2SubtreeRootIndex >> 31u) != 1u);
 
-	uint32_t children[4u];
-	AABB boxes[4u];
-	uint32_t addedChildren = 0u;
-	uint32_t triangleMask = 0u;
-	RecursiveGetChildren(bvh2AccellStructure, bvh2SubtreeRootIndex, AABB(), 0u, children, boxes, addedChildren, triangleMask);
+	//uint32_t children[4u];
+	//AABB boxes[4u];
+	//uint32_t addedChildren = 0u;
+	//uint32_t triangleMask = 0u;
+	//RecursiveGetChildren(bvh2AccellStructure, bvh2SubtreeRootIndex, AABB(), 0u, children, boxes, addedChildren, triangleMask);
 
+	uint32_t children[4u];
+	children[0u] = bvh2SubtreeRootIndex;
+	
+	AABB boxes[4u];
+	uint32_t addedChildren = 1u;
+	uint32_t triangleMask = 0u;
+	
+	GetChildren(bvh2AccellStructure, children, boxes, addedChildren, triangleMask);
+	
 	const uint32_t bvh4Node = (uint32_t)m_innerNodesTri4.size();
 	m_innerNodesTri4.push_back(BVH4InnerNode());
 	uint32_t subNode = 0u;
@@ -196,7 +264,7 @@ uint32_t BVH4AccellStructure::BuildBVH4NodeFromBVH2NodeTri4(const BVH2AccellStru
 		const uint32_t postShiftValue = triangleMask >> (3u - child);
 		if (!(postShiftValue & 1u))
 		{
-			m_innerNodesTri4[bvh4Node].m_child[subNode] = BuildBVH4NodeFromBVH2NodeTri4(bvh2AccellStructure, children[child]);
+			m_innerNodesTri4[bvh4Node].m_child[subNode] = MakeBVH4Node(bvh2AccellStructure, children[child]);
 			
 			m_innerNodesTri4[bvh4Node].m_aabbMinX[subNode] = boxes[child].m_min.X();
 			m_innerNodesTri4[bvh4Node].m_aabbMinY[subNode] = boxes[child].m_min.Y();

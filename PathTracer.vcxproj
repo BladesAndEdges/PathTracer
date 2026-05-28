@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="CustomRelease|Win32">
@@ -228,6 +228,7 @@
     <ClCompile Include="Source\Core\Shader.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Raytracing\HitResult.cpp" />
+    <ClCompile Include="Source\Raytracing\Pathtracer.cpp" />
     <ClCompile Include="Source\Raytracing\Ray.cpp" />
     <ClCompile Include="Source\ResourceManagers\MaterialManager.cpp" />
     <ClCompile Include="Source\ResourceManagers\SceneManager.cpp" />
@@ -255,9 +256,9 @@
     <ClInclude Include="Source\Core\PerformanceCounter.h" />
     <ClInclude Include="Source\Core\Renderer.h" />
     <ClInclude Include="Source\Core\Shader.h" />
-    <ClInclude Include="Source\Core\ViewportDesc.h" />
     <ClInclude Include="Source\Intersections\Intersections.h" />
     <ClInclude Include="Source\Raytracing\HitResult.h" />
+    <ClInclude Include="Source\Raytracing\Pathtracer.h" />
     <ClInclude Include="Source\Raytracing\Ray.h" />
     <ClInclude Include="Source\ResourceManagers\MaterialManager.h" />
     <ClInclude Include="Source\ResourceManagers\SceneManager.h" />

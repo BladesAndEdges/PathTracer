@@ -20,6 +20,8 @@
 #include "TriangleTexCoords.h"
 #include "TriangleTexCoords4.h"
 
+#include "Pathtracer.h"
+
 # define M_PI 3.14159265358979323846
 //#define TRACE_AGAINST_NON_BVH
 //#define TRACE_AGAINST_NON_BVH_SSE
@@ -29,7 +31,6 @@
 // --------------------------------------------------------------------------------
 Renderer::Renderer()
 {
-	ZeroMemory((void*)&m_viewportDesc, sizeof(m_viewportDesc));
 	m_isFirstFrame = true;
 
 	m_sceneManager = new SceneManager("sponza.obj", 0.01f, "sponza.mtl");
@@ -38,12 +39,9 @@ Renderer::Renderer()
 
 	m_camera.SetCameraLocation(m_sceneManager->GetInitialCameraPosition());
 
-	// How does the light direection affect the performance?
-	// Why does it take longer to render with direction (1, 0, 0)
 	m_lightDirection = Normalize(Vector3(0.9f, 1.0f, 0.4f));
-	//m_lightDirection = Normalize(Vector3(0.000000001f, 1.0f, 0.0f)); // super small x
-	//m_lightDirection = Normalize(Vector3(1.0f, 0.8f, 1.0f));
-	//m_lightDirection = Normalize(Vector3(0.6f, 10.0f, 0.5f));
+
+	m_pathtracer = new Pathtracer();
 }
 
 // --------------------------------------------------------------------------------
@@ -57,7 +55,8 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 {
 	if (hasResized || m_isFirstFrame)
 	{
-		RegenerateViewSpaceDirections(framebuffer);
+		m_pathtracer->GenerateViewspaceDirections(framebuffer->GetWidth(), framebuffer->GetHeight());
+		m_isFirstFrame = false;
 	}
 
 	std::vector<uint32_t> primaryRayAABBIntersectionsCount;
@@ -84,6 +83,9 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------
 	pc.BeginTiming();
 	uint8_t* bytes = framebuffer->GetDataPtr();
+	const std::vector<Vector3>& viewSpaceDirections = m_pathtracer->GetViewSpaceDirections();
+	const float pixelHalfWidth = m_pathtracer->GetPixelWidth() / 2.0f;
+	const float pixelHalfHeight = m_pathtracer->GetPixelHeight() / 2.0f;
 
 	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
 	{
@@ -110,16 +112,17 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 					Vector3 texelTopLeft;
 					Vector3 texelBottomRight;
 					
-					texelTopLeft.SetX(m_texelCenters[rayIndex].X() - m_viewportDesc.m_texelWidth / 2.0f);
-					texelTopLeft.SetY(m_texelCenters[rayIndex].Y() + m_viewportDesc.m_texelHeight / 2.0f);
-					
-					texelBottomRight.SetX(m_texelCenters[rayIndex].X() + m_viewportDesc.m_texelWidth / 2.0f);
-					texelBottomRight.SetY(m_texelCenters[rayIndex].Y() - m_viewportDesc.m_texelHeight / 2.0f);
-					
+
+					texelTopLeft.SetX(viewSpaceDirections[rayIndex].X() - pixelHalfWidth);
+					texelTopLeft.SetY(viewSpaceDirections[rayIndex].Y() + pixelHalfHeight);
+
+					texelBottomRight.SetX(viewSpaceDirections[rayIndex].X() + pixelHalfWidth);
+					texelBottomRight.SetY(viewSpaceDirections[rayIndex].Y() - pixelHalfHeight);
+
 					const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
 					const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
-					
-					Ray primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, m_texelCenters[rayIndex].Z()));
+
+					Ray primaryRay(m_camera.GetCameraLocation(), Vector3(randomX, randomY, viewSpaceDirections[rayIndex].Z()));
 
 					radiance = radiance + PathTrace(primaryRay, rayIndex, depth);
 				}
@@ -133,7 +136,7 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 			}
 			else
 			{
-				Ray primaryRay(m_camera.GetCameraLocation(), m_texelCenters[rayIndex]);
+				Ray primaryRay(m_camera.GetCameraLocation(), viewSpaceDirections[rayIndex]);
 
 				// Trace based on selected method
 #ifdef TRACE_AGAINST_NON_BVH
@@ -324,53 +327,6 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 	char buffer[128];
 	sprintf_s(buffer, "Total frame time: %f \n", pc.GetMilliseconds());
 	OutputDebugStringA(buffer);
-}
-
-// --------------------------------------------------------------------------------
-void Renderer::RegenerateViewSpaceDirections(Framebuffer* framebuffer)
-{
-	m_texelCenters.clear();
-
-	m_viewportDesc.m_aspectRatio = (float)framebuffer->GetWidth() / (float)framebuffer->GetHeight();
-	m_viewportDesc.m_width = 2.0f;
-	m_viewportDesc.m_height = m_viewportDesc.m_width / m_viewportDesc.m_aspectRatio;
-	m_viewportDesc.m_halfFov = 45.0f * ((float)M_PI / 180.0f);
-	m_viewportDesc.m_distanceToPlane = ((m_viewportDesc.m_width / 2.0f) / tanf(m_viewportDesc.m_halfFov));
-	m_viewportDesc.m_texelWidth = m_viewportDesc.m_width / framebuffer->GetWidth();
-	m_viewportDesc.m_texelHeight = m_viewportDesc.m_height / framebuffer->GetHeight();
-
-	// Corners of the plane
-	m_viewportDesc.m_topLeftTexel = Vector3(-(m_viewportDesc.m_width / 2.0f), m_viewportDesc.m_height / 2.0f, -m_viewportDesc.m_distanceToPlane);
-	m_viewportDesc.m_bottomLeftTexel = Vector3(-(m_viewportDesc.m_width / 2.0f), -(m_viewportDesc.m_height / 2.0f), -m_viewportDesc.m_distanceToPlane);
-	m_viewportDesc.m_topRightTexel = Vector3(m_viewportDesc.m_width / 2.0f, m_viewportDesc.m_height / 2.0f, -m_viewportDesc.m_distanceToPlane);
-	m_viewportDesc.m_bottomRightTexel = Vector3(m_viewportDesc.m_width / 2.0f, -(m_viewportDesc.m_height / 2.0f), -m_viewportDesc.m_distanceToPlane);
-
-	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
-	{
-		const float ty = (row * m_viewportDesc.m_texelHeight) / m_viewportDesc.m_height;
-		const Vector3 c_r0 = (1.0f - ty) * m_viewportDesc.m_topLeftTexel + ty * m_viewportDesc.m_bottomLeftTexel;
-		const Vector3 c_r1 = (1.0f - ty) * m_viewportDesc.m_topRightTexel + ty * m_viewportDesc.m_bottomRightTexel;
-
-		for (uint32_t column = 0u; column < framebuffer->GetWidth(); column++)
-		{
-			const float tx = (column * m_viewportDesc.m_texelWidth) / m_viewportDesc.m_width;
-
-			Vector3 texelCenter = (1.0f - tx) * c_r0 + tx * c_r1;
-			const float xVal = texelCenter.X() + (m_viewportDesc.m_texelWidth / 2.0f);
-
-			const float valDegreesToRad = 90.0f * ((float)M_PI / 180.0f);
-			const float rotatedX = cosf(valDegreesToRad) * xVal + sinf(valDegreesToRad) * texelCenter.Z();
-			const float rotatedZ = -sinf(valDegreesToRad) * xVal + cosf(valDegreesToRad) * texelCenter.Z();
-
-			//texelCenter.SetX(texelCenter.X() + (m_viewportDesc.m_texelWidth / 2.0f));
-			texelCenter.SetX(rotatedX);
-			texelCenter.SetY(texelCenter.Y() - (m_viewportDesc.m_texelHeight / 2.0f));
-			texelCenter.SetZ(rotatedZ);
-			m_texelCenters.push_back(texelCenter);
-		}
-	}
-
-	m_isFirstFrame = false;
 }
 
 // --------------------------------------------------------------------------------

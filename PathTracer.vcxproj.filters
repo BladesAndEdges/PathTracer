@@ -93,6 +93,9 @@
     <ClCompile Include="Source\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Raytracing\Pathtracer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Mesh.h">
@@ -176,13 +179,13 @@
     <ClInclude Include="Source\Core\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Core\ViewportDesc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Dependencies\stb\stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Traversals\Traversals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Raytracing\Pathtracer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

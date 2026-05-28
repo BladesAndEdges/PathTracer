@@ -6,7 +6,6 @@
 #include "Camera.h"
 #include "HitResult.h"
 #include "Ray.h"
-#include "ViewportDesc.h"
 
 class BVH2AccellStructure;
 class BVH4AccellStructure;
@@ -14,6 +13,7 @@ class Framebuffer;
 class PerformanceCounter;
 class SceneManager;
 class TraversalDataManager;
+class Pathtracer;
 
 // --------------------------------------------------------------------------------
 class Renderer
@@ -28,8 +28,6 @@ public:
 	void UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResized, PerformanceCounter& pc);
 
 private:
-
-	void RegenerateViewSpaceDirections(Framebuffer* framebuffer);
 	
 	Vector3 PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth);
 
@@ -51,12 +49,12 @@ private:
 
 	Camera m_camera;
 	Vector3 m_lightDirection;
-	ViewportDesc m_viewportDesc;
 
-	std::vector<Vector3> m_texelCenters;
 	bool m_isFirstFrame;
 
 	TraversalDataManager* m_traversalDataManager;
 	SceneManager* m_sceneManager;
+
+	Pathtracer* m_pathtracer;
 };
 

@@ -1,4 +1,7 @@
 #include <stdint.h>
+
+#include "BVHNode.h"
+#include "BVH4AccellStructure.h"
 #include "Ray.h"
 #include "TraversalDataManager.h"
 

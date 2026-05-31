@@ -140,18 +140,17 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 
 				// Trace based on selected method
 #ifdef TRACE_AGAINST_NON_BVH
-				const HitResult hr = TraceRayNonBVH<false>(primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = m_pathtracer->ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-				const HitResult hr = TraceRay4NonBVH<false>(primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = m_pathtracer->SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-				const HitResult hr = TraceAgainstBVH2<false>(primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = m_pathtracer->BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-				const HitResult hr = TraceAgainstBVH4<false>(primaryRay, rayIndex, 1e-5f);
+				const HitResult hr = m_pathtracer->BVH4TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
 #endif
-
 				// Check ray traversal/intersection statistics
 				if (xKeyState > 0u)
 				{
@@ -228,16 +227,16 @@ void Renderer::UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResiz
 						Ray shadowRay(hr.m_intersectionPoint, m_lightDirection);
 
 #ifdef TRACE_AGAINST_NON_BVH
-						const HitResult shadowHr = TraceRayNonBVH<true>(shadowRay, rayIndex, 1e-5f);
+						const HitResult shadowHr = m_pathtracer->ScalarTraceRay<true>(m_traversalDataManager, m_sceneManager, shadowRay);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-						const HitResult shadowHr = TraceRay4NonBVH<true>(shadowRay, rayIndex, 1e-5f);
+						const HitResult shadowHr = m_pathtracer->SSETraceRay<true>(m_traversalDataManager, m_sceneManager, shadowRay);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-						const HitResult shadowHr = TraceAgainstBVH2<true>(shadowRay, rayIndex, 1e-5f);
+						const HitResult shadowHr = m_pathtracer->BVH2TraceRay<true>(m_traversalDataManager, m_sceneManager, shadowRay);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-						const HitResult shadowHr = TraceAgainstBVH4<true>(shadowRay, rayIndex, 1e-5f);
+						const HitResult shadowHr = m_pathtracer->BVH4TraceRay<true>(m_traversalDataManager, m_sceneManager, shadowRay);
 #endif
 
 						red = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
@@ -340,16 +339,16 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 	Vector3 radiance(0.0f, 0.0f, 0.0f);
 
 #ifdef TRACE_AGAINST_NON_BVH
-	const HitResult c_primaryHitResult = TraceRayNonBVH<false>(ray, rayIndex, 1e-5f);
+	const HitResult c_primaryHitResult = m_pathtracer->ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, ray);
 #endif 
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-	const HitResult c_primaryHitResult = TraceRay4NonBVH<false>(ray, rayIndex, 1e-5f);
+	const HitResult c_primaryHitResult = m_pathtracer->SSETraceRay<false>(m_traversalDataManager, m_sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-	const HitResult c_primaryHitResult = TraceAgainstBVH2<false>(ray, rayIndex, 1e-5f);
+	const HitResult c_primaryHitResult = m_pathtracer->BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-	const HitResult c_primaryHitResult = TraceAgainstBVH4<false>(ray, rayIndex, 1e-5f);
+	const HitResult c_primaryHitResult = m_pathtracer->BVH4TraceRay<false>(m_traversalDataManager, m_sceneManager, ray);
 #endif
 
 	if (c_primaryHitResult.m_t != INFINITY)
@@ -385,16 +384,16 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 			Ray c_shadowRay(c_primaryHitResult.m_intersectionPoint, m_lightDirection);
 
 #ifdef TRACE_AGAINST_NON_BVH
-			const HitResult c_secondaryRayHitResult = TraceRayNonBVH<true>(c_shadowRay, rayIndex, 1e-5f);
+			const HitResult c_secondaryRayHitResult = m_pathtracer->ScalarTraceRay<true>(m_traversalDataManager, m_sceneManager, c_shadowRay);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-			const HitResult c_secondaryRayHitResult = TraceRay4NonBVH<true>(c_shadowRay, rayIndex, 1e-5f);
+			const HitResult c_secondaryRayHitResult = m_pathtracer->SSETraceRay<true>(m_traversalDataManager, m_sceneManager, c_shadowRay);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-			const HitResult c_secondaryRayHitResult = TraceAgainstBVH2<true>(c_shadowRay, rayIndex, 1e-5f);
+			const HitResult c_secondaryRayHitResult = m_pathtracer->BVH2TraceRay<true>(m_traversalDataManager, m_sceneManager, c_shadowRay);
 #endif
 #ifdef TRACE_AGAINST_BVH4
-			const HitResult c_secondaryRayHitResult = TraceAgainstBVH4<true>(c_shadowRay, rayIndex, 1e-5f);
+			const HitResult c_secondaryRayHitResult = m_pathtracer->BVH4TraceRay<true>(m_traversalDataManager, m_sceneManager, c_shadowRay);
 #endif
 
 			if (c_secondaryRayHitResult.m_t == INFINITY)
@@ -420,312 +419,4 @@ Vector3 Renderer::PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth)
 
 	// Use hit result to spawn other rays
 	return radiance;
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-HitResult Renderer::TraceRayNonBVH(Ray& ray, const uint32_t rayIndex, const float tMin)
-{
-	// Probably should be moved elsewhere
-#ifdef _DEBUG
-	assert(rayIndex >= 0u);
-#endif
-#ifdef NDEBUG
-	(void)(rayIndex);
-#endif
-
-	HitResult hitResult;
-	bool hasHit = false;
-	float tMax = INFINITY;
-	float tu = FLT_MAX;
-	float tv = FLT_MAX;
-	uint32_t primitiveId = UINT32_MAX;
-
-	const std::vector<TraversalTriangle>& traversalTriangles = m_traversalDataManager->GetTraversalTriangles();
-	const TraversalTriangle* const beginTriangle = &traversalTriangles[0u];
-	const TraversalTriangle* const endTriangle = beginTriangle + traversalTriangles.size();
-
-	const std::vector<uint32_t>& materialIndices = m_traversalDataManager->GetMaterialIndices();
-	const std::vector<TriangleTexCoords>& triangleTexCoords = m_traversalDataManager->GetTriangleTexCoords();
-
-	uint32_t triangleIndex = 0u;
-	for (const TraversalTriangle* triangle = beginTriangle; triangle != endTriangle; triangle++)
-	{
-		HitTriangle(ray, *triangle, triangleIndex, tMin, primitiveId, tMax, tu, tv, hasHit);
-
-		if (T_acceptAnyHit)
-		{
-			if (hasHit)
-			{
-				break;
-			}
-		}
-
-		triangleIndex++;
-	}
-
-	if (hasHit)
-	{
-		hitResult.m_t = tMax;
-
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
-
-		const TriangleTexCoords& texCoords = triangleTexCoords[primitiveId];
-		hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
-		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
-
-		const Vector3 edge1 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge1[0u], traversalTriangles[primitiveId].m_edge1[1u], traversalTriangles[primitiveId].m_edge1[2u]));
-		const Vector3 edge2 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge2[0u], traversalTriangles[primitiveId].m_edge2[1u], traversalTriangles[primitiveId].m_edge2[2u]));
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-
-		hitResult.m_primitiveId = primitiveId;
-
-		hitResult.m_materialId = materialIndices[primitiveId];
-
-		hitResult.m_colour = m_sceneManager->BasicSample(materialIndices[primitiveId], hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
-	}
-
-	return hitResult;
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-HitResult Renderer::TraceRay4NonBVH(Ray& ray, const uint32_t rayIndex, const float tMin)
-{
-	(void)rayIndex;
-	HitResult hitResult;
-
-	// Constants
-	const __m128 epsilon = _mm_set1_ps(1e-8f);
-	const __m128 zeros = _mm_set1_ps(0.0f);
-	const __m128 ones = _mm_set1_ps(1.0f);
-
-	// Ray data
-	const __m128 rayOriginX = _mm_set1_ps(ray.Origin().X());
-	const __m128 rayOriginY = _mm_set1_ps(ray.Origin().Y());
-	const __m128 rayOriginZ = _mm_set1_ps(ray.Origin().Z());
-
-	const __m128 rayDirectionX = _mm_set1_ps(ray.Direction().X());
-	const __m128 rayDirectionY = _mm_set1_ps(ray.Direction().Y());
-	const __m128 rayDirectionZ = _mm_set1_ps(ray.Direction().Z());
-
-	// tMin
-	const __m128 tMinimum = _mm_set1_ps(tMin);
-
-	// Loop outputs
-	__m128i outTri4Indices = _mm_set_epi32(INT_MAX, INT_MAX, INT_MAX, INT_MAX);
-	__m128 outTMax = _mm_set1_ps(INFINITY);
-	__m128 outU = _mm_set1_ps(FLT_MAX);
-	__m128 outV = _mm_set1_ps(FLT_MAX);
-
-	const std::vector<TraversalTriangle4>& traversalTriangle4s = m_traversalDataManager->GetTraversalTriangle4s();
-	const TraversalTriangle4* const beginTriangle4 = &traversalTriangle4s[0u];
-	const TraversalTriangle4* const endTriangle4 = beginTriangle4 + traversalTriangle4s.size();
-
-	int currentIndex = 0u;
-	int moveMask = 0u;
-	for (const TraversalTriangle4* triangle4 = beginTriangle4; triangle4 != endTriangle4; triangle4++)
-	{
-		HitTriangle4(ray, *triangle4, currentIndex, tMin, outTri4Indices, outTMax, outU, outV, moveMask);
-
-		if (T_acceptAnyHit) // This runs all the time for the sse version, the T_AcceptAnyHit runs only if the hit triangle returns something for the non-sse
-		{
-			if (moveMask)
-			{
-				break;
-			}
-		}
-
-		currentIndex++;
-	}
-
-	// Get the closest t value out of the four
-	const __m128 tShuffle23to01 = _mm_shuffle_ps(outTMax, outTMax, _MM_SHUFFLE(0, 0, 2, 3));
-	const __m128 closestTwoTs = _mm_min_ps(outTMax, tShuffle23to01);
-	const __m128i firstMinMask = _mm_castps_si128(_mm_cmplt_ps(outTMax, tShuffle23to01));
-
-	const __m128 tShuffle1to0 = _mm_shuffle_ps(closestTwoTs, closestTwoTs, _MM_SHUFFLE(0, 0, 0, 1));
-	const __m128 closestT = _mm_min_ps(closestTwoTs, tShuffle1to0);
-	const __m128i closestMask = _mm_castps_si128(_mm_cmplt_ps(closestTwoTs, tShuffle1to0));
-
-	// Shuffle to obtain the sub index of the closest t, within the original arrays
-	const __m128i orderedIndices = _mm_set_epi32(3, 2, 1, 0);
-	const __m128i indexShuffle23to01 = _mm_shuffle_epi32(orderedIndices, _MM_SHUFFLE(0, 0, 2, 3));
-	const __m128i closestTwoIndices = _mm_or_epi32(_mm_and_epi32(firstMinMask, orderedIndices),
-		_mm_andnot_epi32(firstMinMask, indexShuffle23to01));
-
-	const __m128i indexShuffle1to0 = _mm_shuffle_epi32(closestTwoIndices, _MM_SHUFFLE(0, 0, 0, 1));
-	const __m128i closestSubIndex = _mm_or_epi32(_mm_and_epi32(closestMask, closestTwoIndices),
-		_mm_andnot_epi32(closestMask, indexShuffle1to0));
-
-	const int subIndex = _mm_cvtsi128_si32(closestSubIndex);
-
-	int tri4Indices[4u];
-	_mm_storeu_epi32(tri4Indices, outTri4Indices);
-	int tri4Index = tri4Indices[subIndex];
-	if (tri4Index != INT_MAX)
-	{
-		float tMaxes[4u];
-		_mm_storeu_ps(tMaxes, outTMax);
-		float tMax = tMaxes[subIndex];
-
-		float us[4u];
-		_mm_storeu_ps(us, outU);
-		float u = us[subIndex];
-
-		float vs[4u];
-		_mm_storeu_ps(vs, outV);
-		float v = vs[subIndex];
-
-		hitResult.m_t = tMax;
-
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
-
-		const std::vector<TriangleTexCoords4>& texCoords4 = m_traversalDataManager->GetTriangleTexCoords4();
-		hitResult.m_texCoords.SetX((1.0f - u - v) * texCoords4[tri4Index].m_v0U[subIndex] + u * texCoords4[tri4Index].m_v1U[subIndex] + v * texCoords4[tri4Index].m_v2U[subIndex]);
-		hitResult.m_texCoords.SetY((1.0f - u - v) * texCoords4[tri4Index].m_v0V[subIndex] + u * texCoords4[tri4Index].m_v1V[subIndex] + v * texCoords4[tri4Index].m_v2V[subIndex]);
-
-		const Vector3 edge1 = Normalize(Vector3(traversalTriangle4s[tri4Index].m_edge1X[subIndex], 
-			traversalTriangle4s[tri4Index].m_edge1Y[subIndex], 
-			traversalTriangle4s[tri4Index].m_edge1Z[subIndex]));
-
-		const Vector3 edge2 = Normalize(Vector3(traversalTriangle4s[tri4Index].m_edge2X[subIndex], 
-			traversalTriangle4s[tri4Index].m_edge2Y[subIndex], 
-			traversalTriangle4s[tri4Index].m_edge2Z[subIndex]));
-
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-
-		hitResult.m_primitiveId = (tri4Index * 4u) + subIndex;
-
-		const std::vector<Material4Index>& material4Indices = m_traversalDataManager->GetMaterial4Indices();
-		hitResult.m_materialId = material4Indices[tri4Index].m_indices[subIndex];
-
-		hitResult.m_colour = m_sceneManager->BasicSample(hitResult.m_materialId, hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
-	}
-
-	return hitResult;
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-HitResult Renderer::TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const float tMin)
-{
-	(void)rayIndex;
-
-	HitResult hitResult;
-	bool hasHit = false;
-	float tMax = INFINITY;
-	float tu = FLT_MAX;
-	float tv = FLT_MAX;
-	uint32_t primitiveId = UINT32_MAX;
-
-	BVH2Traversal<T_acceptAnyHit>(m_traversalDataManager, 0u, ray, tMin, primitiveId, tMax, tu, tv, hasHit);
-	
-	if (hasHit)
-	{
-		hitResult.m_t = tMax;
-
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
-
-
-		const TriangleTexCoords& texCoords = m_traversalDataManager->GetBVH2TriangleTexCoords(primitiveId);
-		hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
-		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
-
-		const TraversalTriangle& traversalTriangle = m_traversalDataManager->GetBVH2TraversalTriangle(primitiveId);
-		const Vector3 edge1 = Normalize(Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]));
-		const Vector3 edge2 = Normalize(Vector3(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]));
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-
-		hitResult.m_primitiveId = primitiveId;
-
-		hitResult.m_materialId = m_traversalDataManager->GetBVH2MaterialIndex(primitiveId);
-
-		hitResult.m_colour = m_sceneManager->BasicSample(hitResult.m_materialId, hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
-	}
-
-	return hitResult;
-}
-
-// --------------------------------------------------------------------------------
-template<bool T_acceptAnyHit>
-HitResult Renderer::TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const float tMin)
-{
-	(void)rayIndex;
-
-	HitResult hitResult;
-
-	__m128i outTri4Indices = _mm_set_epi32(INT_MAX, INT_MAX, INT_MAX, INT_MAX);
-	__m128 outTMax = _mm_set1_ps(INFINITY);
-	__m128 outU = _mm_set1_ps(FLT_MAX);
-	__m128 outV = _mm_set1_ps(FLT_MAX);
-	int moveMask = 0;
-
-	BVH4Traversal<T_acceptAnyHit>(m_traversalDataManager, 0u, ray, tMin, outTri4Indices, outTMax, outU, outV, moveMask);
-
-	// Get the closest t value out of the four
-	const __m128 tShuffle23to01 = _mm_shuffle_ps(outTMax, outTMax, _MM_SHUFFLE(0, 0, 2, 3));
-	const __m128 closestTwoTs = _mm_min_ps(outTMax, tShuffle23to01);
-	const __m128i firstMinMask = _mm_castps_si128(_mm_cmplt_ps(outTMax, tShuffle23to01));
-
-	const __m128 tShuffle1to0 = _mm_shuffle_ps(closestTwoTs, closestTwoTs, _MM_SHUFFLE(0, 0, 0, 1));
-	const __m128 closestT = _mm_min_ps(closestTwoTs, tShuffle1to0);
-	const __m128i closestMask = _mm_castps_si128(_mm_cmplt_ps(closestTwoTs, tShuffle1to0));
-
-	// Shuffle to obtain the sub index of the closest t, within the original arrays
-	const __m128i orderedIndices = _mm_set_epi32(3, 2, 1, 0);
-	const __m128i indexShuffle23to01 = _mm_shuffle_epi32(orderedIndices, _MM_SHUFFLE(0, 0, 2, 3));
-	const __m128i closestTwoIndices = _mm_or_epi32(_mm_and_epi32(firstMinMask, orderedIndices),
-		_mm_andnot_epi32(firstMinMask, indexShuffle23to01));
-
-	const __m128i indexShuffle1to0 = _mm_shuffle_epi32(closestTwoIndices, _MM_SHUFFLE(0, 0, 0, 1));
-	const __m128i closestSubIndex = _mm_or_epi32(_mm_and_epi32(closestMask, closestTwoIndices),
-		_mm_andnot_epi32(closestMask, indexShuffle1to0));
-
-	const int subIndex = _mm_cvtsi128_si32(closestSubIndex);
-
-	int tri4Indices[4u];
-	_mm_storeu_epi32(tri4Indices, outTri4Indices);
-	int tri4Index = tri4Indices[subIndex];
-	if (tri4Index != INT_MAX)
-	{
-		float tMaxes[4u];
-		_mm_storeu_ps(tMaxes, outTMax);
-		float tMax = tMaxes[subIndex];
-
-		float us[4u];
-		_mm_storeu_ps(us, outU);
-		float u = us[subIndex];
-
-		float vs[4u];
-		_mm_storeu_ps(vs, outV);
-		float v = vs[subIndex];
-
-		hitResult.m_t = tMax;
-
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
-
-		const TriangleTexCoords4& triangleTexCoords4 = m_traversalDataManager->GetBVH4TriangleTexCoords4(tri4Index);
-		hitResult.m_texCoords.SetX((1.0f - u - v) * triangleTexCoords4.m_v0U[subIndex] + u * triangleTexCoords4.m_v1U[subIndex] + v * triangleTexCoords4.m_v2U[subIndex]);
-		hitResult.m_texCoords.SetY((1.0f - u - v) * triangleTexCoords4.m_v0V[subIndex] + u * triangleTexCoords4.m_v1V[subIndex] + v * triangleTexCoords4.m_v2V[subIndex]);
-
-		const TraversalTriangle4& traversalTriangle4 = m_traversalDataManager->GetBVH4TraversalTriangle4(tri4Index);
-		const Vector3 edge1 = Normalize(Vector3(traversalTriangle4.m_edge1X[subIndex], traversalTriangle4.m_edge1Y[subIndex], traversalTriangle4.m_edge1Z[subIndex]));
-		const Vector3 edge2 = Normalize(Vector3(traversalTriangle4.m_edge2X[subIndex], traversalTriangle4.m_edge2Y[subIndex], traversalTriangle4.m_edge2Z[subIndex]));
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-
-		const TriangleIndices& triangleIndices = m_traversalDataManager->GetBVH4TriangleIndices(tri4Index);
-		hitResult.m_primitiveId = triangleIndices.m_triangleIndices[subIndex];
-
-		const Material4Index& material4Index = m_traversalDataManager->GetBVH4Material4Index(tri4Index);
-		hitResult.m_materialId = material4Index.m_indices[subIndex];
-
-		hitResult.m_colour = m_sceneManager->BasicSample(material4Index.m_indices[subIndex], hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
-	}
-
-	return hitResult;
 }

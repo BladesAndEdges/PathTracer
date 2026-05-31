@@ -31,22 +31,6 @@ private:
 	
 	Vector3 PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth);
 
-	// Non-BVH Scalar
-	template<bool T_acceptAnyHit>
-	HitResult TraceRayNonBVH(Ray& ray, const uint32_t rayIndex, const float tMin);
-
-	// Non-BVH SSE
-	template<bool T_acceptAnyHit>
-	HitResult TraceRay4NonBVH(Ray& ray, const uint32_t rayIndex, const float tMin);
-
-	// BVH2
-	template<bool T_acceptAnyHit>
-	HitResult TraceAgainstBVH2(Ray& ray, const uint32_t rayIndex, const float tMin);
-
-	// BVH4
-	template<bool T_acceptAnyHit>
-	HitResult TraceAgainstBVH4(Ray& ray, const uint32_t rayIndex, const float tMin);
-
 	Camera m_camera;
 	Vector3 m_lightDirection;
 

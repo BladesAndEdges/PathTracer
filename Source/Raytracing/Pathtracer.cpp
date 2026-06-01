@@ -148,13 +148,13 @@ void Pathtracer::RenderInShadow(const Camera* camera, const TraversalDataManager
 			Ray ray(camera->GetCameraLocation(), m_viewspaceDirections[rayIndex]);
 
 #ifdef TRACE_AGAINST_NON_BVH
-			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = ScalarTraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = SSETraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = BVH2TraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH4
 			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
@@ -212,13 +212,13 @@ void Pathtracer::RenderDepth(const Camera* camera, const TraversalDataManager* t
 
 			// Trace based on selected method
 #ifdef TRACE_AGAINST_NON_BVH
-			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = ScalarTraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = SSETraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = BVH2TraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH4
 			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
@@ -254,13 +254,13 @@ void Pathtracer::RenderNormals(const Camera* camera, const TraversalDataManager*
 
 			// Trace based on selected method
 #ifdef TRACE_AGAINST_NON_BVH
-			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = ScalarTraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = SSETraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = BVH2TraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH4
 			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
@@ -294,13 +294,13 @@ void Pathtracer::RenderPrimitiveIds(const Camera* camera, const TraversalDataMan
 
 			// Trace based on selected method
 #ifdef TRACE_AGAINST_NON_BVH
-			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = ScalarTraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = SSETraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = BVH2TraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH4
 			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
@@ -334,13 +334,13 @@ void Pathtracer::RenderMaterialIds(const Camera* camera, const TraversalDataMana
 
 			// Trace based on selected method
 #ifdef TRACE_AGAINST_NON_BVH
-			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = ScalarTraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = SSETraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = BVH2TraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH4
 			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
@@ -375,13 +375,13 @@ void Pathtracer::RenderTextureCoordinates(const Camera* camera, const TraversalD
 
 			// Trace based on selected method
 #ifdef TRACE_AGAINST_NON_BVH
-			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = ScalarTraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = SSETraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = BVH2TraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH4
 			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
@@ -421,13 +421,13 @@ void Pathtracer::RenderSurfaceColour(const Camera* camera, const TraversalDataMa
 
 			// Trace based on selected method
 #ifdef TRACE_AGAINST_NON_BVH
-			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = ScalarTraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_NON_BVH_SSE
-			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = SSETraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH2
-			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+			const HitResult hr = BVH2TraceRay<false>(traversalDataManager, sceneManager, ray);
 #endif
 #ifdef TRACE_AGAINST_BVH4
 			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);

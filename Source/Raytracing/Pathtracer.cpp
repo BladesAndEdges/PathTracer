@@ -13,22 +13,22 @@
 #include "TriangleTexCoords.h"
 #include "TriangleTexCoords4.h"
 
+# define NOMINMAX
 # define M_PI 3.14159265358979323846
 # define TMIN 1e-5f
 
 //#define TRACE_AGAINST_NON_BVH
 //#define TRACE_AGAINST_NON_BVH_SSE
 //#define TRACE_AGAINST_BVH2
-//#define TRACE_AGAINST_BVH4
+#define TRACE_AGAINST_BVH4
+
+const Vector3 primitiveDebugColours[5u] = { Vector3(0.94f, 0.34f, 0.30f), Vector3(0.30f, 0.94f, 0.70f), Vector3(0.51f, 0.70f, 0.96f),
+	Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
 
 // --------------------------------------------------------------------------------
 Pathtracer::Pathtracer() : m_pixelWidth(0.0f), m_pixelHeight(0.0f)
 {
-}
-
-// --------------------------------------------------------------------------------
-void Pathtracer::CreateImage()
-{
+	m_lightDirection = Normalize(Vector3(0.9f, 1.0f, 0.4f));
 }
 
 // --------------------------------------------------------------------------------
@@ -77,28 +77,461 @@ void Pathtracer::GenerateViewspaceDirections(const uint32_t framebufferWidth, co
 }
 
 // --------------------------------------------------------------------------------
-void Pathtracer::RenderSurfaceColour(Camera* camera, Framebuffer* framebuffer, 
-	const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, uint8_t* out_pixels)
+void Pathtracer::RenderPathtrace(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Framebuffer* out_framebuffer)
 {
-	for (uint32_t row = 0u; row < framebuffer->GetHeight(); row++)
+	uint8_t* bytes = out_framebuffer->GetDataPtr();
+	for (uint32_t row = 0u; row < out_framebuffer->GetHeight(); row++)
 	{
-		for (uint32_t column = 0u; column < framebuffer->GetWidth(); column++)
+		for (uint32_t column = 0u; column < out_framebuffer->GetWidth(); column++)
 		{
-			const uint32_t rayIndex = (row * framebuffer->GetWidth() + column);
+			const uint32_t rayIndex = (row * out_framebuffer->GetWidth() + column);
 
-			const uint32_t byteIndex = (row * framebuffer->GetWidth() * framebuffer->GetNumChannels()) + 
-				(column * framebuffer->GetNumChannels());
+			// Byte offsets
+			const uint32_t texelByteIndex = (row * out_framebuffer->GetWidth() * out_framebuffer->GetNumChannels()) + (column * out_framebuffer->GetNumChannels());
+			assert(texelByteIndex < (out_framebuffer->GetWidth() * out_framebuffer->GetHeight() * out_framebuffer->GetNumChannels()));
+
+			float red = 0.0f;
+			float green = 0.0f;
+			float blue = 0.0f;
+
+			Vector3 radiance(0.0f, 0.0f, 0.0f);
+			const uint32_t numSamples = 1u;
+			const uint32_t depth = 2u;
+
+			for (uint32_t sample = 0u; sample < numSamples; sample++)
+			{
+				Vector3 texelTopLeft;
+				Vector3 texelBottomRight;
+
+				texelTopLeft.SetX(m_viewspaceDirections[rayIndex].X() - m_pixelWidth / 2.0f);
+				texelTopLeft.SetY(m_viewspaceDirections[rayIndex].Y() + m_pixelHeight / 2.0f);
+
+				texelBottomRight.SetX(m_viewspaceDirections[rayIndex].X() + m_pixelWidth / 2.0f);
+				texelBottomRight.SetY(m_viewspaceDirections[rayIndex].Y() - m_pixelHeight / 2.0f);
+
+				const float randomX = RandomFloat(texelTopLeft.X(), texelBottomRight.X());
+				const float randomY = RandomFloat(texelBottomRight.Y(), texelTopLeft.Y());
+
+				Ray ray(camera->GetCameraLocation(), Vector3(randomX, randomY, m_viewspaceDirections[rayIndex].Z()));
+
+				radiance = radiance + Pathtrace(traversalDataManager, sceneManager, depth, ray);
+			}
+
+			radiance = Vector3(radiance.X() / (float)numSamples, radiance.Y() / (float)numSamples, radiance.Z() / (float)numSamples);
+
+			// Clamp prior to the conversion, assume SDR
+			red = std::fmin(1.0f, radiance.X());
+			green = std::fmin(1.0f, radiance.Y());
+			blue = std::fmin(1.0f, radiance.Z());
+
+			bytes[texelByteIndex] = uint8_t((red * 255.0f) + 0.5f);
+			bytes[texelByteIndex + 1u] = uint8_t((green * 255.0f) + 0.5f);
+			bytes[texelByteIndex + 2u] = uint8_t((blue * 255.0f) + 0.5f);
+			bytes[texelByteIndex + 3u] = 255u;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+void Pathtracer::RenderInShadow(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Framebuffer* out_framebuffer)
+{
+	uint8_t* pixels = out_framebuffer->GetDataPtr();
+	for (uint32_t row = 0u; row < out_framebuffer->GetHeight(); row++)
+	{
+		for (uint32_t column = 0u; column < out_framebuffer->GetWidth(); column++)
+		{
+			const uint32_t rayIndex = (row * out_framebuffer->GetWidth() + column);
+
+			const uint32_t byteIndex = (row * out_framebuffer->GetWidth() * out_framebuffer->GetNumChannels()) +
+				(column * out_framebuffer->GetNumChannels());
 
 			Ray ray(camera->GetCameraLocation(), m_viewspaceDirections[rayIndex]);
 
-			const HitResult hitResult = ScalarTraceRay<true>(traversalDataManager, sceneManager, ray);
+#ifdef TRACE_AGAINST_NON_BVH
+			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+			float red, green, blue;
+			if (hr.m_t != INFINITY)
+			{
+				Ray shadowRay(hr.m_intersectionPoint, m_lightDirection);
 
-			out_pixels[byteIndex] = uint8_t((hitResult.m_colour.X() * 255.0f) + 0.5f);
-			out_pixels[byteIndex + 1u] = uint8_t((hitResult.m_colour.Y() * 255.0f) + 0.5f);
-			out_pixels[byteIndex + 2u] = uint8_t((hitResult.m_colour.Z() * 255.0f) + 0.5f);
-			out_pixels[byteIndex + 3u] = 255u;
+#ifdef TRACE_AGAINST_NON_BVH
+						const HitResult shadowHr = ScalarTraceRay<true>(traversalDataManager, sceneManager, shadowRay);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+						const HitResult shadowHr = SSETraceRay<true>(traversalDataManager, sceneManager, shadowRay);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+						const HitResult shadowHr = BVH2TraceRay<true>(traversalDataManager, sceneManager, shadowRay);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+						const HitResult shadowHr = BVH4TraceRay<true>(traversalDataManager, sceneManager, shadowRay);
+#endif
+						red = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
+						green = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
+						blue = (shadowHr.m_t == INFINITY) ? 1.0f : 0.0f;
+			}
+			else
+			{
+				red = 0.7f;
+				green = 0.7f;
+				blue = 0.7f;
+			}
+
+			pixels[byteIndex] = uint8_t((red * 255.0f) + 0.5f);
+			pixels[byteIndex + 1u] = uint8_t((green * 255.0f) + 0.5f);
+			pixels[byteIndex + 2u] = uint8_t((blue * 255.0f) + 0.5f);
+			pixels[byteIndex + 3u] = 255u;
 		}
 	}
+}
+
+// --------------------------------------------------------------------------------
+void Pathtracer::RenderDepth(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Framebuffer* out_framebuffer)
+{
+	uint8_t* pixels = out_framebuffer->GetDataPtr();
+	for (uint32_t row = 0u; row < out_framebuffer->GetHeight(); row++)
+	{
+		for (uint32_t column = 0u; column < out_framebuffer->GetWidth(); column++)
+		{
+			const uint32_t rayIndex = (row * out_framebuffer->GetWidth() + column);
+
+			const uint32_t byteIndex = (row * out_framebuffer->GetWidth() * out_framebuffer->GetNumChannels()) +
+				(column * out_framebuffer->GetNumChannels());
+
+			Ray ray(camera->GetCameraLocation(), m_viewspaceDirections[rayIndex]);
+
+			// Trace based on selected method
+#ifdef TRACE_AGAINST_NON_BVH
+			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+			const float maxDepth = 10.0f;
+
+			const float red = (hr.m_t != INFINITY) ? hr.m_t / maxDepth : 0.0f;
+			const float green = (hr.m_t != INFINITY) ? hr.m_t / maxDepth : 0.0f;
+			const float blue = (hr.m_t != INFINITY) ? hr.m_t / maxDepth : 0.0f;
+
+			pixels[byteIndex] = uint8_t((red * 255.0f) + 0.5f);
+			pixels[byteIndex + 1u] = uint8_t((green * 255.0f) + 0.5f);
+			pixels[byteIndex + 2u] = uint8_t((blue * 255.0f) + 0.5f);
+			pixels[byteIndex + 3u] = 255u;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+void Pathtracer::RenderNormals(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Framebuffer* out_framebuffer)
+{
+	uint8_t* pixels = out_framebuffer->GetDataPtr();
+	for (uint32_t row = 0u; row < out_framebuffer->GetHeight(); row++)
+	{
+		for (uint32_t column = 0u; column < out_framebuffer->GetWidth(); column++)
+		{
+			const uint32_t rayIndex = (row * out_framebuffer->GetWidth() + column);
+
+			const uint32_t byteIndex = (row * out_framebuffer->GetWidth() * out_framebuffer->GetNumChannels()) +
+				(column * out_framebuffer->GetNumChannels());
+
+			Ray ray(camera->GetCameraLocation(), m_viewspaceDirections[rayIndex]);
+
+			// Trace based on selected method
+#ifdef TRACE_AGAINST_NON_BVH
+			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+			const float red = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.X() + 0.5f : 0.0f;
+			const float green = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Y() + 0.5f : 0.0f;
+			const float blue = (hr.m_t < INFINITY) ? 0.5f * hr.m_normal.Z() + 0.5f : 0.0f;
+
+			pixels[byteIndex] = uint8_t((red * 255.0f) + 0.5f);
+			pixels[byteIndex + 1u] = uint8_t((green * 255.0f) + 0.5f);
+			pixels[byteIndex + 2u] = uint8_t((blue * 255.0f) + 0.5f);
+			pixels[byteIndex + 3u] = 255u;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+void Pathtracer::RenderPrimitiveIds(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Framebuffer* out_framebuffer)
+{
+	uint8_t* pixels = out_framebuffer->GetDataPtr();
+	for (uint32_t row = 0u; row < out_framebuffer->GetHeight(); row++)
+	{
+		for (uint32_t column = 0u; column < out_framebuffer->GetWidth(); column++)
+		{
+			const uint32_t rayIndex = (row * out_framebuffer->GetWidth() + column);
+
+			const uint32_t byteIndex = (row * out_framebuffer->GetWidth() * out_framebuffer->GetNumChannels()) +
+				(column * out_framebuffer->GetNumChannels());
+
+			Ray ray(camera->GetCameraLocation(), m_viewspaceDirections[rayIndex]);
+
+			// Trace based on selected method
+#ifdef TRACE_AGAINST_NON_BVH
+			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+			const float red = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].X() : 0.0f;
+			const float green = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Y() : 0.0f;
+			const float blue = (hr.m_primitiveId != UINT32_MAX) ? primitiveDebugColours[hr.m_primitiveId % 5u].Z() : 0.0f;
+
+			pixels[byteIndex] = uint8_t((red * 255.0f) + 0.5f);
+			pixels[byteIndex + 1u] = uint8_t((green * 255.0f) + 0.5f);
+			pixels[byteIndex + 2u] = uint8_t((blue * 255.0f) + 0.5f);
+			pixels[byteIndex + 3u] = 255u;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+void Pathtracer::RenderMaterialIds(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Framebuffer* out_framebuffer)
+{
+	uint8_t* pixels = out_framebuffer->GetDataPtr();
+	for (uint32_t row = 0u; row < out_framebuffer->GetHeight(); row++)
+	{
+		for (uint32_t column = 0u; column < out_framebuffer->GetWidth(); column++)
+		{
+			const uint32_t rayIndex = (row * out_framebuffer->GetWidth() + column);
+
+			const uint32_t byteIndex = (row * out_framebuffer->GetWidth() * out_framebuffer->GetNumChannels()) +
+				(column * out_framebuffer->GetNumChannels());
+
+			Ray ray(camera->GetCameraLocation(), m_viewspaceDirections[rayIndex]);
+
+			// Trace based on selected method
+#ifdef TRACE_AGAINST_NON_BVH
+			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+			const float red = (hr.m_materialId != UINT32_MAX) ? sceneManager->GetDebugMaterialColour(hr.m_materialId).X() : 0.0f;
+			const float green = (hr.m_materialId != UINT32_MAX) ? sceneManager->GetDebugMaterialColour(hr.m_materialId).Y() : 0.0f;
+			const float blue = (hr.m_materialId != UINT32_MAX) ? sceneManager->GetDebugMaterialColour(hr.m_materialId).Z() : 0.0f;
+
+			pixels[byteIndex] = uint8_t((red * 255.0f) + 0.5f);
+			pixels[byteIndex + 1u] = uint8_t((green * 255.0f) + 0.5f);
+			pixels[byteIndex + 2u] = uint8_t((blue * 255.0f) + 0.5f);
+			pixels[byteIndex + 3u] = 255u;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+void Pathtracer::RenderTextureCoordinates(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, 
+	Framebuffer* out_framebuffer)
+{
+	uint8_t* pixels = out_framebuffer->GetDataPtr();
+	for (uint32_t row = 0u; row < out_framebuffer->GetHeight(); row++)
+	{
+		for (uint32_t column = 0u; column < out_framebuffer->GetWidth(); column++)
+		{
+			const uint32_t rayIndex = (row * out_framebuffer->GetWidth() + column);
+
+			const uint32_t byteIndex = (row * out_framebuffer->GetWidth() * out_framebuffer->GetNumChannels()) +
+				(column * out_framebuffer->GetNumChannels());
+
+			Ray ray(camera->GetCameraLocation(), m_viewspaceDirections[rayIndex]);
+
+			// Trace based on selected method
+#ifdef TRACE_AGAINST_NON_BVH
+			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+
+			// Possibly do some other comparison due to fp precision
+			const bool uInRange = ((hr.m_texCoords.X() >= 0.0f) && (hr.m_texCoords.X() <= 1.0f));
+			const bool vInRange = ((hr.m_texCoords.Y() >= 0.0f) && (hr.m_texCoords.Y() <= 1.0f));
+
+			const float red = (uInRange && vInRange) ? hr.m_texCoords.X() : 1.0f;
+			const float green = (uInRange && vInRange) ? hr.m_texCoords.Y() : 0.75f;
+			const float blue = (uInRange && vInRange) ? 0.0f : 0.8f;
+
+			pixels[byteIndex] = uint8_t((red * 255.0f) + 0.5f);
+			pixels[byteIndex + 1u] = uint8_t((green * 255.0f) + 0.5f);
+			pixels[byteIndex + 2u] = uint8_t((blue * 255.0f) + 0.5f);
+			pixels[byteIndex + 3u] = 255u;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+void Pathtracer::RenderSurfaceColour(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
+	Framebuffer* out_framebuffer)
+{
+	uint8_t* pixels = out_framebuffer->GetDataPtr();
+	for (uint32_t row = 0u; row < out_framebuffer->GetHeight(); row++)
+	{
+		for (uint32_t column = 0u; column < out_framebuffer->GetWidth(); column++)
+		{
+			const uint32_t rayIndex = (row * out_framebuffer->GetWidth() + column);
+
+			const uint32_t byteIndex = (row * out_framebuffer->GetWidth() * out_framebuffer->GetNumChannels()) +
+				(column * out_framebuffer->GetNumChannels());
+
+			Ray ray(camera->GetCameraLocation(), m_viewspaceDirections[rayIndex]);
+
+			// Trace based on selected method
+#ifdef TRACE_AGAINST_NON_BVH
+			const HitResult hr = ScalarTraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+			const HitResult hr = SSETraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult hr = BVH2TraceRay<false>(m_traversalDataManager, m_sceneManager, primaryRay);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+
+			pixels[byteIndex] = uint8_t((hr.m_colour.X() * 255.0f) + 0.5f);
+			pixels[byteIndex + 1u] = uint8_t((hr.m_colour.Y() * 255.0f) + 0.5f);
+			pixels[byteIndex + 2u] = uint8_t((hr.m_colour.Z() * 255.0f) + 0.5f);
+			pixels[byteIndex + 3u] = 255u;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------------
+Vector3 Pathtracer::Pathtrace(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, const uint32_t depth,
+	Ray& ray)
+{
+	if (depth <= 0u)
+	{
+		return Vector3(0.0f, 0.0f, 0.0f);
+	}
+
+	Vector3 radiance(0.0f, 0.0f, 0.0f);
+
+#ifdef TRACE_AGAINST_NON_BVH
+	const HitResult  hr = ScalarTraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif 
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+	const HitResult hr = SSETraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+	const HitResult hr = BVH2TraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+	const HitResult hr = BVH4TraceRay<false>(traversalDataManager, sceneManager, ray);
+#endif
+
+	if (hr.m_t != INFINITY)
+	{
+		// Indirect lighting
+		{
+			// Calculate the random direction of the outward ray
+			Ray rayOnHemisphere(hr.m_intersectionPoint, Vector3::RandomVector3OnHemisphere(hr.m_normal));
+
+			// RENDERING EQUATION
+
+			// We need the Li
+			const Vector3 Li = Pathtrace(traversalDataManager, sceneManager, depth - 1u, rayOnHemisphere);
+
+			// Elongation/cosine term, the falloff (Geometric term)
+			// We use the ray direction, instead of -ray.Direction() so that the Dot product produces a positive value
+			const float cosineTerm = std::fmin(std::fmax(Dot(rayOnHemisphere.Direction(), hr.m_normal), 0.0f), 1.0f);
+
+			// BRDF, in our case just use Lambert which is P/PI, P being the colour of the material, a vector3 [0,1] for each wavelength
+			const Vector3 brdf = (1.0f / (float)M_PI) * hr.m_colour;
+
+			radiance = cosineTerm * brdf * Li;
+
+			// Divide everything by the probability distribution function, for our case just 1/ 2 * Pi
+			const float pdf = 1.0f / (2.0f * (float)M_PI);
+			radiance = Vector3(radiance.X() / pdf, radiance.Y() / pdf, radiance.Z() / pdf);
+		}
+
+		//Direct Lighting
+		{
+			const float clampValue = std::fmin(std::fmax(Dot(m_lightDirection, hr.m_normal), 0.0f), 1.0f);
+
+			Ray shadowRay(hr.m_intersectionPoint, m_lightDirection);
+
+#ifdef TRACE_AGAINST_NON_BVH
+			const HitResult shadowHr = ScalarTraceRay<true>(traversalDataManager, sceneManager, shadowRay);
+#endif
+#ifdef TRACE_AGAINST_NON_BVH_SSE
+			const HitResult shadowHr = SSETraceRay<true>(traversalDataManager, sceneManager, shadowRay);
+#endif
+#ifdef TRACE_AGAINST_BVH2
+			const HitResult shadowHr = BVH2TraceRay<true>(traversalDataManager, sceneManager, shadowRay);
+#endif
+#ifdef TRACE_AGAINST_BVH4
+			const HitResult shadowHr = BVH4TraceRay<true>(traversalDataManager, sceneManager, shadowRay);
+#endif
+
+			if (shadowHr.m_t == INFINITY)
+			{
+				Vector3 directRadiance;
+				directRadiance.SetX(clampValue * hr.m_colour.X());
+				directRadiance.SetY(clampValue * hr.m_colour.Y());
+				directRadiance.SetZ(clampValue * hr.m_colour.Z());
+
+				radiance = radiance + 2.0 * directRadiance;
+			}
+		}
+	}
+	else
+	{
+		const float skyIntensity = 1.5f;
+		const Vector3 skyColour = skyIntensity * Vector3(0.98f, 0.68f, 0.37f);
+
+		radiance.SetX(skyColour.X());
+		radiance.SetY(skyColour.Y());
+		radiance.SetZ(skyColour.Z());
+	}
+
+	return radiance;
 }
 
 // --------------------------------------------------------------------------------
@@ -395,34 +828,3 @@ HitResult Pathtracer::BVH4TraceRay(const TraversalDataManager* traversalDataMana
 
 	return hitResult;
 }
-
-// --------------------------------------------------------------------------------
-const std::vector<Vector3>& Pathtracer::GetViewSpaceDirections() const
-{
-	return m_viewspaceDirections;
-}
-
-// --------------------------------------------------------------------------------
-float Pathtracer::GetPixelWidth() const
-{
-	return m_pixelWidth;
-}
-
-// --------------------------------------------------------------------------------
-float Pathtracer::GetPixelHeight() const
-{
-	return m_pixelHeight;
-}
-
-// --------------------------------------------------------------------------------
-template HitResult Pathtracer::ScalarTraceRay<true>(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Ray& ray);
-template HitResult Pathtracer::ScalarTraceRay<false>(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Ray& ray);
-
-template HitResult Pathtracer::SSETraceRay<true>(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Ray& ray);
-template HitResult Pathtracer::SSETraceRay<false>(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Ray& ray);
-
-template HitResult Pathtracer::BVH2TraceRay<true>(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Ray& ray);
-template HitResult Pathtracer::BVH2TraceRay<false>(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Ray& ray);
-
-template HitResult Pathtracer::BVH4TraceRay<true>(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Ray& ray);
-template HitResult Pathtracer::BVH4TraceRay<false>(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, Ray& ray);

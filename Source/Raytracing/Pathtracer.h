@@ -18,20 +18,43 @@ public:
 
 	Pathtracer();
 
-	void CreateImage();
-
 	void GenerateViewspaceDirections(const uint32_t imageWidth, const uint32_t imageHeight);
 
-	void RenderSurfaceColour(Camera* camera, Framebuffer* framebuffer, 
-		const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, uint8_t* out_pixels);
+	void RenderPathtrace(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
+		Framebuffer* out_framebuffer);
 
-	// Make tracing functions private later
-	template<bool T_acceptAnyHit>
-	HitResult ScalarTraceRay(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, 
+	void RenderInShadow(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
+		Framebuffer* out_framebuffer);
+
+	void RenderDepth(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
+		Framebuffer* out_framebuffer);
+
+	void RenderNormals(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
+		Framebuffer* out_framebuffer);
+
+	void RenderPrimitiveIds(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
+		Framebuffer* out_framebuffer);
+
+	void RenderMaterialIds(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
+		Framebuffer* out_framebuffer);
+
+	void RenderTextureCoordinates(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, 
+		Framebuffer* out_framebuffer);
+
+	void RenderSurfaceColour(const Camera* camera, const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
+		Framebuffer* out_framebuffer);
+
+private:
+
+	Vector3 Pathtrace(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, const uint32_t depth,
 		Ray& ray);
 
 	template<bool T_acceptAnyHit>
-	HitResult SSETraceRay(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager, 
+	HitResult ScalarTraceRay(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
+		Ray& ray);
+
+	template<bool T_acceptAnyHit>
+	HitResult SSETraceRay(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
 		Ray& ray);
 
 	template<bool T_acceptAnyHit>
@@ -42,16 +65,11 @@ public:
 	HitResult BVH4TraceRay(const TraversalDataManager* traversalDataManager, const SceneManager* sceneManager,
 		Ray& ray);
 
-	const std::vector<Vector3>& GetViewSpaceDirections() const;
-	float GetPixelWidth() const;
-	float GetPixelHeight() const;
-
-private:
-
 	std::vector<Vector3> m_viewspaceDirections;
 
 	float m_pixelWidth;
 	float m_pixelHeight;
 
+	Vector3 m_lightDirection;
 };
 

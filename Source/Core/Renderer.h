@@ -1,19 +1,12 @@
 #pragma once
 
-#include<cstdint>
-#include<vector>
-
 #include "Camera.h"
-#include "HitResult.h"
-#include "Ray.h"
 
-class BVH2AccellStructure;
-class BVH4AccellStructure;
 class Framebuffer;
+class Pathtracer;
 class PerformanceCounter;
 class SceneManager;
 class TraversalDataManager;
-class Pathtracer;
 
 // --------------------------------------------------------------------------------
 class Renderer
@@ -25,14 +18,11 @@ public:
 	Renderer& operator=(const Renderer&) = delete;
 
 	Camera* GetCamera();
-	void UpdateFramebufferContents(Framebuffer* framebuffer, bool hasResized, PerformanceCounter& pc);
+	void Update(Framebuffer* framebuffer, bool hasResized, PerformanceCounter& pc);
 
 private:
-	
-	Vector3 PathTrace(Ray& ray, const uint32_t rayIndex, uint32_t depth);
 
 	Camera m_camera;
-	Vector3 m_lightDirection;
 
 	bool m_isFirstFrame;
 

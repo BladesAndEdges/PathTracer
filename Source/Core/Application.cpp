@@ -42,7 +42,7 @@ void Application::Run()
 			m_context->ResizeFramebuffer();
 		}
 
-		m_renderer->UpdateFramebufferContents(m_context->GetFramebuffer(), hasResized, counter);
+		m_renderer->Update(m_context->GetFramebuffer(), hasResized, counter);
 		m_context->UpdateFramebuffer();
 
 		m_context->Draw();
@@ -55,7 +55,6 @@ void Application::Run()
 		frameNumber++;
 	}
 }
-#include <assert.h>
 
 // --------------------------------------------------------------------------------
 double CalculateAverageFrameTime(const double frameTimeInMilisecods, uint32_t frameNumber, double buffer[FRAME_TIMINGS_BUFFER_SIZE])

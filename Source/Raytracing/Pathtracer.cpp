@@ -572,22 +572,25 @@ HitResult Pathtracer::ScalarTraceRay(const TraversalDataManager* traversalDataMa
 	{
 		hitResult.m_t = tMax;
 
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+		if (!T_acceptAnyHit)
+		{
+			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
 
-		const TriangleTexCoords& texCoords = triangleTexCoords[primitiveId];
-		hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
-		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
+			const TriangleTexCoords& texCoords = triangleTexCoords[primitiveId];
+			hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
+			hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
 
-		const Vector3 edge1 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge1[0u], traversalTriangles[primitiveId].m_edge1[1u], traversalTriangles[primitiveId].m_edge1[2u]));
-		const Vector3 edge2 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge2[0u], traversalTriangles[primitiveId].m_edge2[1u], traversalTriangles[primitiveId].m_edge2[2u]));
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+			const Vector3 edge1 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge1[0u], traversalTriangles[primitiveId].m_edge1[1u], traversalTriangles[primitiveId].m_edge1[2u]));
+			const Vector3 edge2 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge2[0u], traversalTriangles[primitiveId].m_edge2[1u], traversalTriangles[primitiveId].m_edge2[2u]));
+			const Vector3 normal = Normalize(Cross(edge1, edge2));
+			hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
-		hitResult.m_primitiveId = primitiveId;
+			hitResult.m_primitiveId = primitiveId;
 
-		hitResult.m_materialId = materialIndices[primitiveId];
+			hitResult.m_materialId = materialIndices[primitiveId];
 
-		hitResult.m_colour = sceneManager->BasicSample(materialIndices[primitiveId], hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
+			hitResult.m_colour = sceneManager->BasicSample(materialIndices[primitiveId], hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
+		}
 	}
 
 	return hitResult;
@@ -673,39 +676,42 @@ HitResult Pathtracer::SSETraceRay(const TraversalDataManager* traversalDataManag
 		_mm_storeu_ps(tMaxes, outTMax);
 		float tMax = tMaxes[subIndex];
 
-		float us[4u];
-		_mm_storeu_ps(us, outU);
-		float u = us[subIndex];
-
-		float vs[4u];
-		_mm_storeu_ps(vs, outV);
-		float v = vs[subIndex];
-
 		hitResult.m_t = tMax;
 
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+		if (!T_acceptAnyHit)
+		{
+			float us[4u];
+			_mm_storeu_ps(us, outU);
+			float u = us[subIndex];
 
-		const std::vector<TriangleTexCoords4>& texCoords4 = traversalDataManager->GetTriangleTexCoords4();
-		hitResult.m_texCoords.SetX((1.0f - u - v) * texCoords4[tri4Index].m_v0U[subIndex] + u * texCoords4[tri4Index].m_v1U[subIndex] + v * texCoords4[tri4Index].m_v2U[subIndex]);
-		hitResult.m_texCoords.SetY((1.0f - u - v) * texCoords4[tri4Index].m_v0V[subIndex] + u * texCoords4[tri4Index].m_v1V[subIndex] + v * texCoords4[tri4Index].m_v2V[subIndex]);
+			float vs[4u];
+			_mm_storeu_ps(vs, outV);
+			float v = vs[subIndex];
 
-		const Vector3 edge1 = Normalize(Vector3(traversalTriangle4s[tri4Index].m_edge1X[subIndex],
-			traversalTriangle4s[tri4Index].m_edge1Y[subIndex],
-			traversalTriangle4s[tri4Index].m_edge1Z[subIndex]));
+			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
 
-		const Vector3 edge2 = Normalize(Vector3(traversalTriangle4s[tri4Index].m_edge2X[subIndex],
-			traversalTriangle4s[tri4Index].m_edge2Y[subIndex],
-			traversalTriangle4s[tri4Index].m_edge2Z[subIndex]));
+			const std::vector<TriangleTexCoords4>& texCoords4 = traversalDataManager->GetTriangleTexCoords4();
+			hitResult.m_texCoords.SetX((1.0f - u - v) * texCoords4[tri4Index].m_v0U[subIndex] + u * texCoords4[tri4Index].m_v1U[subIndex] + v * texCoords4[tri4Index].m_v2U[subIndex]);
+			hitResult.m_texCoords.SetY((1.0f - u - v) * texCoords4[tri4Index].m_v0V[subIndex] + u * texCoords4[tri4Index].m_v1V[subIndex] + v * texCoords4[tri4Index].m_v2V[subIndex]);
 
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+			const Vector3 edge1 = Normalize(Vector3(traversalTriangle4s[tri4Index].m_edge1X[subIndex],
+				traversalTriangle4s[tri4Index].m_edge1Y[subIndex],
+				traversalTriangle4s[tri4Index].m_edge1Z[subIndex]));
 
-		hitResult.m_primitiveId = (tri4Index * 4u) + subIndex;
+			const Vector3 edge2 = Normalize(Vector3(traversalTriangle4s[tri4Index].m_edge2X[subIndex],
+				traversalTriangle4s[tri4Index].m_edge2Y[subIndex],
+				traversalTriangle4s[tri4Index].m_edge2Z[subIndex]));
 
-		const std::vector<Material4Index>& material4Indices = traversalDataManager->GetMaterial4Indices();
-		hitResult.m_materialId = material4Indices[tri4Index].m_indices[subIndex];
+			const Vector3 normal = Normalize(Cross(edge1, edge2));
+			hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
-		hitResult.m_colour = sceneManager->BasicSample(hitResult.m_materialId, hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
+			hitResult.m_primitiveId = (tri4Index * 4u) + subIndex;
+
+			const std::vector<Material4Index>& material4Indices = traversalDataManager->GetMaterial4Indices();
+			hitResult.m_materialId = material4Indices[tri4Index].m_indices[subIndex];
+
+			hitResult.m_colour = sceneManager->BasicSample(hitResult.m_materialId, hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
+		}
 	}
 
 	return hitResult;
@@ -728,24 +734,26 @@ HitResult Pathtracer::BVH2TraceRay(const TraversalDataManager* traversalDataMana
 	{
 		hitResult.m_t = tMax;
 
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+		if (!T_acceptAnyHit)
+		{
+			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
 
+			const TriangleTexCoords& texCoords = traversalDataManager->GetBVH2TriangleTexCoords(primitiveId);
+			hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
+			hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
 
-		const TriangleTexCoords& texCoords = traversalDataManager->GetBVH2TriangleTexCoords(primitiveId);
-		hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
-		hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
+			const TraversalTriangle& traversalTriangle = traversalDataManager->GetBVH2TraversalTriangle(primitiveId);
+			const Vector3 edge1 = Normalize(Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]));
+			const Vector3 edge2 = Normalize(Vector3(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]));
+			const Vector3 normal = Normalize(Cross(edge1, edge2));
+			hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
-		const TraversalTriangle& traversalTriangle = traversalDataManager->GetBVH2TraversalTriangle(primitiveId);
-		const Vector3 edge1 = Normalize(Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]));
-		const Vector3 edge2 = Normalize(Vector3(traversalTriangle.m_edge2[0u], traversalTriangle.m_edge2[1u], traversalTriangle.m_edge2[2u]));
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+			hitResult.m_primitiveId = primitiveId;
 
-		hitResult.m_primitiveId = primitiveId;
+			hitResult.m_materialId = traversalDataManager->GetBVH2MaterialIndex(primitiveId);
 
-		hitResult.m_materialId = traversalDataManager->GetBVH2MaterialIndex(primitiveId);
-
-		hitResult.m_colour = sceneManager->BasicSample(hitResult.m_materialId, hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
+			hitResult.m_colour = sceneManager->BasicSample(hitResult.m_materialId, hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
+		}
 	}
 
 	return hitResult;
@@ -794,36 +802,39 @@ HitResult Pathtracer::BVH4TraceRay(const TraversalDataManager* traversalDataMana
 		float tMaxes[4u];
 		_mm_storeu_ps(tMaxes, outTMax);
 		float tMax = tMaxes[subIndex];
-	
-		float us[4u];
-		_mm_storeu_ps(us, outU);
-		float u = us[subIndex];
-	
-		float vs[4u];
-		_mm_storeu_ps(vs, outV);
-		float v = vs[subIndex];
-	
+
 		hitResult.m_t = tMax;
-	
-		hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
-	
-		const TriangleTexCoords4& triangleTexCoords4 = traversalDataManager->GetBVH4TriangleTexCoords4(tri4Index);
-		hitResult.m_texCoords.SetX((1.0f - u - v) * triangleTexCoords4.m_v0U[subIndex] + u * triangleTexCoords4.m_v1U[subIndex] + v * triangleTexCoords4.m_v2U[subIndex]);
-		hitResult.m_texCoords.SetY((1.0f - u - v) * triangleTexCoords4.m_v0V[subIndex] + u * triangleTexCoords4.m_v1V[subIndex] + v * triangleTexCoords4.m_v2V[subIndex]);
-	
-		const TraversalTriangle4& traversalTriangle4 = traversalDataManager->GetBVH4TraversalTriangle4(tri4Index);
-		const Vector3 edge1 = Normalize(Vector3(traversalTriangle4.m_edge1X[subIndex], traversalTriangle4.m_edge1Y[subIndex], traversalTriangle4.m_edge1Z[subIndex]));
-		const Vector3 edge2 = Normalize(Vector3(traversalTriangle4.m_edge2X[subIndex], traversalTriangle4.m_edge2Y[subIndex], traversalTriangle4.m_edge2Z[subIndex]));
-		const Vector3 normal = Normalize(Cross(edge1, edge2));
-		hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
-	
-		const TriangleIndices& triangleIndices = traversalDataManager->GetBVH4TriangleIndices(tri4Index);
-		hitResult.m_primitiveId = triangleIndices.m_triangleIndices[subIndex];
-	
-		const Material4Index& material4Index = traversalDataManager->GetBVH4Material4Index(tri4Index);
-		hitResult.m_materialId = material4Index.m_indices[subIndex];
-	
-		hitResult.m_colour = sceneManager->BasicSample(material4Index.m_indices[subIndex], hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
+
+		if (!T_acceptAnyHit)
+		{
+			float us[4u];
+			_mm_storeu_ps(us, outU);
+			float u = us[subIndex];
+
+			float vs[4u];
+			_mm_storeu_ps(vs, outV);
+			float v = vs[subIndex];
+
+			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
+
+			const TriangleTexCoords4& triangleTexCoords4 = traversalDataManager->GetBVH4TriangleTexCoords4(tri4Index);
+			hitResult.m_texCoords.SetX((1.0f - u - v) * triangleTexCoords4.m_v0U[subIndex] + u * triangleTexCoords4.m_v1U[subIndex] + v * triangleTexCoords4.m_v2U[subIndex]);
+			hitResult.m_texCoords.SetY((1.0f - u - v) * triangleTexCoords4.m_v0V[subIndex] + u * triangleTexCoords4.m_v1V[subIndex] + v * triangleTexCoords4.m_v2V[subIndex]);
+
+			const TraversalTriangle4& traversalTriangle4 = traversalDataManager->GetBVH4TraversalTriangle4(tri4Index);
+			const Vector3 edge1 = Normalize(Vector3(traversalTriangle4.m_edge1X[subIndex], traversalTriangle4.m_edge1Y[subIndex], traversalTriangle4.m_edge1Z[subIndex]));
+			const Vector3 edge2 = Normalize(Vector3(traversalTriangle4.m_edge2X[subIndex], traversalTriangle4.m_edge2Y[subIndex], traversalTriangle4.m_edge2Z[subIndex]));
+			const Vector3 normal = Normalize(Cross(edge1, edge2));
+			hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
+
+			const TriangleIndices& triangleIndices = traversalDataManager->GetBVH4TriangleIndices(tri4Index);
+			hitResult.m_primitiveId = triangleIndices.m_triangleIndices[subIndex];
+
+			const Material4Index& material4Index = traversalDataManager->GetBVH4Material4Index(tri4Index);
+			hitResult.m_materialId = material4Index.m_indices[subIndex];
+
+			hitResult.m_colour = sceneManager->BasicSample(material4Index.m_indices[subIndex], hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
+		}
 	}
 
 	return hitResult;

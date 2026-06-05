@@ -2,13 +2,13 @@
 
 #include <vector>
 
-#include "BVHNode.h"
+#include "AABB.h"
+#include "Vector3.h"
 
-struct BVH2InnerNode;
-struct ConstructResult;
-struct TraversalTriangle;
+struct BVH2Node;
 struct Triangle;
-struct TriangleTexCoords;
+struct TraversalTriangle;
+struct TriangleTexCoord;
 
 // --------------------------------------------------------------------------------
 // This idea is taken from pbrt, 4th edition
@@ -26,11 +26,17 @@ struct Centroid
 	uint32_t m_triangleIndex;
 };
 
-// Triangle's centroid and the aabb
 // --------------------------------------------------------------------------------
 struct BVHTriangleData
 {
 	Centroid m_centroid;
+	AABB m_aabb;
+};
+
+// --------------------------------------------------------------------------------
+struct ConstructResult
+{
+	uint32_t m_index;
 	AABB m_aabb;
 };
 
@@ -40,12 +46,12 @@ class BVH2AccellStructure
 public:
 
 	BVH2AccellStructure(const std::vector<Triangle>& triangles, const std::vector<TraversalTriangle>& traversalTriangles, 
-		const std::vector<uint32_t>& perTriangleMaterials, const std::vector<TriangleTexCoords>& triangleTexCoords, const BVH2PartitionStrategy& bvhPartitionStrategy);
+		const std::vector<uint32_t>& triangleMaterials, const std::vector<TriangleTexCoord>& triangleTexCoords, const BVH2PartitionStrategy& bvhPartitionStrategy);
 
-	const BVH2InnerNode& GetInnerNode(uint32_t index) const;
+	const BVH2Node& GetBVH2Node(uint32_t index) const;
 	const TraversalTriangle& GetTraversalTriangle(const uint32_t index) const;
 	uint32_t GetMaterialIndex(const uint32_t index) const;
-	const TriangleTexCoords& GetTriangleTexCoords(const uint32_t index) const;
+	const TriangleTexCoord& GetTriangleTexCoord(const uint32_t index) const;
 
 	uint32_t GetNodeCount() const;
 
@@ -56,9 +62,9 @@ private:
 	ConstructResult ConstructNode(BVHTriangleData* bvhData, const uint32_t count, const BVH2PartitionStrategy& bvhPartitionStrategy);
 	AABB CalculateAABB(const uint32_t triangle);
 
-	std::vector<BVH2InnerNode> m_innerNodes;
+	std::vector<BVH2Node> m_bvh2Nodes;
 	std::vector<TraversalTriangle> m_traversalTriangles;
-	std::vector<uint32_t> m_perTriangleMaterials;
-	std::vector<TriangleTexCoords> m_triangleTexCoords;
+	std::vector<uint32_t> m_materialIndices;
+	std::vector<TriangleTexCoord> m_triangleTexCoords;
 };
 

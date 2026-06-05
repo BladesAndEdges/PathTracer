@@ -8,12 +8,12 @@
 #include "Triangle4AccellStructure.h"
 
 // --------------------------------------------------------------------------------
-TraversalDataManager::TraversalDataManager(const std::vector<Triangle>& triangles, const std::vector<uint32_t> perTriangleMaterials)
+TraversalDataManager::TraversalDataManager(const std::vector<Triangle>& triangles, const std::vector<uint32_t> materials)
 {
-	m_triangleAccellStructure = new TriangleAccellStructure(triangles, perTriangleMaterials);
-	m_triangle4AccellStructure = new Triangle4AccellStructure(m_triangleAccellStructure->GetTraversalTriangles(), m_triangleAccellStructure->GetPerTriangleMaterials(), 
+	m_triangleAccellStructure = new TriangleAccellStructure(triangles, materials);
+	m_triangle4AccellStructure = new Triangle4AccellStructure(m_triangleAccellStructure->GetTraversalTriangles(), m_triangleAccellStructure->GetMaterialIndices(), 
 		m_triangleAccellStructure->GetTriangleTexCoords());
-	m_bvh2AccellStructure = new BVH2AccellStructure(triangles, m_triangleAccellStructure->GetTraversalTriangles(), m_triangleAccellStructure->GetPerTriangleMaterials(),
+	m_bvh2AccellStructure = new BVH2AccellStructure(triangles, m_triangleAccellStructure->GetTraversalTriangles(), m_triangleAccellStructure->GetMaterialIndices(),
 		m_triangleAccellStructure->GetTriangleTexCoords(), BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
 	m_bvh4AccellStructure = new BVH4AccellStructure(m_bvh2AccellStructure);
 }
@@ -25,18 +25,6 @@ const uint32_t TraversalDataManager::GetTraversalTrianglesCount() const
 }
 
 // --------------------------------------------------------------------------------
-const TraversalTriangle& TraversalDataManager::GetTraversalTriangle(const uint32_t index) const
-{
-	return m_triangleAccellStructure->GetTraversalTriangle(index);
-}
-
-// --------------------------------------------------------------------------------
-const TriangleTexCoords& TraversalDataManager::GetTriangleTexCoords(const uint32_t index) const
-{
-	return m_triangleAccellStructure->GetTriangleTexCoords(index);
-}
-
-// --------------------------------------------------------------------------------
 const std::vector<TraversalTriangle>& TraversalDataManager::GetTraversalTriangles() const
 {
 	return m_triangleAccellStructure->GetTraversalTriangles();
@@ -45,11 +33,11 @@ const std::vector<TraversalTriangle>& TraversalDataManager::GetTraversalTriangle
 // --------------------------------------------------------------------------------
 const std::vector<uint32_t>& TraversalDataManager::GetMaterialIndices() const
 {
-	return m_triangleAccellStructure->GetPerTriangleMaterials();
+	return m_triangleAccellStructure->GetMaterialIndices();
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<TriangleTexCoords>& TraversalDataManager::GetTriangleTexCoords() const
+const std::vector<TriangleTexCoord>& TraversalDataManager::GetTriangleTexCoords() const
 {
 	return m_triangleAccellStructure->GetTriangleTexCoords();
 }
@@ -73,9 +61,9 @@ const std::vector<TriangleTexCoord4>& TraversalDataManager::GetSSETriangleTexCoo
 }
 
 // --------------------------------------------------------------------------------
-const BVH2InnerNode& TraversalDataManager::GetBVH2InnerNode(const uint32_t index) const
+const BVH2Node& TraversalDataManager::GetBVH2Node(const uint32_t index) const
 {
-	return m_bvh2AccellStructure->GetInnerNode(index);
+	return m_bvh2AccellStructure->GetBVH2Node(index);
 }
 
 // --------------------------------------------------------------------------------
@@ -91,9 +79,9 @@ const uint32_t TraversalDataManager::GetBVH2MaterialIndex(const uint32_t index) 
 }
 
 // --------------------------------------------------------------------------------
-const TriangleTexCoords& TraversalDataManager::GetBVH2TriangleTexCoords(const uint32_t index) const
+const TriangleTexCoord& TraversalDataManager::GetBVH2TriangleTexCoord(const uint32_t index) const
 {
-	return m_bvh2AccellStructure->GetTriangleTexCoords(index);
+	return m_bvh2AccellStructure->GetTriangleTexCoord(index);
 }
 
 // --------------------------------------------------------------------------------

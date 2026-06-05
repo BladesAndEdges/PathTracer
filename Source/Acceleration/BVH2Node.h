@@ -1,19 +1,11 @@
 #pragma once
 
-#include <vector>
-
 #include "AABB.h"
-#include "Vector3.h"
 
-struct ConstructResult
+// --------------------------------------------------------------------------------
+struct alignas(64) BVH2Node
 {
-	uint32_t m_index;
-	AABB m_aabb;
-};
-
-struct alignas(64) BVH2InnerNode
-{
-	BVH2InnerNode();
+	BVH2Node();
 
 	uint32_t m_leftChild;
 	uint32_t m_rightChild;

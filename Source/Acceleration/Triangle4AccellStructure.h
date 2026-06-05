@@ -5,7 +5,7 @@
 struct MaterialIndex4;
 struct TraversalTriangle;
 struct TraversalTriangle4;
-struct TriangleTexCoords;
+struct TriangleTexCoord;
 struct TriangleTexCoord4;
 
 // --------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ class Triangle4AccellStructure
 public:
 
 	Triangle4AccellStructure(std::vector<TraversalTriangle> traversalTriangles, std::vector<uint32_t> perTriangleMaterials, 
-		std::vector<TriangleTexCoords> triangleTexCoords);
+		std::vector<TriangleTexCoord> triangleTexCoords);
 
 	const std::vector<MaterialIndex4>& GetMaterialIndex4s() const;
 	const std::vector<TraversalTriangle4>& GetTraversalTriangle4s() const;

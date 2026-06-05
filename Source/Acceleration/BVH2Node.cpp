@@ -1,8 +1,8 @@
-#include "BVHNode.h"
+#include "BVH2Node.h"
 #include <cmath>
 
 // --------------------------------------------------------------------------------
-BVH2InnerNode::BVH2InnerNode() 
+BVH2Node::BVH2Node() 
     : m_leftChild(0x7fffffffu), 
     m_rightChild(0x7fffffffu),
     m_leftAABB(Vector3(std::nanf(""), std::nanf(""), std::nanf("")), Vector3(std::nanf(""), std::nanf(""), std::nanf(""))),

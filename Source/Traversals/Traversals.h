@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "BVHNode.h"
+#include "BVH2Node.h"
 #include "BVH4Node.h"
 #include "Ray.h"
 #include "TraversalDataManager.h"
@@ -17,7 +17,7 @@ void BVH2Traversal(const TraversalDataManager* dataManager, const uint32_t inner
 		ray.m_primaryNodeVisits++;
 	}
 
-	const BVH2InnerNode& node = dataManager->GetBVH2InnerNode(innerNodeStartIndex);
+	const BVH2Node& node = dataManager->GetBVH2Node(innerNodeStartIndex);
 
 	float tNears[2u] = { INFINITY, INFINITY };
 	float hit[2u] = { false, false };

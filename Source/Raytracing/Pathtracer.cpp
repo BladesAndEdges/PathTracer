@@ -549,7 +549,7 @@ HitResult Pathtracer::ScalarTraceRay(const TraversalDataManager* traversalDataMa
 	const TraversalTriangle* const endTriangle = beginTriangle + traversalTriangles.size();
 
 	const std::vector<uint32_t>& materialIndices = traversalDataManager->GetMaterialIndices();
-	const std::vector<TriangleTexCoords>& triangleTexCoords = traversalDataManager->GetTriangleTexCoords();
+	const std::vector<TriangleTexCoord>& triangleTexCoords = traversalDataManager->GetTriangleTexCoords();
 
 	uint32_t triangleIndex = 0u;
 	for (const TraversalTriangle* triangle = beginTriangle; triangle != endTriangle; triangle++)
@@ -575,9 +575,9 @@ HitResult Pathtracer::ScalarTraceRay(const TraversalDataManager* traversalDataMa
 		{
 			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
 
-			const TriangleTexCoords& texCoords = triangleTexCoords[primitiveId];
-			hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
-			hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
+			const TriangleTexCoord& texCoord = triangleTexCoords[primitiveId];
+			hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoord.m_v0uv[0u] + tu * texCoord.m_v1uv[0u] + tv * texCoord.m_v2uv[0u]);
+			hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoord.m_v0uv[1u] + tu * texCoord.m_v1uv[1u] + tv * texCoord.m_v2uv[1u]);
 
 			const Vector3 edge1 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge1[0u], traversalTriangles[primitiveId].m_edge1[1u], traversalTriangles[primitiveId].m_edge1[2u]));
 			const Vector3 edge2 = Normalize(Vector3(traversalTriangles[primitiveId].m_edge2[0u], traversalTriangles[primitiveId].m_edge2[1u], traversalTriangles[primitiveId].m_edge2[2u]));
@@ -737,9 +737,9 @@ HitResult Pathtracer::BVH2TraceRay(const TraversalDataManager* traversalDataMana
 		{
 			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
 
-			const TriangleTexCoords& texCoords = traversalDataManager->GetBVH2TriangleTexCoords(primitiveId);
-			hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoords.m_v0uv[0u] + tu * texCoords.m_v1uv[0u] + tv * texCoords.m_v2uv[0u]);
-			hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoords.m_v0uv[1u] + tu * texCoords.m_v1uv[1u] + tv * texCoords.m_v2uv[1u]);
+			const TriangleTexCoord& texCoord = traversalDataManager->GetBVH2TriangleTexCoord(primitiveId);
+			hitResult.m_texCoords.SetX((1.0f - tu - tv) * texCoord.m_v0uv[0u] + tu * texCoord.m_v1uv[0u] + tv * texCoord.m_v2uv[0u]);
+			hitResult.m_texCoords.SetY((1.0f - tu - tv) * texCoord.m_v0uv[1u] + tu * texCoord.m_v1uv[1u] + tv * texCoord.m_v2uv[1u]);
 
 			const TraversalTriangle& traversalTriangle = traversalDataManager->GetBVH2TraversalTriangle(primitiveId);
 			const Vector3 edge1 = Normalize(Vector3(traversalTriangle.m_edge1[0u], traversalTriangle.m_edge1[1u], traversalTriangle.m_edge1[2u]));

@@ -5,7 +5,7 @@
 #include "TriangleTexCoords.h"
 
 // --------------------------------------------------------------------------------
-TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& triangles, const std::vector<uint32_t>& perTriangleMaterials) : m_perTriangleMaterials(perTriangleMaterials)
+TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& triangles, const std::vector<uint32_t>& perTriangleMaterials) : m_materialIndices(perTriangleMaterials)
 {
 	// Traversal data
 	TraversalTriangle traversalTriangle;
@@ -27,7 +27,7 @@ TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& tr
 	}
 
 	// Texture coordinate data
-	TriangleTexCoords triangleTexCoords;
+	TriangleTexCoord triangleTexCoords;
 	for (uint32_t triangle = 0u; triangle < triangles.size(); triangle++)
 	{
 		triangleTexCoords.m_v0uv[0u] = triangles[triangle].m_vertices[0u].m_textureCoordinate[0u];
@@ -50,31 +50,19 @@ const uint32_t TriangleAccellStructure::GetTraversalTrianglesCount() const
 }
 
 // --------------------------------------------------------------------------------
-const TraversalTriangle& TriangleAccellStructure::GetTraversalTriangle(const uint32_t index) const
-{
-	return m_traversalTriangles[index];
-}
-
-// --------------------------------------------------------------------------------
-const TriangleTexCoords& TriangleAccellStructure::GetTriangleTexCoords(const uint32_t index) const
-{
-	return m_triangleTexCoords[index];
-}
-
-// --------------------------------------------------------------------------------
 const std::vector<TraversalTriangle>& TriangleAccellStructure::GetTraversalTriangles() const
 {
 	return m_traversalTriangles;
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<uint32_t>& TriangleAccellStructure::GetPerTriangleMaterials() const
+const std::vector<uint32_t>& TriangleAccellStructure::GetMaterialIndices() const
 {
-	return m_perTriangleMaterials;
+	return m_materialIndices;
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<TriangleTexCoords>& TriangleAccellStructure::GetTriangleTexCoords() const
+const std::vector<TriangleTexCoord>& TriangleAccellStructure::GetTriangleTexCoords() const
 {
 	return m_triangleTexCoords;
 }

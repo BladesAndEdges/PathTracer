@@ -7,21 +7,21 @@
 
 // --------------------------------------------------------------------------------
 Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle> traversalTriangles, 
-	std::vector<uint32_t> triangleMaterials, std::vector<TriangleTexCoords> triangleTexCoords)
+	std::vector<uint32_t> triangleMaterials, std::vector<TriangleTexCoord> triangleTexCoords)
 {
 	// Pad to a multiple of 4, if needed
 	const uint32_t remainder = (uint32_t)traversalTriangles.size() % 4u;
 	if (remainder != 0u)
 	{
 		const TraversalTriangle traversalTriangle;
-		const TriangleTexCoords triTexCoords;
+		const TriangleTexCoord triangleTexCoord;
 
 		const uint32_t padCount = 4u - remainder;
 		for (uint32_t padding = 0u; padding < padCount; padding++)
 		{
 			traversalTriangles.push_back(traversalTriangle);
 			triangleMaterials.push_back(UINT32_MAX);
-			triangleTexCoords.push_back(triTexCoords);
+			triangleTexCoords.push_back(triangleTexCoord);
 		}
 	}
 

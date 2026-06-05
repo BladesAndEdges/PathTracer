@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "BVH2Node.h"
 #include "TraversalTriangle.h"
 #include "Triangle.h"
 #include "TriangleTexCoords.h"
@@ -14,9 +15,9 @@
 // --------------------------------------------------------------------------------
 BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles, 
 	const std::vector<TraversalTriangle>& traversalTriangles,
-	const std::vector<uint32_t>& perTriangleMaterials, 
-	const std::vector<TriangleTexCoords>& triangleTexCoords, const BVH2PartitionStrategy& bvhPartitionStrategy) : m_traversalTriangles(traversalTriangles),
-																										         m_perTriangleMaterials(perTriangleMaterials),
+	const std::vector<uint32_t>& triangleMaterials, 
+	const std::vector<TriangleTexCoord>& triangleTexCoords, const BVH2PartitionStrategy& bvhPartitionStrategy) : m_traversalTriangles(traversalTriangles),
+																										         m_materialIndices(triangleMaterials),
 																												 m_triangleTexCoords(triangleTexCoords)
 {
 	assert(triangles.size() != 0);
@@ -39,10 +40,10 @@ BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles,
 }
 
 // --------------------------------------------------------------------------------
-const BVH2InnerNode& BVH2AccellStructure::GetInnerNode(uint32_t index) const
+const BVH2Node& BVH2AccellStructure::GetBVH2Node(uint32_t index) const
 {
-	assert(index < (uint32_t)m_innerNodes.size());
-	return m_innerNodes[index];
+	assert(index < (uint32_t)m_bvh2Nodes.size());
+	return m_bvh2Nodes[index];
 }
 
 // --------------------------------------------------------------------------------
@@ -55,11 +56,11 @@ const TraversalTriangle& BVH2AccellStructure::GetTraversalTriangle(const uint32_
 // --------------------------------------------------------------------------------
 uint32_t BVH2AccellStructure::GetMaterialIndex(const uint32_t index) const
 {
-	assert(index < (uint32_t)m_perTriangleMaterials.size());
-	return m_perTriangleMaterials[index];
+	assert(index < (uint32_t)m_materialIndices.size());
+	return m_materialIndices[index];
 }
 
-const TriangleTexCoords& BVH2AccellStructure::GetTriangleTexCoords(const uint32_t index) const
+const TriangleTexCoord& BVH2AccellStructure::GetTriangleTexCoord(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_triangleTexCoords.size());
 	return m_triangleTexCoords[index];
@@ -68,7 +69,7 @@ const TriangleTexCoords& BVH2AccellStructure::GetTriangleTexCoords(const uint32_
 // --------------------------------------------------------------------------------
 uint32_t BVH2AccellStructure::GetNodeCount() const
 {
-	return (uint32_t)m_innerNodes.size();
+	return (uint32_t)m_bvh2Nodes.size();
 }
 
 // --------------------------------------------------------------------------------
@@ -96,14 +97,14 @@ ConstructResult BVH2AccellStructure::ConstructNode(BVHTriangleData* bvhData, con
 
 	if (count == 1u)
 	{
-		if (m_innerNodes.size() == 0u)
+		if (m_bvh2Nodes.size() == 0u)
 		{
-			BVH2InnerNode node;
-			const uint32_t innerNodeIndex = (uint32_t)m_innerNodes.size();
-			m_innerNodes.push_back(node);
+			BVH2Node node;
+			const uint32_t innerNodeIndex = (uint32_t)m_bvh2Nodes.size();
+			m_bvh2Nodes.push_back(node);
 
-			m_innerNodes[innerNodeIndex].m_leftChild = bvhData->m_centroid.m_triangleIndex | (1u << 31u);
-			m_innerNodes[innerNodeIndex].m_leftAABB = bvhData->m_aabb;
+			m_bvh2Nodes[innerNodeIndex].m_leftChild = bvhData->m_centroid.m_triangleIndex | (1u << 31u);
+			m_bvh2Nodes[innerNodeIndex].m_leftAABB = bvhData->m_aabb;
 		}
 
 		cr.m_index = bvhData->m_centroid.m_triangleIndex | (1u << 31u);
@@ -111,9 +112,9 @@ ConstructResult BVH2AccellStructure::ConstructNode(BVHTriangleData* bvhData, con
 	}
 	else
 	{
-		BVH2InnerNode node;
-		const uint32_t innerNodeIndex = (uint32_t)m_innerNodes.size();
-		m_innerNodes.push_back(node);
+		BVH2Node node;
+		const uint32_t innerNodeIndex = (uint32_t)m_bvh2Nodes.size();
+		m_bvh2Nodes.push_back(node);
 
 		BVHTriangleData* leftStart = nullptr;;
 		BVHTriangleData* rightStart = nullptr;
@@ -345,11 +346,11 @@ ConstructResult BVH2AccellStructure::ConstructNode(BVHTriangleData* bvhData, con
 		const ConstructResult left = ConstructNode(leftStart, leftCount, bvhPartitionStrategy);
 		const ConstructResult right = ConstructNode(rightStart, rightCount, bvhPartitionStrategy);
 
-		m_innerNodes[innerNodeIndex].m_leftChild = left.m_index;
-		m_innerNodes[innerNodeIndex].m_leftAABB = left.m_aabb;
+		m_bvh2Nodes[innerNodeIndex].m_leftChild = left.m_index;
+		m_bvh2Nodes[innerNodeIndex].m_leftAABB = left.m_aabb;
 
-		m_innerNodes[innerNodeIndex].m_rightChild = right.m_index;
-		m_innerNodes[innerNodeIndex].m_rightAABB = right.m_aabb;
+		m_bvh2Nodes[innerNodeIndex].m_rightChild = right.m_index;
+		m_bvh2Nodes[innerNodeIndex].m_rightAABB = right.m_aabb;
 
 		cr.m_index = innerNodeIndex;
 		cr.m_aabb.MergeAABB(left.m_aabb);

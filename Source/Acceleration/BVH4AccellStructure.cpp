@@ -4,6 +4,7 @@
 
 #include "BVH2AccellStructure.h"
 #include "BaseTypes4.h"
+#include "BVH2Node.h"
 #include "BVH4Node.h"
 #include "TraversalTriangle.h"
 #include "TraversalTriangle4.h"
@@ -33,7 +34,7 @@ void GetChildren(const BVH2AccellStructure* bvh2AccellStructure, uint32_t* child
 		{
 			if ((children[child] >> 31u) != 1u)
 			{
-				const BVH2InnerNode node = bvh2AccellStructure->GetInnerNode(children[child]);
+				const BVH2Node node = bvh2AccellStructure->GetBVH2Node(children[child]);
 
 				AABB childrenAABB;
 				childrenAABB.MergeAABB(node.m_leftAABB);
@@ -54,7 +55,7 @@ void GetChildren(const BVH2AccellStructure* bvh2AccellStructure, uint32_t* child
 		}
 		else
 		{
-			const BVH2InnerNode node = bvh2AccellStructure->GetInnerNode(children[childIndex]);
+			const BVH2Node node = bvh2AccellStructure->GetBVH2Node(children[childIndex]);
 
 			children[childIndex] = node.m_leftChild;
 			boxes[childIndex] = node.m_leftAABB;
@@ -178,7 +179,7 @@ uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccellStructure* bvh2Accell
 			if (postShiftValue & 1u)
 			{
 				const uint32_t indexInBVH2 = children[child] & ~(1u << 31u);
-				const TriangleTexCoords& triangleTexCoord = bvh2AccellStructure->GetTriangleTexCoords(indexInBVH2);
+				const TriangleTexCoord& triangleTexCoord = bvh2AccellStructure->GetTriangleTexCoord(indexInBVH2);
 
 				triangleTexCoord4.m_v0U[texCoord] = triangleTexCoord.m_v0uv[0u];
 				triangleTexCoord4.m_v0V[texCoord] = triangleTexCoord.m_v0uv[1u];

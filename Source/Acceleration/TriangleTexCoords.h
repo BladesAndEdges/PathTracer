@@ -2,8 +2,7 @@
 
 #include "float.h"
 
-// CHANGE TO CAPITAL LETTERS TO MATCH STYLE IN OTHER FILES :)))
-struct TriangleTexCoords
+struct TriangleTexCoord
 {
 	float m_v0uv[2u] = { FLT_MAX, FLT_MAX };
 	float m_v1uv[2u] = { FLT_MAX, FLT_MAX };

@@ -1,26 +1,25 @@
 #include "Pathtracer.h"
 
+#include "BaseTypes4.h"
 #include "Camera.h"
 #include "Framebuffer.h"
 #include "HitResult.h"
 #include "Intersections.h"
-#include "Material4Index.h"
 #include "Ray.h"
 #include "SceneManager.h"
 #include "Traversals.h"
 #include "TraversalDataManager.h"
 #include "TraversalTriangle.h"
 #include "TriangleTexCoords.h"
-#include "TriangleTexCoords4.h"
 
 # define NOMINMAX
 # define M_PI 3.14159265358979323846
 # define TMIN 1e-5f
 
-//#define TRACE_AGAINST_NON_BVH
+#define TRACE_AGAINST_NON_BVH
 //#define TRACE_AGAINST_NON_BVH_SSE
 //#define TRACE_AGAINST_BVH2
-#define TRACE_AGAINST_BVH4
+//#define TRACE_AGAINST_BVH4
 
 const Vector3 primitiveDebugColours[5u] = { Vector3(0.94f, 0.34f, 0.30f), Vector3(0.30f, 0.94f, 0.70f), Vector3(0.51f, 0.70f, 0.96f),
 	Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
@@ -625,7 +624,7 @@ HitResult Pathtracer::SSETraceRay(const TraversalDataManager* traversalDataManag
 	__m128 outU = _mm_set1_ps(FLT_MAX);
 	__m128 outV = _mm_set1_ps(FLT_MAX);
 
-	const std::vector<TraversalTriangle4>& traversalTriangle4s = traversalDataManager->GetTraversalTriangle4s();
+	const std::vector<TraversalTriangle4>& traversalTriangle4s = traversalDataManager->GetSSETraversalTriangle4s();
 	const TraversalTriangle4* const beginTriangle4 = &traversalTriangle4s[0u];
 	const TraversalTriangle4* const endTriangle4 = beginTriangle4 + traversalTriangle4s.size();
 
@@ -690,9 +689,9 @@ HitResult Pathtracer::SSETraceRay(const TraversalDataManager* traversalDataManag
 
 			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
 
-			const std::vector<TriangleTexCoords4>& texCoords4 = traversalDataManager->GetTriangleTexCoords4();
-			hitResult.m_texCoords.SetX((1.0f - u - v) * texCoords4[tri4Index].m_v0U[subIndex] + u * texCoords4[tri4Index].m_v1U[subIndex] + v * texCoords4[tri4Index].m_v2U[subIndex]);
-			hitResult.m_texCoords.SetY((1.0f - u - v) * texCoords4[tri4Index].m_v0V[subIndex] + u * texCoords4[tri4Index].m_v1V[subIndex] + v * texCoords4[tri4Index].m_v2V[subIndex]);
+			const std::vector<TriangleTexCoord4>& texCoord4s = traversalDataManager->GetSSETriangleTexCoord4s();
+			hitResult.m_texCoords.SetX((1.0f - u - v) * texCoord4s[tri4Index].m_v0U[subIndex] + u * texCoord4s[tri4Index].m_v1U[subIndex] + v * texCoord4s[tri4Index].m_v2U[subIndex]);
+			hitResult.m_texCoords.SetY((1.0f - u - v) * texCoord4s[tri4Index].m_v0V[subIndex] + u * texCoord4s[tri4Index].m_v1V[subIndex] + v * texCoord4s[tri4Index].m_v2V[subIndex]);
 
 			const Vector3 edge1 = Normalize(Vector3(traversalTriangle4s[tri4Index].m_edge1X[subIndex],
 				traversalTriangle4s[tri4Index].m_edge1Y[subIndex],
@@ -707,8 +706,8 @@ HitResult Pathtracer::SSETraceRay(const TraversalDataManager* traversalDataManag
 
 			hitResult.m_primitiveId = (tri4Index * 4u) + subIndex;
 
-			const std::vector<Material4Index>& material4Indices = traversalDataManager->GetMaterial4Indices();
-			hitResult.m_materialId = material4Indices[tri4Index].m_indices[subIndex];
+			const std::vector<MaterialIndex4>& materialIndex4 = traversalDataManager->GetSSEMaterialIndex4s();
+			hitResult.m_materialId = materialIndex4[tri4Index].m_index[subIndex];
 
 			hitResult.m_colour = sceneManager->BasicSample(hitResult.m_materialId, hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
 		}
@@ -817,9 +816,9 @@ HitResult Pathtracer::BVH4TraceRay(const TraversalDataManager* traversalDataMana
 
 			hitResult.m_intersectionPoint = ray.CalculateIntersectionPoint(tMax);
 
-			const TriangleTexCoords4& triangleTexCoords4 = traversalDataManager->GetBVH4TriangleTexCoords4(tri4Index);
-			hitResult.m_texCoords.SetX((1.0f - u - v) * triangleTexCoords4.m_v0U[subIndex] + u * triangleTexCoords4.m_v1U[subIndex] + v * triangleTexCoords4.m_v2U[subIndex]);
-			hitResult.m_texCoords.SetY((1.0f - u - v) * triangleTexCoords4.m_v0V[subIndex] + u * triangleTexCoords4.m_v1V[subIndex] + v * triangleTexCoords4.m_v2V[subIndex]);
+			const TriangleTexCoord4& triangleTexCoord4 = traversalDataManager->GetBVH4TriangleTexCoord4(tri4Index);
+			hitResult.m_texCoords.SetX((1.0f - u - v) * triangleTexCoord4.m_v0U[subIndex] + u * triangleTexCoord4.m_v1U[subIndex] + v * triangleTexCoord4.m_v2U[subIndex]);
+			hitResult.m_texCoords.SetY((1.0f - u - v) * triangleTexCoord4.m_v0V[subIndex] + u * triangleTexCoord4.m_v1V[subIndex] + v * triangleTexCoord4.m_v2V[subIndex]);
 
 			const TraversalTriangle4& traversalTriangle4 = traversalDataManager->GetBVH4TraversalTriangle4(tri4Index);
 			const Vector3 edge1 = Normalize(Vector3(traversalTriangle4.m_edge1X[subIndex], traversalTriangle4.m_edge1Y[subIndex], traversalTriangle4.m_edge1Z[subIndex]));
@@ -827,13 +826,13 @@ HitResult Pathtracer::BVH4TraceRay(const TraversalDataManager* traversalDataMana
 			const Vector3 normal = Normalize(Cross(edge1, edge2));
 			hitResult.m_normal = (Dot(normal, ray.Direction()) < 0.0f) ? normal : -normal;
 
-			const TriangleIndices& triangleIndices = traversalDataManager->GetBVH4TriangleIndices(tri4Index);
-			hitResult.m_primitiveId = triangleIndices.m_triangleIndices[subIndex];
+			const TriangleIndex4& triangleIndex4 = traversalDataManager->GetBVH4TriangleIndex4(tri4Index);
+			hitResult.m_primitiveId = triangleIndex4.m_index[subIndex];
 
-			const Material4Index& material4Index = traversalDataManager->GetBVH4Material4Index(tri4Index);
-			hitResult.m_materialId = material4Index.m_indices[subIndex];
+			const MaterialIndex4& materialIndex4 = traversalDataManager->GetBVH4MaterialIndex4(tri4Index);
+			hitResult.m_materialId = materialIndex4.m_index[subIndex];
 
-			hitResult.m_colour = sceneManager->BasicSample(material4Index.m_indices[subIndex], hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
+			hitResult.m_colour = sceneManager->BasicSample(materialIndex4.m_index[subIndex], hitResult.m_texCoords.X(), hitResult.m_texCoords.Y());
 		}
 	}
 

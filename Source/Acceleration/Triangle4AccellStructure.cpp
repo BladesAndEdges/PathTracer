@@ -1,14 +1,13 @@
 #include "Triangle4AccellStructure.h"
 
-#include "Material4Index.h"
+#include "BaseTypes4.h"
 #include "TraversalTriangle.h"
 #include "TraversalTriangle4.h"
 #include "TriangleTexCoords.h"
-#include "TriangleTexCoords4.h"
 
 // --------------------------------------------------------------------------------
 Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle> traversalTriangles, 
-	std::vector<uint32_t> perTriangleMaterials, std::vector<TriangleTexCoords> triangleTexCoords)
+	std::vector<uint32_t> triangleMaterials, std::vector<TriangleTexCoords> triangleTexCoords)
 {
 	// Pad to a multiple of 4, if needed
 	const uint32_t remainder = (uint32_t)traversalTriangles.size() % 4u;
@@ -21,7 +20,7 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 		for (uint32_t padding = 0u; padding < padCount; padding++)
 		{
 			traversalTriangles.push_back(traversalTriangle);
-			perTriangleMaterials.push_back(UINT32_MAX);
+			triangleMaterials.push_back(UINT32_MAX);
 			triangleTexCoords.push_back(triTexCoords);
 		}
 	}
@@ -86,19 +85,19 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 	}
 
 	// Material indices
-	Material4Index material4Index;
-	for (uint32_t index = 0u; index < perTriangleMaterials.size(); index += 4u)
+	MaterialIndex4 materialIndex4;
+	for (uint32_t index = 0u; index < triangleMaterials.size(); index += 4u)
 	{
-		material4Index.m_indices[0u] = perTriangleMaterials[index];
-		material4Index.m_indices[1u] = perTriangleMaterials[index + 1u];
-		material4Index.m_indices[2u] = perTriangleMaterials[index + 2u];
-		material4Index.m_indices[3u] = perTriangleMaterials[index + 3u];
+		materialIndex4.m_index[0u] = triangleMaterials[index];
+		materialIndex4.m_index[1u] = triangleMaterials[index + 1u];
+		materialIndex4.m_index[2u] = triangleMaterials[index + 2u];
+		materialIndex4.m_index[3u] = triangleMaterials[index + 3u];
 
-		m_perTriangle4Materials.push_back(material4Index);
+		m_materialIndex4s.push_back(materialIndex4);
 	}
 
 	// Texture coordinates
-	TriangleTexCoords4 triangleTexCoords4;
+	TriangleTexCoord4 triangleTexCoords4;
 	for (uint32_t index = 0u; index < triangleTexCoords.size(); index += 4u)
 	{
 		// Tex coord 0
@@ -141,7 +140,7 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 		triangleTexCoords4.m_v2U[3u] = triangleTexCoords[index + 3u].m_v2uv[0u];
 		triangleTexCoords4.m_v2V[3u] = triangleTexCoords[index + 3u].m_v2uv[1u];
 
-		m_triangleTexCoords4.push_back(triangleTexCoords4);
+		m_triangleTexCoord4s.push_back(triangleTexCoords4);
 	}
 }
 
@@ -152,13 +151,13 @@ const std::vector<TraversalTriangle4>& Triangle4AccellStructure::GetTraversalTri
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<Material4Index>& Triangle4AccellStructure::GetMaterial4Indices() const
+const std::vector<MaterialIndex4>& Triangle4AccellStructure::GetMaterialIndex4s() const
 {
-	return m_perTriangle4Materials;
+	return m_materialIndex4s;
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<TriangleTexCoords4>& Triangle4AccellStructure::GetTriangleTexCoords4() const
+const std::vector<TriangleTexCoord4>& Triangle4AccellStructure::GetTriangleTexCoord4s() const
 {
-	return m_triangleTexCoords4;
+	return m_triangleTexCoord4s;
 }

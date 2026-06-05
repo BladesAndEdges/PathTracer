@@ -213,7 +213,6 @@
     <ClCompile Include="Source\Acceleration\BVH2AccellStructure.cpp" />
     <ClCompile Include="Source\Acceleration\BVH4AccellStructure.cpp" />
     <ClCompile Include="Source\Acceleration\BVHNode.cpp" />
-    <ClCompile Include="Source\Acceleration\Material4Index.cpp" />
     <ClCompile Include="Source\Acceleration\TraversalTriangle.cpp" />
     <ClCompile Include="Source\Acceleration\TraversalTriangle4.cpp" />
     <ClCompile Include="Source\Acceleration\Triangle4AccellStructure.cpp" />
@@ -239,16 +238,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dependencies\stb\stb_image.h" />
+    <ClInclude Include="Source\Acceleration\BaseTypes4.h" />
     <ClInclude Include="Source\Acceleration\BVH2AccellStructure.h" />
     <ClInclude Include="Source\Acceleration\BVH4AccellStructure.h" />
+    <ClInclude Include="Source\Acceleration\BVH4Node.h" />
     <ClInclude Include="Source\Acceleration\BVHNode.h" />
-    <ClInclude Include="Source\Acceleration\Material4Index.h" />
     <ClInclude Include="Source\Acceleration\TraversalTriangle.h" />
     <ClInclude Include="Source\Acceleration\TraversalTriangle4.h" />
     <ClInclude Include="Source\Acceleration\Triangle4AccellStructure.h" />
     <ClInclude Include="Source\Acceleration\TriangleAccellStructure.h" />
     <ClInclude Include="Source\Acceleration\TriangleTexCoords.h" />
-    <ClInclude Include="Source\Acceleration\TriangleTexCoords4.h" />
     <ClInclude Include="Source\Core\Application.h" />
     <ClInclude Include="Source\Core\Camera.h" />
     <ClInclude Include="Source\Core\Framebuffer.h" />
@@ -266,7 +265,6 @@
     <ClInclude Include="Source\ResourceManagers\TraversalDataManager.h" />
     <ClInclude Include="Source\ResourceManagers\Triangle.h" />
     <ClInclude Include="Source\ResourceManagers\Vertex.h" />
-    <ClInclude Include="Mesh.h" />
     <ClInclude Include="Source\Traversals\Traversals.h" />
   </ItemGroup>
   <ItemGroup>

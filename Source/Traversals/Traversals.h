@@ -1,7 +1,9 @@
+#pragma once
+
 #include <stdint.h>
 
 #include "BVHNode.h"
-#include "BVH4AccellStructure.h"
+#include "BVH4Node.h"
 #include "Ray.h"
 #include "TraversalDataManager.h"
 
@@ -81,7 +83,7 @@ void BVH4Traversal(const TraversalDataManager* dataManager, const uint32_t inner
 		ray.m_primaryNodeVisits++;
 	}
 
-	const BVH4InnerNode& node = dataManager->GetBVH4InnerNode(innerNodeStartIndex);
+	const BVH4Node& node = dataManager->GetBVH4Node(innerNodeStartIndex);
 
 #ifdef SORTED_BVH4
 

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <vector>
 
-class BVH2AccellStructure;
+class BVH2AccelStructure;
 struct BVH4Node;
 struct MaterialIndex4;
 struct TraversalTriangle4;
@@ -15,8 +15,8 @@ class BVH4AccellStructure
 {
 public:
 
-	BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellStructure);
-	uint32_t MakeBVH4Node(const BVH2AccellStructure* bvhAccellStructure, const uint32_t start);
+	BVH4AccellStructure(const BVH2AccelStructure* bvh2AccelStructure);
+	uint32_t MakeBVH4Node(const BVH2AccelStructure* bvh2AccelStructure, const uint32_t start);
 
 	const BVH4Node& GetBVH4Node(const uint32_t index) const;
 	const MaterialIndex4& GetMaterialIndex4(const uint32_t index) const;

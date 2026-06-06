@@ -1,4 +1,4 @@
-#include "Triangle4AccellStructure.h"
+#include "SSEAccelStructure.h"
 
 #include "BaseTypes4.h"
 #include "TraversalTriangle.h"

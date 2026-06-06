@@ -1,11 +1,12 @@
 #include "TraversalDataManager.h"
 
-#include "BVH2AccellStructure.h"
+#include "BVH2AccelStructure.h"
 #include "BVH4AccellStructure.h"
 #include "ScalarAccelStructure.h"
+#include "SSEAccelStructure.h"
 #include "TraversalTriangle.h"
 #include "TriangleTexCoords.h"
-#include "Triangle4AccellStructure.h"
+
 
 // --------------------------------------------------------------------------------
 TraversalDataManager::TraversalDataManager(const std::vector<Triangle>& triangles, const std::vector<uint32_t> materials)
@@ -13,9 +14,9 @@ TraversalDataManager::TraversalDataManager(const std::vector<Triangle>& triangle
 	m_scalarAccelStructure = new ScalarAccelStructure(triangles, materials);
 	m_sseAccelStructure = new SSEAccelStructure(m_scalarAccelStructure->GetTraversalTriangles(), m_scalarAccelStructure->GetMaterialIndices(), 
 		m_scalarAccelStructure->GetTriangleTexCoords());
-	m_bvh2AccellStructure = new BVH2AccellStructure(triangles, m_scalarAccelStructure->GetTraversalTriangles(), m_scalarAccelStructure->GetMaterialIndices(),
+	m_bvh2AccelStructure = new BVH2AccelStructure(triangles, m_scalarAccelStructure->GetTraversalTriangles(), m_scalarAccelStructure->GetMaterialIndices(),
 		m_scalarAccelStructure->GetTriangleTexCoords(), BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
-	m_bvh4AccellStructure = new BVH4AccellStructure(m_bvh2AccellStructure);
+	m_bvh4AccellStructure = new BVH4AccellStructure(m_bvh2AccelStructure);
 }
 
 // --------------------------------------------------------------------------------
@@ -63,25 +64,25 @@ const std::vector<TriangleTexCoord4>& TraversalDataManager::GetSSETriangleTexCoo
 // --------------------------------------------------------------------------------
 const BVH2Node& TraversalDataManager::GetBVH2Node(const uint32_t index) const
 {
-	return m_bvh2AccellStructure->GetBVH2Node(index);
+	return m_bvh2AccelStructure->GetBVH2Node(index);
 }
 
 // --------------------------------------------------------------------------------
 const TraversalTriangle& TraversalDataManager::GetBVH2TraversalTriangle(const uint32_t index) const
 {
-	return m_bvh2AccellStructure->GetTraversalTriangle(index);
+	return m_bvh2AccelStructure->GetTraversalTriangle(index);
 }
 
 // --------------------------------------------------------------------------------
 const uint32_t TraversalDataManager::GetBVH2MaterialIndex(const uint32_t index) const
 {
-	return m_bvh2AccellStructure->GetMaterialIndex(index);
+	return m_bvh2AccelStructure->GetMaterialIndex(index);
 }
 
 // --------------------------------------------------------------------------------
 const TriangleTexCoord& TraversalDataManager::GetBVH2TriangleTexCoord(const uint32_t index) const
 {
-	return m_bvh2AccellStructure->GetTriangleTexCoord(index);
+	return m_bvh2AccelStructure->GetTriangleTexCoord(index);
 }
 
 // --------------------------------------------------------------------------------

@@ -41,11 +41,11 @@ struct ConstructResult
 };
 
 // --------------------------------------------------------------------------------
-class BVH2AccellStructure
+class BVH2AccelStructure
 {
 public:
 
-	BVH2AccellStructure(const std::vector<Triangle>& triangles, const std::vector<TraversalTriangle>& traversalTriangles, 
+	BVH2AccelStructure(const std::vector<Triangle>& triangles, const std::vector<TraversalTriangle>& traversalTriangles, 
 		const std::vector<uint32_t>& triangleMaterials, const std::vector<TriangleTexCoord>& triangleTexCoords, const BVH2PartitionStrategy& bvhPartitionStrategy);
 
 	const BVH2Node& GetBVH2Node(uint32_t index) const;

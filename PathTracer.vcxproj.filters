@@ -18,7 +18,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Acceleration\BVH2AccellStructure.cpp">
+    <ClCompile Include="Source\Acceleration\BVH2AccelStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Acceleration\BVH4AccellStructure.cpp">
@@ -33,7 +33,7 @@
     <ClCompile Include="Source\Acceleration\TraversalTriangle4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Acceleration\Triangle4AccellStructure.cpp">
+    <ClCompile Include="Source\Acceleration\SSEAccelStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Acceleration\ScalarAccelStructure.cpp">
@@ -95,7 +95,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Acceleration\BVH2AccellStructure.h">
+    <ClInclude Include="Source\Acceleration\BVH2AccelStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Acceleration\BVH4AccellStructure.h">
@@ -110,7 +110,7 @@
     <ClInclude Include="Source\Acceleration\TraversalTriangle4.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Acceleration\Triangle4AccellStructure.h">
+    <ClInclude Include="Source\Acceleration\SSEAccelStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Acceleration\ScalarAccelStructure.h">

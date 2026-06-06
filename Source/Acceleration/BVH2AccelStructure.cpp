@@ -1,4 +1,4 @@
-#include "BVH2AccellStructure.h"
+#include "BVH2AccelStructure.h"
 
 #include <Windows.h>
 #include <assert.h>
@@ -13,7 +13,7 @@
 #define EPSILON 0.00001f
 
 // --------------------------------------------------------------------------------
-BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles, 
+BVH2AccelStructure::BVH2AccelStructure(const std::vector<Triangle>& triangles, 
 	const std::vector<TraversalTriangle>& traversalTriangles,
 	const std::vector<uint32_t>& triangleMaterials, 
 	const std::vector<TriangleTexCoord>& triangleTexCoords, const BVH2PartitionStrategy& bvhPartitionStrategy) : m_traversalTriangles(traversalTriangles),
@@ -40,34 +40,34 @@ BVH2AccellStructure::BVH2AccellStructure(const std::vector<Triangle>& triangles,
 }
 
 // --------------------------------------------------------------------------------
-const BVH2Node& BVH2AccellStructure::GetBVH2Node(uint32_t index) const
+const BVH2Node& BVH2AccelStructure::GetBVH2Node(uint32_t index) const
 {
 	assert(index < (uint32_t)m_bvh2Nodes.size());
 	return m_bvh2Nodes[index];
 }
 
 // --------------------------------------------------------------------------------
-const TraversalTriangle& BVH2AccellStructure::GetTraversalTriangle(const uint32_t index) const
+const TraversalTriangle& BVH2AccelStructure::GetTraversalTriangle(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_traversalTriangles.size());
 	return m_traversalTriangles[index];
 }
 
 // --------------------------------------------------------------------------------
-uint32_t BVH2AccellStructure::GetMaterialIndex(const uint32_t index) const
+uint32_t BVH2AccelStructure::GetMaterialIndex(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_materialIndices.size());
 	return m_materialIndices[index];
 }
 
-const TriangleTexCoord& BVH2AccellStructure::GetTriangleTexCoord(const uint32_t index) const
+const TriangleTexCoord& BVH2AccelStructure::GetTriangleTexCoord(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_triangleTexCoords.size());
 	return m_triangleTexCoords[index];
 }
 
 // --------------------------------------------------------------------------------
-uint32_t BVH2AccellStructure::GetNodeCount() const
+uint32_t BVH2AccelStructure::GetNodeCount() const
 {
 	return (uint32_t)m_bvh2Nodes.size();
 }
@@ -91,7 +91,7 @@ uint32_t ChooseAxisForPartition(const Vector3& min, const Vector3& max)
 }
 
 // --------------------------------------------------------------------------------
-ConstructResult BVH2AccellStructure::ConstructNode(BVHTriangleData* bvhData, const uint32_t count, const BVH2PartitionStrategy& bvhPartitionStrategy)
+ConstructResult BVH2AccelStructure::ConstructNode(BVHTriangleData* bvhData, const uint32_t count, const BVH2PartitionStrategy& bvhPartitionStrategy)
 {
 	ConstructResult cr;
 

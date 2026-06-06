@@ -2,7 +2,7 @@
 
 #include <vector>
 
-class BVH2AccellStructure;
+class BVH2AccelStructure;
 class BVH4AccellStructure;
 struct BVH2Node;
 struct BVH4Node;
@@ -47,7 +47,7 @@ private:
 
 	ScalarAccelStructure* m_scalarAccelStructure;
 	SSEAccelStructure* m_sseAccelStructure;
-	BVH2AccellStructure* m_bvh2AccellStructure;
+	BVH2AccelStructure* m_bvh2AccelStructure;
 	BVH4AccellStructure* m_bvh4AccellStructure;
 };
 

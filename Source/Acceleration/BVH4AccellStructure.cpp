@@ -2,8 +2,8 @@
 
 #include <assert.h>
 
-#include "BVH2AccellStructure.h"
 #include "BaseTypes4.h"
+#include "BVH2AccelStructure.h"
 #include "BVH2Node.h"
 #include "BVH4Node.h"
 #include "TraversalTriangle.h"
@@ -11,11 +11,11 @@
 #include "TriangleTexCoords.h"
 
 // --------------------------------------------------------------------------------
-BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellStructure)
+BVH4AccellStructure::BVH4AccellStructure(const BVH2AccelStructure* bvh2AccelStructure)
 {
-	assert(bvh2AccellStructure != nullptr);
+	assert(bvh2AccelStructure != nullptr);
 
-	const uint32_t bvhRootIndex = MakeBVH4Node(bvh2AccellStructure, 0u);
+	const uint32_t bvhRootIndex = MakeBVH4Node(bvh2AccelStructure, 0u);
 	(void)bvhRootIndex;
 
 	assert(m_traversalTriangle4s.size() == m_triangleIndex4s.size());
@@ -23,7 +23,7 @@ BVH4AccellStructure::BVH4AccellStructure(const BVH2AccellStructure* bvh2AccellSt
 }
 
 // --------------------------------------------------------------------------------
-void GetChildren(const BVH2AccellStructure* bvh2AccellStructure, uint32_t* children,
+void GetChildren(const BVH2AccelStructure* bvh2AccelStructure, uint32_t* children,
 	AABB* boxes, uint32_t& addedChildren, uint32_t& triangleMask)
 {
 	while (addedChildren < 4u)
@@ -34,7 +34,7 @@ void GetChildren(const BVH2AccellStructure* bvh2AccellStructure, uint32_t* child
 		{
 			if ((children[child] >> 31u) != 1u)
 			{
-				const BVH2Node node = bvh2AccellStructure->GetBVH2Node(children[child]);
+				const BVH2Node node = bvh2AccelStructure->GetBVH2Node(children[child]);
 
 				AABB childrenAABB;
 				childrenAABB.MergeAABB(node.m_leftAABB);
@@ -55,7 +55,7 @@ void GetChildren(const BVH2AccellStructure* bvh2AccellStructure, uint32_t* child
 		}
 		else
 		{
-			const BVH2Node node = bvh2AccellStructure->GetBVH2Node(children[childIndex]);
+			const BVH2Node node = bvh2AccelStructure->GetBVH2Node(children[childIndex]);
 
 			children[childIndex] = node.m_leftChild;
 			boxes[childIndex] = node.m_leftAABB;
@@ -78,7 +78,7 @@ void GetChildren(const BVH2AccellStructure* bvh2AccellStructure, uint32_t* child
 }
 
 // --------------------------------------------------------------------------------
-uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccellStructure* bvh2AccellStructure, const uint32_t bvh2SubtreeRootIndex)
+uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccelStructure* bvh2AccelStructure, const uint32_t bvh2SubtreeRootIndex)
 {
 	assert((bvh2SubtreeRootIndex >> 31u) != 1u);
 
@@ -89,7 +89,7 @@ uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccellStructure* bvh2Accell
 	uint32_t addedChildren = 1u;
 	uint32_t triangleMask = 0u;
 	
-	GetChildren(bvh2AccellStructure, children, boxes, addedChildren, triangleMask);
+	GetChildren(bvh2AccelStructure, children, boxes, addedChildren, triangleMask);
 	
 	const uint32_t bvh4Node = (uint32_t)m_bvh4Nodes.size();
 	m_bvh4Nodes.push_back(BVH4Node());
@@ -107,7 +107,7 @@ uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccellStructure* bvh2Accell
 			if (postShiftValue & 1u)
 			{
 				const uint32_t indexInBVH2 = children[child] & ~(1u << 31u);
-				const TraversalTriangle& traversalTriangle = bvh2AccellStructure->GetTraversalTriangle(indexInBVH2);
+				const TraversalTriangle& traversalTriangle = bvh2AccelStructure->GetTraversalTriangle(indexInBVH2);
 
 				traversalTriangle4.m_v0X[subTriangle] = traversalTriangle.m_v0[0u];
 				traversalTriangle4.m_v0Y[subTriangle] = traversalTriangle.m_v0[1u];
@@ -165,7 +165,7 @@ uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccellStructure* bvh2Accell
 			if (postShiftValue & 1u)
 			{
 				const uint32_t indexInBVH2 = children[child] & ~(1u << 31u);
-				materialIndex4.m_index[material] = bvh2AccellStructure->GetMaterialIndex(indexInBVH2);
+				materialIndex4.m_index[material] = bvh2AccelStructure->GetMaterialIndex(indexInBVH2);
 				material++;
 			}
 		}
@@ -179,7 +179,7 @@ uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccellStructure* bvh2Accell
 			if (postShiftValue & 1u)
 			{
 				const uint32_t indexInBVH2 = children[child] & ~(1u << 31u);
-				const TriangleTexCoord& triangleTexCoord = bvh2AccellStructure->GetTriangleTexCoord(indexInBVH2);
+				const TriangleTexCoord& triangleTexCoord = bvh2AccelStructure->GetTriangleTexCoord(indexInBVH2);
 
 				triangleTexCoord4.m_v0U[texCoord] = triangleTexCoord.m_v0uv[0u];
 				triangleTexCoord4.m_v0V[texCoord] = triangleTexCoord.m_v0uv[1u];
@@ -221,7 +221,7 @@ uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccellStructure* bvh2Accell
 		const uint32_t postShiftValue = triangleMask >> (3u - child);
 		if (!(postShiftValue & 1u))
 		{
-			m_bvh4Nodes[bvh4Node].m_child[subNode] = MakeBVH4Node(bvh2AccellStructure, children[child]);
+			m_bvh4Nodes[bvh4Node].m_child[subNode] = MakeBVH4Node(bvh2AccelStructure, children[child]);
 			
 			m_bvh4Nodes[bvh4Node].m_aabbMinX[subNode] = boxes[child].m_min.X();
 			m_bvh4Nodes[bvh4Node].m_aabbMinY[subNode] = boxes[child].m_min.Y();

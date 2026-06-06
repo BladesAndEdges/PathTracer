@@ -16,9 +16,9 @@ void BVH2Traversal(const TraversalDataManager* dataManager, const uint32_t inner
 
 	float tNears[2u] = { INFINITY, INFINITY };
 	float hit[2u] = { false, false };
-	hit[0u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_leftAABB.m_min.X(), node.m_leftAABB.m_min.Y(), node.m_leftAABB.m_min.Z(),
+	hit[0u] = RayAABBIntersection(ray, node.m_leftAABB.m_min.X(), node.m_leftAABB.m_min.Y(), node.m_leftAABB.m_min.Z(),
 		node.m_leftAABB.m_max.X(), node.m_leftAABB.m_max.Y(), node.m_leftAABB.m_max.Z(), out_tMax, &tNears[0u]);
-	hit[1u] = RayAABBIntersection(ray, T_acceptAnyHit, node.m_rightAABB.m_min.X(), node.m_rightAABB.m_min.Y(), node.m_rightAABB.m_min.Z(),
+	hit[1u] = RayAABBIntersection(ray, node.m_rightAABB.m_min.X(), node.m_rightAABB.m_min.Y(), node.m_rightAABB.m_min.Z(),
 		node.m_rightAABB.m_max.X(), node.m_rightAABB.m_max.Y(), node.m_rightAABB.m_max.Z(), out_tMax, &tNears[0u]);
 
 	if (!hit[0u] && !hit[1u])
@@ -53,7 +53,7 @@ void BVH2Traversal(const TraversalDataManager* dataManager, const uint32_t inner
 			const TraversalTriangle& traversalTriangle = dataManager->GetBVH2TraversalTriangle(triangleIndex);
 			HitTriangle(ray, traversalTriangle, triangleIndex, tMin, out_primitiveId, out_tMax, out_u, out_v, out_hasHit);
 		}
-		else if (RayAABBIntersection(ray, T_acceptAnyHit, aabbs[child].m_min.X(), aabbs[child].m_min.Y(), aabbs[child].m_min.Z(),
+		else if (RayAABBIntersection(ray, aabbs[child].m_min.X(), aabbs[child].m_min.Y(), aabbs[child].m_min.Z(),
 			aabbs[child].m_max.X(), aabbs[child].m_max.Y(), aabbs[child].m_max.Z(), out_tMax, nullptr))
 		{
 			BVH2Traversal<T_acceptAnyHit>(dataManager, visitOrder[child], ray, tMin, out_primitiveId, out_tMax, out_u, out_v, out_hasHit);

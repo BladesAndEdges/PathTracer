@@ -36,7 +36,7 @@
     <ClCompile Include="Source\Acceleration\Triangle4AccellStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Acceleration\TriangleAccellStructure.cpp">
+    <ClCompile Include="Source\Acceleration\ScalarAccelStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Acceleration\TriangleTexCoords.cpp">
@@ -113,7 +113,7 @@
     <ClInclude Include="Source\Acceleration\Triangle4AccellStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Acceleration\TriangleAccellStructure.h">
+    <ClInclude Include="Source\Acceleration\ScalarAccelStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Acceleration\TriangleTexCoords.h">

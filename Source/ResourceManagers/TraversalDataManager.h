@@ -7,13 +7,13 @@ class BVH4AccellStructure;
 struct BVH2Node;
 struct BVH4Node;
 struct MaterialIndex4;
+class ScalarAccelStructure;
 struct TraversalTriangle;
 struct TraversalTriangle4;
 struct TriangleIndex4;
 struct Triangle;
 struct TriangleTexCoord;
 struct TriangleTexCoord4;
-class TriangleAccellStructure;
 class Triangle4AccellStructure;
 
 // --------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ public:
 
 private:
 
-	TriangleAccellStructure* m_triangleAccellStructure;
+	ScalarAccelStructure* m_scalarAccelStructure;
 	Triangle4AccellStructure* m_triangle4AccellStructure;
 	BVH2AccellStructure* m_bvh2AccellStructure;
 	BVH4AccellStructure* m_bvh4AccellStructure;

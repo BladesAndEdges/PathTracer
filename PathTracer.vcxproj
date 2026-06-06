@@ -216,7 +216,7 @@
     <ClCompile Include="Source\Acceleration\TraversalTriangle.cpp" />
     <ClCompile Include="Source\Acceleration\TraversalTriangle4.cpp" />
     <ClCompile Include="Source\Acceleration\Triangle4AccellStructure.cpp" />
-    <ClCompile Include="Source\Acceleration\TriangleAccellStructure.cpp" />
+    <ClCompile Include="Source\Acceleration\ScalarAccelStructure.cpp" />
     <ClCompile Include="Source\Acceleration\TriangleTexCoords.cpp" />
     <ClCompile Include="Source\Core\Application.cpp" />
     <ClCompile Include="Source\Core\Camera.cpp" />
@@ -246,7 +246,7 @@
     <ClInclude Include="Source\Acceleration\TraversalTriangle.h" />
     <ClInclude Include="Source\Acceleration\TraversalTriangle4.h" />
     <ClInclude Include="Source\Acceleration\Triangle4AccellStructure.h" />
-    <ClInclude Include="Source\Acceleration\TriangleAccellStructure.h" />
+    <ClInclude Include="Source\Acceleration\ScalarAccelStructure.h" />
     <ClInclude Include="Source\Acceleration\TriangleTexCoords.h" />
     <ClInclude Include="Source\Core\Application.h" />
     <ClInclude Include="Source\Core\Camera.h" />

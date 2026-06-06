@@ -1,11 +1,11 @@
-#include "TriangleAccellStructure.h"
+#include "ScalarAccelStructure.h"
 
 #include "TraversalTriangle.h"
 #include "Triangle.h"
 #include "TriangleTexCoords.h"
 
 // --------------------------------------------------------------------------------
-TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& triangles, const std::vector<uint32_t>& perTriangleMaterials) : m_materialIndices(perTriangleMaterials)
+ScalarAccelStructure::ScalarAccelStructure(const std::vector<Triangle>& triangles, const std::vector<uint32_t>& perTriangleMaterials) : m_materialIndices(perTriangleMaterials)
 {
 	// Traversal data
 	TraversalTriangle traversalTriangle;
@@ -44,25 +44,25 @@ TriangleAccellStructure::TriangleAccellStructure(const std::vector<Triangle>& tr
 }
 
 // --------------------------------------------------------------------------------
-const uint32_t TriangleAccellStructure::GetTraversalTrianglesCount() const
+const uint32_t ScalarAccelStructure::GetTraversalTrianglesCount() const
 {
 	return (uint32_t)m_traversalTriangles.size();
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<TraversalTriangle>& TriangleAccellStructure::GetTraversalTriangles() const
+const std::vector<TraversalTriangle>& ScalarAccelStructure::GetTraversalTriangles() const
 {
 	return m_traversalTriangles;
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<uint32_t>& TriangleAccellStructure::GetMaterialIndices() const
+const std::vector<uint32_t>& ScalarAccelStructure::GetMaterialIndices() const
 {
 	return m_materialIndices;
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<TriangleTexCoord>& TriangleAccellStructure::GetTriangleTexCoords() const
+const std::vector<TriangleTexCoord>& ScalarAccelStructure::GetTriangleTexCoords() const
 {
 	return m_triangleTexCoords;
 }

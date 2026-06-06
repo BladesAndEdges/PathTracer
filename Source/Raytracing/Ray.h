@@ -26,6 +26,6 @@ private:
 	Vector3 m_negativeOriginTimesInverseDir;
 };
 
-bool RayAABBIntersection(Ray& ray, bool isPrimary, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, const float tMax, float* out_hitNear);
+bool RayAABBIntersection(Ray& ray, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, const float tMax, float* out_hitNear);
 
 #include "Ray.inl"

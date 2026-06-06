@@ -7,11 +7,11 @@ struct Triangle;
 struct TriangleTexCoord;
 
 // --------------------------------------------------------------------------------
-class TriangleAccellStructure
+class ScalarAccelStructure
 {
 public:
 
-	TriangleAccellStructure(const std::vector<Triangle>& triangles, const std::vector<uint32_t>& perTriangleMaterials);
+	ScalarAccelStructure(const std::vector<Triangle>& triangles, const std::vector<uint32_t>& perTriangleMaterials);
 
 	const uint32_t GetTraversalTrianglesCount() const;
 	const std::vector<TraversalTriangle>& GetTraversalTriangles() const;

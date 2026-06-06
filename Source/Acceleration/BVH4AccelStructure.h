@@ -11,11 +11,11 @@ struct TriangleIndex4;
 struct TriangleTexCoord4;
 
 // --------------------------------------------------------------------------------
-class BVH4AccellStructure
+class BVH4AccelStructure
 {
 public:
 
-	BVH4AccellStructure(const BVH2AccelStructure* bvh2AccelStructure);
+	BVH4AccelStructure(const BVH2AccelStructure* bvh2AccelStructure);
 	uint32_t MakeBVH4Node(const BVH2AccelStructure* bvh2AccelStructure, const uint32_t start);
 
 	const BVH4Node& GetBVH4Node(const uint32_t index) const;

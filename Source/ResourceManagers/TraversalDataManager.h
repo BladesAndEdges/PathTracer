@@ -3,7 +3,7 @@
 #include <vector>
 
 class BVH2AccelStructure;
-class BVH4AccellStructure;
+class BVH4AccelStructure;
 struct BVH2Node;
 struct BVH4Node;
 struct MaterialIndex4;
@@ -48,6 +48,6 @@ private:
 	ScalarAccelStructure* m_scalarAccelStructure;
 	SSEAccelStructure* m_sseAccelStructure;
 	BVH2AccelStructure* m_bvh2AccelStructure;
-	BVH4AccellStructure* m_bvh4AccellStructure;
+	BVH4AccelStructure* m_bvh4AccelStructure;
 };
 

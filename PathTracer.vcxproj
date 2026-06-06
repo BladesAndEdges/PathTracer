@@ -211,7 +211,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Acceleration\BVH2AccelStructure.cpp" />
-    <ClCompile Include="Source\Acceleration\BVH4AccellStructure.cpp" />
+    <ClCompile Include="Source\Acceleration\BVH4AccelStructure.cpp" />
     <ClCompile Include="Source\Acceleration\BVH2Node.cpp" />
     <ClCompile Include="Source\Acceleration\TraversalTriangle.cpp" />
     <ClCompile Include="Source\Acceleration\TraversalTriangle4.cpp" />
@@ -240,7 +240,7 @@
     <ClInclude Include="Dependencies\stb\stb_image.h" />
     <ClInclude Include="Source\Acceleration\BaseTypes4.h" />
     <ClInclude Include="Source\Acceleration\BVH2AccelStructure.h" />
-    <ClInclude Include="Source\Acceleration\BVH4AccellStructure.h" />
+    <ClInclude Include="Source\Acceleration\BVH4AccelStructure.h" />
     <ClInclude Include="Source\Acceleration\BVH4Node.h" />
     <ClInclude Include="Source\Acceleration\BVH2Node.h" />
     <ClInclude Include="Source\Acceleration\TraversalTriangle.h" />

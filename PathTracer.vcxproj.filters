@@ -21,7 +21,7 @@
     <ClCompile Include="Source\Acceleration\BVH2AccelStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Acceleration\BVH4AccellStructure.cpp">
+    <ClCompile Include="Source\Acceleration\BVH4AccelStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Acceleration\BVH2Node.cpp">
@@ -98,7 +98,7 @@
     <ClInclude Include="Source\Acceleration\BVH2AccelStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Acceleration\BVH4AccellStructure.h">
+    <ClInclude Include="Source\Acceleration\BVH4AccelStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Acceleration\BVH2Node.h">

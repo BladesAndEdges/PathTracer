@@ -1,4 +1,4 @@
-#include "BVH4AccellStructure.h"
+#include "BVH4AccelStructure.h"
 
 #include <assert.h>
 
@@ -11,7 +11,7 @@
 #include "TriangleTexCoords.h"
 
 // --------------------------------------------------------------------------------
-BVH4AccellStructure::BVH4AccellStructure(const BVH2AccelStructure* bvh2AccelStructure)
+BVH4AccelStructure::BVH4AccelStructure(const BVH2AccelStructure* bvh2AccelStructure)
 {
 	assert(bvh2AccelStructure != nullptr);
 
@@ -78,7 +78,7 @@ void GetChildren(const BVH2AccelStructure* bvh2AccelStructure, uint32_t* childre
 }
 
 // --------------------------------------------------------------------------------
-uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccelStructure* bvh2AccelStructure, const uint32_t bvh2SubtreeRootIndex)
+uint32_t BVH4AccelStructure::MakeBVH4Node(const BVH2AccelStructure* bvh2AccelStructure, const uint32_t bvh2SubtreeRootIndex)
 {
 	assert((bvh2SubtreeRootIndex >> 31u) != 1u);
 
@@ -257,35 +257,35 @@ uint32_t BVH4AccellStructure::MakeBVH4Node(const BVH2AccelStructure* bvh2AccelSt
 }
 
 // --------------------------------------------------------------------------------
-const BVH4Node& BVH4AccellStructure::GetBVH4Node(const uint32_t index) const
+const BVH4Node& BVH4AccelStructure::GetBVH4Node(const uint32_t index) const
 {
 	assert(index < m_bvh4Nodes.size());
 	return m_bvh4Nodes[index];
 }
 
 // --------------------------------------------------------------------------------
-const MaterialIndex4& BVH4AccellStructure::GetMaterialIndex4(const uint32_t index) const
+const MaterialIndex4& BVH4AccelStructure::GetMaterialIndex4(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_materialIndex4s.size());
 	return m_materialIndex4s[index];
 }
 
 // --------------------------------------------------------------------------------
-const TraversalTriangle4& BVH4AccellStructure::GetTraversalTriangle4(const uint32_t index) const
+const TraversalTriangle4& BVH4AccelStructure::GetTraversalTriangle4(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_traversalTriangle4s.size());
 	return m_traversalTriangle4s[index];
 }
 
 // --------------------------------------------------------------------------------
-const TriangleIndex4& BVH4AccellStructure::GetTriangleIndex4(const uint32_t index) const
+const TriangleIndex4& BVH4AccelStructure::GetTriangleIndex4(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_triangleIndex4s.size());
 	return m_triangleIndex4s[index];
 }
 
 // --------------------------------------------------------------------------------
-const TriangleTexCoord4& BVH4AccellStructure::GetTriangleTexCoord4(const uint32_t index) const
+const TriangleTexCoord4& BVH4AccelStructure::GetTriangleTexCoord4(const uint32_t index) const
 {
 	assert(index < (uint32_t)m_triangleTexCoord4s.size());
 	return m_triangleTexCoord4s[index];

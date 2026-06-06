@@ -9,11 +9,11 @@ struct TriangleTexCoord;
 struct TriangleTexCoord4;
 
 // --------------------------------------------------------------------------------
-class Triangle4AccellStructure
+class SSEAccelStructure
 {
 public:
 
-	Triangle4AccellStructure(std::vector<TraversalTriangle> traversalTriangles, std::vector<uint32_t> perTriangleMaterials, 
+	SSEAccelStructure(std::vector<TraversalTriangle> traversalTriangles, std::vector<uint32_t> perTriangleMaterials, 
 		std::vector<TriangleTexCoord> triangleTexCoords);
 
 	const std::vector<MaterialIndex4>& GetMaterialIndex4s() const;

@@ -14,7 +14,7 @@ struct TriangleIndex4;
 struct Triangle;
 struct TriangleTexCoord;
 struct TriangleTexCoord4;
-class Triangle4AccellStructure;
+class SSEAccelStructure;
 
 // --------------------------------------------------------------------------------
 class TraversalDataManager
@@ -46,7 +46,7 @@ public:
 private:
 
 	ScalarAccelStructure* m_scalarAccelStructure;
-	Triangle4AccellStructure* m_triangle4AccellStructure;
+	SSEAccelStructure* m_sseAccelStructure;
 	BVH2AccellStructure* m_bvh2AccellStructure;
 	BVH4AccellStructure* m_bvh4AccellStructure;
 };

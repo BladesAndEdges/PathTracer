@@ -6,7 +6,7 @@
 #include "TriangleTexCoords.h"
 
 // --------------------------------------------------------------------------------
-Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle> traversalTriangles, 
+SSEAccelStructure::SSEAccelStructure(std::vector<TraversalTriangle> traversalTriangles, 
 	std::vector<uint32_t> triangleMaterials, std::vector<TriangleTexCoord> triangleTexCoords)
 {
 	// Pad to a multiple of 4, if needed
@@ -145,19 +145,19 @@ Triangle4AccellStructure::Triangle4AccellStructure(std::vector<TraversalTriangle
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<TraversalTriangle4>& Triangle4AccellStructure::GetTraversalTriangle4s() const
+const std::vector<TraversalTriangle4>& SSEAccelStructure::GetTraversalTriangle4s() const
 {
 	return m_traversalTriangle4s;
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<MaterialIndex4>& Triangle4AccellStructure::GetMaterialIndex4s() const
+const std::vector<MaterialIndex4>& SSEAccelStructure::GetMaterialIndex4s() const
 {
 	return m_materialIndex4s;
 }
 
 // --------------------------------------------------------------------------------
-const std::vector<TriangleTexCoord4>& Triangle4AccellStructure::GetTriangleTexCoord4s() const
+const std::vector<TriangleTexCoord4>& SSEAccelStructure::GetTriangleTexCoord4s() const
 {
 	return m_triangleTexCoord4s;
 }

@@ -18,10 +18,6 @@ public:
 	inline Vector3 NegativeOriginTimesInvDir() const;
 	Vector3 CalculateIntersectionPoint(const float t) const;
 
-	uint32_t m_primaryAABBIntersectionTests;
-	uint32_t m_primaryTriangleIntersectionTests;
-	uint32_t m_primaryNodeVisits;
-
 private:
 
 	Vector3 m_rayOrigin;
@@ -31,7 +27,5 @@ private:
 };
 
 bool RayAABBIntersection(Ray& ray, bool isPrimary, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, const float tMax, float* out_hitNear);
-int SIMDRayAABBIntersection(Ray& ray, bool isPrimary, const float* minX, const float* minY, const float* minZ, 
-	const float* maxX, const float* maxY, const float* maxZ, const float tMax, __m128* out_hitNears);
 
 #include "Ray.inl"

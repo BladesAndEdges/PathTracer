@@ -12,11 +12,6 @@ template<bool T_acceptAnyHit>
 void BVH2Traversal(const TraversalDataManager* dataManager, const uint32_t innerNodeStartIndex, Ray& ray, const float tMin, uint32_t& out_primitiveId,
 	float& out_tMax, float& out_u, float& out_v, bool& out_hasHit)
 {
-	if (!T_acceptAnyHit)
-	{
-		ray.m_primaryNodeVisits++;
-	}
-
 	const BVH2Node& node = dataManager->GetBVH2Node(innerNodeStartIndex);
 
 	float tNears[2u] = { INFINITY, INFINITY };
@@ -78,11 +73,6 @@ void BVH2Traversal(const TraversalDataManager* dataManager, const uint32_t inner
 template<bool T_acceptAnyHit>
 void BVH4Traversal(const TraversalDataManager* dataManager, const uint32_t innerNodeStartIndex, Ray& ray, const float tMin, __m128i& out_primitiveId, __m128& out_tMax, __m128& out_u, __m128& out_v, int& moveMask)
 {
-	if (!T_acceptAnyHit)
-	{
-		ray.m_primaryNodeVisits++;
-	}
-
 	const BVH4Node& node = dataManager->GetBVH4Node(innerNodeStartIndex);
 
 #ifdef SORTED_BVH4

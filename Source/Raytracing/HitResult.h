@@ -2,9 +2,11 @@
 
 #include <cmath>
 #include <stdint.h>
-#include "Vector3.h"
-#include "Vector2.h"
 
+#include "Vector2.h"
+#include "Vector3.h"
+
+// --------------------------------------------------------------------------------
 struct HitResult
 {
 	Vector3 m_intersectionPoint = Vector3(0.0f, 0.0f, 0.0f);

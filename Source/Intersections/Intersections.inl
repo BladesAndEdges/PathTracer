@@ -80,8 +80,6 @@ __forceinline void HitTriangle4(Ray& ray, const TraversalTriangle4& traversalTri
 	const __m128 v0Y = _mm_loadu_ps(traversalTriangle4.m_v0Y);
 	const __m128 v0Z = _mm_loadu_ps(traversalTriangle4.m_v0Z);
 
-	// TRY TO USE FUSED MULTIPLY SUBTRACT IF IT EXISTS HERE
-
 	// Calculate pVec
 	const __m128 pvecXLHS = _mm_mul_ps(rayDirectionY, edge2Z);
 	const __m128 pvecXRHS = _mm_mul_ps(rayDirectionZ, edge2Y);
@@ -96,7 +94,7 @@ __forceinline void HitTriangle4(Ray& ray, const TraversalTriangle4& traversalTri
 	const __m128 pvecZ = _mm_sub_ps(pvecZLHS, pvecZRHS);
 
 	// Calculate determinants
-	const __m128 detDotX = _mm_mul_ps(pvecX, edge1X); // fmadd: _mm_fmadd_ps(), header is already added
+	const __m128 detDotX = _mm_mul_ps(pvecX, edge1X);
 	const __m128 detDotY = _mm_mul_ps(pvecY, edge1Y);
 	const __m128 detDotZ = _mm_mul_ps(pvecZ, edge1Z);
 

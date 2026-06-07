@@ -7,6 +7,7 @@
 class GLContext;
 class Renderer;
 
+// --------------------------------------------------------------------------------
 class Application
 {
 public:

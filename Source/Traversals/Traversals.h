@@ -179,7 +179,7 @@ void BVH4Traversal(const TraversalDataManager* dataManager, const uint32_t inner
 
 	// 0 andd tMax
 	const __m128 zeroReg = _mm_set1_ps(0.0f);
-	const __m128 tMaxReg = _mm_set1_ps(INFINITY); // Might want to add the actual tMax
+	const __m128 tMaxReg = _mm_set1_ps(INFINITY);
 
 	// Origin
 	const __m128 originX = _mm_set1_ps(ray.Origin().X());
@@ -276,7 +276,6 @@ void BVH4Traversal(const TraversalDataManager* dataManager, const uint32_t inner
 	const __m128i l1 = _mm_max_epi32(min1, shuffle3);
 	const __m128i l0 = _mm_min_epi32(min1, shuffle3);
 
-	// Figure this out
 	const __m128i unpack0 = _mm_unpackhi_epi32(l1, l3);
 	const __m128i unpack1 = _mm_unpackhi_epi32(l0, l2);
 	const __m128i result = _mm_unpackhi_epi32(unpack1, unpack0);

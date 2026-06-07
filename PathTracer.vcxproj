@@ -217,7 +217,6 @@
     <ClCompile Include="Source\Acceleration\TraversalTriangle4.cpp" />
     <ClCompile Include="Source\Acceleration\SSEAccelStructure.cpp" />
     <ClCompile Include="Source\Acceleration\ScalarAccelStructure.cpp" />
-    <ClCompile Include="Source\Acceleration\TriangleTexCoords.cpp" />
     <ClCompile Include="Source\Core\Application.cpp" />
     <ClCompile Include="Source\Core\Camera.cpp" />
     <ClCompile Include="Source\Core\Framebuffer.cpp" />
@@ -226,7 +225,6 @@
     <ClCompile Include="Source\Core\Renderer.cpp" />
     <ClCompile Include="Source\Core\Shader.cpp" />
     <ClCompile Include="Source\main.cpp" />
-    <ClCompile Include="Source\Raytracing\HitResult.cpp" />
     <ClCompile Include="Source\Raytracing\Pathtracer.cpp" />
     <ClCompile Include="Source\Raytracing\Ray.cpp" />
     <ClCompile Include="Source\ResourceManagers\MaterialManager.cpp" />

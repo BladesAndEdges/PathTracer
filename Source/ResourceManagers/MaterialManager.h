@@ -7,6 +7,7 @@
 class TextureManager;
 class Vector3;
 
+// --------------------------------------------------------------------------------
 struct Material
 {
 	uint32_t diffuseIndex;

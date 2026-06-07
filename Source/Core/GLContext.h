@@ -8,6 +8,7 @@ class Framebuffer;
 class Shader;
 class Camera;
 
+// --------------------------------------------------------------------------------
 class GLContext
 {
 public:

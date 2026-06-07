@@ -29,7 +29,6 @@ void Application::Run()
 	bool hasResized = false;
 	uint32_t frameNumber = 0u;
 
-	// Rendering and all that 
 	while (!m_context->ShouldClose())
 	{
 		m_context->Listen();

@@ -22,7 +22,6 @@ BVH2AccelStructure::BVH2AccelStructure(const std::vector<Triangle>& triangles,
 {
 	assert(triangles.size() != 0);
 
-	// To make it easier to test for now
 	const uint32_t dataCount = (uint32_t)triangles.size();
 
 	std::vector<BVHTriangleData> bvhTriangleData;
@@ -145,7 +144,6 @@ ConstructResult BVH2AccelStructure::ConstructNode(BVHTriangleData* bvhData, cons
 				break;
 			}
 
-			// TODO: Maybe make a Min/Max for Vector3 to make this easier
 			Vector3 centroidsMin(bvhData->m_centroid.m_position);
 			Vector3 centroidsMax(bvhData->m_centroid.m_position);
 		
@@ -279,8 +277,6 @@ ConstructResult BVH2AccelStructure::ConstructNode(BVHTriangleData* bvhData, cons
 					float vlSah = 0.0f;
 					if (leftTriangleCount > 0u)
 					{
-						// Division by infinity
-						// leftAABB.m_max is infinity here
 						vl = leftAABB.GetSurfaceArea();
 						vlSah = vl / saV;
 					}

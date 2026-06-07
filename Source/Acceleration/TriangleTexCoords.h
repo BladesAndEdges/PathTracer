@@ -2,6 +2,7 @@
 
 #include "float.h"
 
+// --------------------------------------------------------------------------------
 struct TriangleTexCoord
 {
 	float m_v0uv[2u] = { FLT_MAX, FLT_MAX };

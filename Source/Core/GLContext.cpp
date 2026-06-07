@@ -73,7 +73,7 @@ bool GLContext::HasFramebufferChanged()
 // --------------------------------------------------------------------------------
 void GLContext::ResizeFramebuffer()
 {
-	delete m_framebuffer; // Any synchronization needed here?
+	delete m_framebuffer;
 
 	int currentWidth, currentHeight;
 	glfwGetFramebufferSize(m_glfwWindow, &currentWidth, &currentHeight);

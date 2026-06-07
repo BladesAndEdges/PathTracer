@@ -11,11 +11,9 @@
 #include "Vector2.h"
 #include "Vertex.h"
 
-Vector3 DabSponzaLoc = Vector3(2.88791323f, 7.37331104f, -0.183363333f); // Remove this eventually
-
 // --------------------------------------------------------------------------------
 SceneManager::SceneManager(const std::string& objFile, const float scale, const std::string& mtlFile) : m_materialManager(nullptr),
-																					m_initialCameraPos(Vector3(2.88791323f, 7.37331104f, -0.183363333f))
+m_initialCameraPos(Vector3(2.88791323f, 7.37331104f, -0.183363333f))
 {
 	std::filesystem::path oFile = objFile;
 	std::filesystem::path mFile = mtlFile;
@@ -27,7 +25,6 @@ SceneManager::SceneManager(const std::string& objFile, const float scale, const 
 	{
 		m_materialManager = new MaterialManager(mtlFile.data());
 		Load(objFile, scale);
-		// assert if the two arrays match
 	}
 	else
 	{

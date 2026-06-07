@@ -17,7 +17,6 @@ bool operator==(const Vertex& lhs, const Vertex& rhs)
 
 	for (unsigned int positionElement = 0; positionElement < 3; positionElement++)
 	{
-		// Position equality
 		if (lhs.m_position[positionElement] == rhs.m_position[positionElement])
 		{
 			positionEqual = true;

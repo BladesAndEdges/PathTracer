@@ -20,6 +20,8 @@ public:
 	SceneManager(const SceneManager&) = delete;
 	SceneManager& operator=(const SceneManager&) = delete;
 
+	~SceneManager();
+
 	const std::vector<Triangle>& GetTriangles() const;
 	const std::vector<uint32_t>& GetPerTriangleMaterials() const;
 	Vector3 GetInitialCameraPosition() const;

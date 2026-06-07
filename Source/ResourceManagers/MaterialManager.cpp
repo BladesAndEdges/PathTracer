@@ -53,6 +53,12 @@ MaterialManager::MaterialManager(const char* mtlFile)
 }
 
 // --------------------------------------------------------------------------------
+MaterialManager::~MaterialManager()
+{
+	delete m_textureManager;
+}
+
+// --------------------------------------------------------------------------------
 uint32_t MaterialManager::GetMaterialIndexByName(const std::string& name) const
 {
 	for (uint32_t index = 0u; index < m_materialNames.size(); index++)

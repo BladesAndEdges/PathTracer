@@ -23,6 +23,8 @@ public:
 
 	TraversalDataManager(const std::vector<Triangle>& triangles, const std::vector<uint32_t> materials);
 
+	~TraversalDataManager();
+
 	const uint32_t GetTraversalTrianglesCount() const;
 	const std::vector<TraversalTriangle>& GetTraversalTriangles() const;
 	const std::vector<uint32_t>& GetMaterialIndices() const;

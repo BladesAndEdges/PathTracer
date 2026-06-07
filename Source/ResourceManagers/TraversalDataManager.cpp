@@ -1,10 +1,14 @@
 #include "TraversalDataManager.h"
 
+#include "BaseTypes4.h"
+#include "BVH2Node.h"
+#include "BVH4Node.h"
 #include "BVH2AccelStructure.h"
 #include "BVH4AccelStructure.h"
 #include "ScalarAccelStructure.h"
 #include "SSEAccelStructure.h"
 #include "TraversalTriangle.h"
+#include "TraversalTriangle4.h"
 #include "TriangleTexCoords.h"
 
 
@@ -17,6 +21,18 @@ TraversalDataManager::TraversalDataManager(const std::vector<Triangle>& triangle
 	m_bvh2AccelStructure = new BVH2AccelStructure(triangles, m_scalarAccelStructure->GetTraversalTriangles(), m_scalarAccelStructure->GetMaterialIndices(),
 		m_scalarAccelStructure->GetTriangleTexCoords(), BVH2PartitionStrategy::HalfWayLongestAxisWithSAH);
 	m_bvh4AccelStructure = new BVH4AccelStructure(m_bvh2AccelStructure);
+}
+
+// --------------------------------------------------------------------------------
+TraversalDataManager::~TraversalDataManager()
+{
+	delete m_scalarAccelStructure;
+
+	delete m_sseAccelStructure;
+	
+	delete m_bvh2AccelStructure;
+	
+	delete m_bvh4AccelStructure;
 }
 
 // --------------------------------------------------------------------------------

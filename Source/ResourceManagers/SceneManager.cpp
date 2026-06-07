@@ -36,6 +36,12 @@ SceneManager::SceneManager(const std::string& objFile, const float scale, const 
 }
 
 // --------------------------------------------------------------------------------
+SceneManager::~SceneManager()
+{
+	delete m_materialManager;
+}
+
+// --------------------------------------------------------------------------------
 const std::vector<Triangle>& SceneManager::GetTriangles() const
 {
 	return m_triangles;

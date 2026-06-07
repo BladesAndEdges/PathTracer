@@ -21,6 +21,16 @@ Renderer::Renderer()
 }
 
 // --------------------------------------------------------------------------------
+Renderer::~Renderer()
+{
+	delete m_sceneManager;
+
+	delete m_traversalDataManager;
+
+	delete m_pathtracer;
+}
+
+// --------------------------------------------------------------------------------
 Camera* Renderer::GetCamera()
 {
 	return &m_camera;

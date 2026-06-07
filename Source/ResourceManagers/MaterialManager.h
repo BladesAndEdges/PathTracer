@@ -23,6 +23,8 @@ public:
 	MaterialManager(const MaterialManager&) = delete;
 	MaterialManager& operator=(const MaterialManager&) = delete;
 
+	~MaterialManager();
+
 	uint32_t GetMaterialIndexByName(const std::string& name) const;
 	Vector3 GetDebugMaterialColour(const uint32_t index) const;
 

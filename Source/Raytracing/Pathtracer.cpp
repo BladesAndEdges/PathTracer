@@ -21,6 +21,9 @@
 //#define RENDER_BVH2
 #define RENDER_BVH4
 
+#define BOUNCES 2
+#define SAMPLES 2
+
 const Vector3 primitiveDebugColours[5u] = { Vector3(0.94f, 0.34f, 0.30f), Vector3(0.30f, 0.94f, 0.70f), Vector3(0.51f, 0.70f, 0.96f),
 	Vector3(0.96f, 0.91f, 0.51f), Vector3(0.96f, 0.61f, 0.91f) };
 
@@ -94,10 +97,8 @@ void Pathtracer::RenderPathtrace(const Camera* camera, const TraversalDataManage
 			float blue = 0.0f;
 
 			Vector3 radiance(0.0f, 0.0f, 0.0f);
-			const uint32_t numSamples = 1u;
-			const uint32_t depth = 2u;
 
-			for (uint32_t sample = 0u; sample < numSamples; sample++)
+			for (uint32_t sample = 0u; sample < SAMPLES; sample++)
 			{
 				Vector3 texelTopLeft;
 				Vector3 texelBottomRight;
@@ -113,10 +114,10 @@ void Pathtracer::RenderPathtrace(const Camera* camera, const TraversalDataManage
 
 				Ray ray(camera->GetCameraLocation(), Vector3(randomX, randomY, m_viewspaceDirections[rayIndex].Z()));
 
-				radiance = radiance + Pathtrace(traversalDataManager, sceneManager, depth, ray);
+				radiance = radiance + Pathtrace(traversalDataManager, sceneManager, BOUNCES, ray);
 			}
 
-			radiance = Vector3(radiance.X() / (float)numSamples, radiance.Y() / (float)numSamples, radiance.Z() / (float)numSamples);
+			radiance = Vector3(radiance.X() / (float)SAMPLES, radiance.Y() / (float)SAMPLES, radiance.Z() / (float)SAMPLES);
 
 			// Clamp prior to the conversion, assume SDR
 			red = std::fmin(1.0f, radiance.X());
